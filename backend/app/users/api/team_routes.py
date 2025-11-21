@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.users.api.schemas import TeamSchema, TeamCreateSchema, TeamUpdateSchema
+from app.users.api.schemas import TeamSchema, TeamCreateSchema, TeamUpdateSchema, TeamWithMembersSchema
 from app.users.api.user_routes import get_current_user_dependency
 from app.users.models import Team
-from app.users.repositories import TeamRepository, TeamFilter
+from app.users.repositories import TeamRepository, TeamFilter, UserRepository
 
 router = APIRouter(prefix="/api/v1/teams", tags=["teams"])
 
@@ -23,12 +23,12 @@ async def list_teams(
     return [TeamSchema.model_validate(team) for team in teams]
 
 
-@router.get("/{team_id}", response_model=TeamSchema)
+@router.get("/{team_id}", response_model=TeamWithMembersSchema)
 async def get_team(
     team_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user_dependency),
-) -> TeamSchema:
+) -> TeamWithMembersSchema:
     """Get team by ID."""
     team_repo = TeamRepository(db)
     team = await team_repo.get(team_id)
@@ -40,7 +40,7 @@ async def get_team(
     if current_user not in team.members:
         raise HTTPException(status_code=403, detail="Not a member of this team")
 
-    return TeamSchema.model_validate(team)
+    return TeamWithMembersSchema.model_validate(team)
 
 
 @router.post("/", response_model=TeamSchema, status_code=201)
@@ -107,4 +107,37 @@ async def delete_team(
         raise HTTPException(status_code=403, detail="Not a member of this team")
 
     await team_repo.delete(team_id)
+    await db.commit()
+
+
+@router.delete("/{team_id}/members/{user_id}", status_code=204)
+async def remove_team_member(
+    team_id: UUID,
+    user_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user_dependency),
+) -> None:
+    """Remove a member from a team."""
+    team_repo = TeamRepository(db)
+    user_repo = UserRepository(db)
+
+    team = await team_repo.get(team_id)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    # Check if current user is a member of the team
+    if current_user not in team.members:
+        raise HTTPException(status_code=403, detail="Not a member of this team")
+
+    # Get the user to remove
+    user_to_remove = await user_repo.get(user_id)
+    if not user_to_remove:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Check if the user is a member of the team
+    if user_to_remove not in team.members:
+        raise HTTPException(status_code=404, detail="User is not a member of this team")
+
+    # Remove the user from the team
+    team.members.remove(user_to_remove)
     await db.commit()

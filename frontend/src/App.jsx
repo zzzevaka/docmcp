@@ -4,6 +4,7 @@ import ProtectedRoute from './components/layout/ProtectedRoute'
 import Login from './pages/Login'
 import AuthCallback from './pages/AuthCallback'
 import Teams from './pages/Teams'
+import TeamDetail from './pages/TeamDetail'
 import Projects from './pages/Projects'
 import ProjectDetail from './pages/ProjectDetail'
 import Library from './pages/Library'
@@ -27,6 +28,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Teams />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teams/:teamId"
+            element={
+              <ProtectedRoute>
+                <TeamDetail />
               </ProtectedRoute>
             }
           />

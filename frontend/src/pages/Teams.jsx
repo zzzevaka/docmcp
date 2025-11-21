@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'sonner'
 import MainLayout from '../components/layout/MainLayout'
 
 function Teams() {
+  const navigate = useNavigate()
   const [teams, setTeams] = useState([])
   const [pendingInvitations, setPendingInvitations] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [showInviteModal, setShowInviteModal] = useState(false)
-  const [selectedTeamForInvite, setSelectedTeamForInvite] = useState(null)
   const [newTeamName, setNewTeamName] = useState('')
-  const [inviteEmail, setInviteEmail] = useState('')
 
   const fetchData = async () => {
     try {
@@ -51,26 +50,6 @@ function Teams() {
     }
   }
 
-  const handleInviteUser = async (e) => {
-    e.preventDefault()
-    if (!inviteEmail.trim() || !selectedTeamForInvite) return
-
-    try {
-      await axios.post(
-        `/api/v1/teams/${selectedTeamForInvite}/invitations`,
-        { invitee_email: inviteEmail },
-        { withCredentials: true }
-      )
-      setInviteEmail('')
-      setShowInviteModal(false)
-      setSelectedTeamForInvite(null)
-      toast.success('Invitation sent successfully!')
-    } catch (error) {
-      console.error('Failed to send invitation:', error)
-      toast.error(error.response?.data?.detail || 'Failed to send invitation')
-    }
-  }
-
   const handleAcceptInvitation = async (invitationId) => {
     try {
       await axios.post(
@@ -103,7 +82,7 @@ function Teams() {
 
   if (loading) {
     return (
-      <MainLayout>
+      <MainLayout activeTab="teams">
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -115,7 +94,7 @@ function Teams() {
   }
 
   return (
-    <MainLayout>
+    <MainLayout activeTab="teams">
       <div className="px-4 py-6">
         {/* Pending Invitations Section */}
         {pendingInvitations.length > 0 && (
@@ -183,23 +162,15 @@ function Teams() {
             {teams.map((team) => (
               <div
                 key={team.id}
-                className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow"
+                onClick={() => navigate(`/teams/${team.id}`)}
+                className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer"
               >
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
                   {team.name}
                 </h3>
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-gray-600 mb-2">
                   Created {new Date(team.created_at).toLocaleDateString()}
                 </p>
-                <button
-                  onClick={() => {
-                    setSelectedTeamForInvite(team.id)
-                    setShowInviteModal(true)
-                  }}
-                  className="w-full px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200"
-                >
-                  Invite Member
-                </button>
               </div>
             ))}
           </div>
@@ -240,49 +211,6 @@ function Teams() {
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                   >
                     Create
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Invite User Modal */}
-        {showInviteModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h2 className="text-2xl font-bold mb-4">Invite Team Member</h2>
-              <form onSubmit={handleInviteUser}>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter email address"
-                    autoFocus
-                  />
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowInviteModal(false)
-                      setInviteEmail('')
-                      setSelectedTeamForInvite(null)
-                    }}
-                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
-                    Send Invitation
                   </button>
                 </div>
               </form>

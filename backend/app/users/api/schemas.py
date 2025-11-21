@@ -5,6 +5,18 @@ from typing import List
 from pydantic import BaseModel, EmailStr
 
 
+class UserBasicSchema(BaseModel):
+    """Basic user schema without teams."""
+
+    id: UUID
+    username: str
+    email: EmailStr
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class TeamSchema(BaseModel):
     """Team schema."""
 
@@ -14,6 +26,12 @@ class TeamSchema(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class TeamWithMembersSchema(TeamSchema):
+    """Team schema with members."""
+
+    members: List[UserBasicSchema] = []
 
 
 class UserSchema(BaseModel):

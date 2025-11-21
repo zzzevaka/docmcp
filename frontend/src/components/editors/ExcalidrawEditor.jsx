@@ -1,10 +1,11 @@
-import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { exportToBlob } from "@excalidraw/excalidraw";
 
 const ExcalidrawLazy = React.lazy(async () => {
   return import("@excalidraw/excalidraw").then((m) => ({ default: m.Excalidraw }));
 });
 
+const DEFAULT_EXCALIDRAW_DATA = { type: "excalidraw", version: 2, elements: [], appState: {}, files: {} };
 
 function sanitizeAppState(appState) {
   if (!appState) return {};
@@ -14,7 +15,7 @@ function sanitizeAppState(appState) {
 
 function sanitizeInitialData(data) {
   if (!data) {
-    return { type: "excalidraw", version: 2, elements: [], appState: {}, files: {} };
+    return DEFAULT_EXCALIDRAW_DATA;
   }
   return { ...data, appState: sanitizeAppState(data.appState) };
 }
@@ -60,21 +61,57 @@ export async function generateExcalidrawImageBase64(excalidrawData, options = {}
 }
 
 
+const UIOptions = { canvasActions: { export: false, loadScene: false } }
+
+
 export default function ExcalidrawEditor({ initialData, onChange, readOnly, excalidrawRef }) {
-  const clean = sanitizeInitialData(initialData);
+  // Мемоизируем sanitized data чтобы избежать лишних реинициализаций
+  // В режиме read-only добавляем viewModeEnabled в appState
+  const clean = useMemo(() => {
+    const sanitized = sanitizeInitialData(initialData);
+    if (readOnly) {
+      return {
+        ...sanitized,
+        appState: {
+          ...sanitized.appState,
+          viewModeEnabled: true,
+        }
+      };
+    }
+    return sanitized;
+  }, [initialData, readOnly]);
+
+  // Вызываем onChange только когда НЕ в режиме read-only
+  const handleChange = useCallback((elements, appState, files) => {
+    if (!readOnly && onChange) {
+      onChange({ elements, appState, files });
+    }
+  }, [readOnly, onChange]);
+
+  const handleExcalidrawAPI = useCallback((api) => {
+    if (excalidrawRef) {
+      excalidrawRef.current = api;
+    }
+  }, [excalidrawRef]);
 
   return (
-      <Suspense>
+    <div className="w-full h-full">
+      <Suspense fallback={
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p className="mt-4 text-gray-600">Loading whiteboard...</p>
+          </div>
+        </div>
+      }>
         <ExcalidrawLazy
           initialData={clean}
-          onChange={onChange}
-          excalidrawAPI={(api) => {
-            if (excalidrawRef) {
-              excalidrawRef.current = api;
-            }
-          }}
-          UIOptions={{ canvasActions: { export: false, loadScene: false } }}
+          onChange={handleChange}
+          excalidrawAPI={handleExcalidrawAPI}
+          UIOptions={UIOptions}
+          viewModeEnabled={readOnly}
         />
       </Suspense>
+    </div>
   );
 }

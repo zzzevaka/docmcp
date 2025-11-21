@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import MarkdownEditor from '@/components/editors/MarkdownEditor'
@@ -17,15 +17,16 @@ export default function DocumentEditor({ document }) {
     contentRef.current = content;
   }, [content]);
 
-  const handleMarkdownChange = (data) => {
+  const handleMarkdownChange = useCallback((data) => {
     setContent(data);
     setSaveStatus('unsaved');
-  }
+  }, []);
 
-  const handleExcalidrawChange = (data) => {
+  const handleExcalidrawChange = useCallback((data) => {
+    console.log('whiteboard changed')
     setContent(data);
     setSaveStatus('unsaved');
-  }
+  }, []);
 
   const performSave = useCallback(async () => {
     console.log('performSave called, status:', saveStatus);
@@ -58,7 +59,6 @@ export default function DocumentEditor({ document }) {
 
       console.log('Saving content:', contentToSave);
 
-      // Call the PUT documents API
       await axios.put(
         `/api/v1/projects/${document.project_id}/documents/${document.id}`,
         { content: contentToSave },
@@ -73,7 +73,7 @@ export default function DocumentEditor({ document }) {
       setSaveStatus('unsaved');
       toast.error(`Failed to save document: ${error.response?.data?.detail || error.message}`);
     }
-  }, [document.type, document.project_id, document.id, excalidrawRef]);
+  }, [document.project_id, document.id, excalidrawRef]);
 
   // Auto-save with debounce
   useEffect(() => {
@@ -101,6 +101,11 @@ export default function DocumentEditor({ document }) {
     };
   }, [saveStatus, performSave]);
 
+  // Мемоизируем initialData чтобы не создавать новую ссылку на каждом рендере
+  const excalidrawInitialData = useMemo(() => {
+    return content || document.content.raw;
+  }, [content, document.content.raw]);
+
   return (
     <div className="relative w-full h-full">
       {
@@ -115,7 +120,7 @@ export default function DocumentEditor({ document }) {
       {
         (document.type === "whiteboard") && (
           <ExcalidrawEditor
-            initialData={content || document.content.raw}
+            initialData={excalidrawInitialData}
             onChange={handleExcalidrawChange}
             readOnly={false}
             excalidrawRef={excalidrawRef}

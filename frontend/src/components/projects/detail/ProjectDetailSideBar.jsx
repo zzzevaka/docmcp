@@ -54,6 +54,11 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
         { withCredentials: true }
       );
 
+      // If deleting the currently active document, redirect to project page
+      if (documentId === activeDocumentId) {
+        navigate(`/projects/${project.id}`);
+      }
+
       if (onDocumentsChange) {
         await onDocumentsChange();
       }

@@ -47,16 +47,16 @@ function MainLayout({ children, activeTab = 'projects' }) {
                   Projects
                 </Link>
                 <Link
-                  to="/teams"
-                  className={getTabClassName('teams')}
-                >
-                  Teams
-                </Link>
-                <Link
                   to="/library/categories"
                   className={getTabClassName('library')}
                 >
                   Library
+                </Link>
+                <Link
+                  to="/teams"
+                  className={getTabClassName('teams')}
+                >
+                  Teams
                 </Link>
               </div>
             </div>
