@@ -171,8 +171,9 @@ export default function Library() {
   return (
     <MainLayout activeTab="library">
       <div className="h-full flex flex-col">
-        {/* Search bar */}
-        <div className="px-6 py-4 flex justify-end">
+        {/* Header with title and search */}
+        <div className="px-6 py-4 flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-gray-900">Library</h1>
           <div className="w-80">
             <SearchBar
               value={searchQuery}

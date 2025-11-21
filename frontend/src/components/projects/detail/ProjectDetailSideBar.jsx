@@ -19,6 +19,9 @@ import EditDocumentModal from '@/components/documents/EditDocumentModal'
 import DeleteDocumentModal from '@/components/documents/DeleteDocumentModal'
 import DocumentActionsModal from '@/components/documents/DocumentActionsModal'
 import CreateTemplateModal from '@/components/documents/CreateTemplateModal'
+import ProjectActionsModal from '@/components/projects/ProjectActionsModal'
+import EditProjectModal from '@/components/projects/EditProjectModal'
+import DeleteProjectModal from '@/components/projects/DeleteProjectModal'
 
 export default function ProjectDetailSidebar({ project, documents, activeDocumentId, onCreateDocument, onDocumentsChange, onCreateTemplate }) {
   const navigate = useNavigate();
@@ -28,6 +31,9 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
   const [deletingDocument, setDeletingDocument] = useState(null);
   const [actionsDocument, setActionsDocument] = useState(null);
   const [creatingTemplateDocument, setCreatingTemplateDocument] = useState(null);
+  const [showProjectActions, setShowProjectActions] = useState(false);
+  const [editingProject, setEditingProject] = useState(false);
+  const [deletingProject, setDeletingProject] = useState(false);
 
   const handleEditDocument = async (documentId, newName) => {
     try {
@@ -65,6 +71,41 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
     } catch (error) {
       console.error('Failed to delete document:', error);
       toast.error(`Failed to delete document: ${error.response?.data?.detail || error.message}`);
+      throw error;
+    }
+  };
+
+  const handleEditProject = async (newName) => {
+    try {
+      await axios.put(
+        `/api/v1/projects/${project.id}`,
+        { name: newName },
+        { withCredentials: true }
+      );
+
+      if (onDocumentsChange) {
+        await onDocumentsChange();
+      }
+      toast.success('Project renamed successfully');
+    } catch (error) {
+      console.error('Failed to update project:', error);
+      toast.error(`Failed to update project: ${error.response?.data?.detail || error.message}`);
+      throw error;
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    try {
+      await axios.delete(
+        `/api/v1/projects/${project.id}`,
+        { withCredentials: true }
+      );
+
+      toast.success('Project deleted successfully');
+      navigate('/');
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      toast.error(`Failed to delete project: ${error.response?.data?.detail || error.message}`);
       throw error;
     }
   };
@@ -226,6 +267,13 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
               </button>
               <span className="font-semibold">{ project.name }</span>
             </div>
+            <button
+              onClick={() => setShowProjectActions(true)}
+              className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+              title="Project actions"
+            >
+              <MoreHorizontal className="w-5 h-5" />
+            </button>
           </div>
         )}
       </SidebarHeader>
@@ -310,6 +358,34 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
         document={creatingTemplateDocument}
         onClose={() => setCreatingTemplateDocument(null)}
         onSuccess={onCreateTemplate}
+      />
+    )}
+
+    {/* Project Actions Modal */}
+    {showProjectActions && (
+      <ProjectActionsModal
+        project={project}
+        onClose={() => setShowProjectActions(false)}
+        onEdit={() => setEditingProject(true)}
+        onDelete={() => setDeletingProject(true)}
+      />
+    )}
+
+    {/* Edit Project Modal */}
+    {editingProject && (
+      <EditProjectModal
+        project={project}
+        onClose={() => setEditingProject(false)}
+        onSave={handleEditProject}
+      />
+    )}
+
+    {/* Delete Project Modal */}
+    {deletingProject && (
+      <DeleteProjectModal
+        project={project}
+        onClose={() => setDeletingProject(false)}
+        onDelete={handleDeleteProject}
       />
     )}
   </>
