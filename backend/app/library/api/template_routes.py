@@ -117,6 +117,9 @@ async def create_template(
     template = await template_repo.create(template)
     await db.commit()
 
+    # Reload template to get relationships (including category)
+    template = await template_repo.get(template.id)
+
     return TemplateSchema.model_validate(template)
 
 
@@ -158,6 +161,9 @@ async def update_template(
 
     template = await template_repo.update(template)
     await db.commit()
+
+    # Reload template to get relationships (including category)
+    template = await template_repo.get(template_id)
 
     return TemplateSchema.model_validate(template)
 

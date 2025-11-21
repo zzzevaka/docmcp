@@ -6,6 +6,14 @@ import SearchBar from '@/components/common/SearchBar';
 import CategoryPill from '@/components/library/CategoryPill';
 import TemplateCard from '@/components/library/TemplateCard';
 import AddTemplateToProjectModal from '@/components/library/AddTemplateToProjectModal';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 
 export default function Library() {
   const navigate = useNavigate();
@@ -99,13 +107,19 @@ export default function Library() {
     return (
       <MainLayout activeTab="library">
         <div className="h-full flex flex-col">
-          {/* Header with category pill and search */}
+          {/* Header with breadcrumbs and search */}
           <div className="px-6 py-4 flex items-center justify-between gap-4">
-            <CategoryPill
-              category={selectedCategory}
-              isActive={true}
-              onClick={() => handleCategoryClick(selectedCategory)}
-            />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="/library/categories">Library</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{selectedCategory.name}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
             <div className="w-80">
               <SearchBar
                 value={searchQuery}
