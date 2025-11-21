@@ -2,12 +2,13 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { Trash2 } from 'lucide-react';
+import { Trash2, FolderPlus } from 'lucide-react';
 
 import MainLayout from '@/components/layout/MainLayout';
 import MarkdownEditor from '@/components/editors/MarkdownEditor';
 import ExcalidrawEditor from '@/components/editors/ExcalidrawEditor';
 import { useAuth } from '@/contexts/AuthContext';
+import AddTemplateToProjectModal from '@/components/library/AddTemplateToProjectModal';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -34,6 +35,7 @@ export default function TemplateDetail() {
   const [template, setTemplate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showAddToProjectModal, setShowAddToProjectModal] = useState(false);
   const excalidrawRef = useRef(null);
 
   useEffect(() => {
@@ -147,15 +149,24 @@ export default function TemplateDetail() {
               </BreadcrumbList>
             </Breadcrumb>
 
-            {canDelete && (
+            <div className="flex gap-2">
               <button
-                onClick={() => setShowDeleteDialog(true)}
-                className="p-2 hover:bg-red-100 rounded-md transition-colors"
-                title="Delete template"
+                onClick={() => setShowAddToProjectModal(true)}
+                className="p-2 hover:bg-blue-100 rounded-md transition-colors"
+                title="Add to project"
               >
-                <Trash2 className="w-5 h-5 text-red-600" />
+                <FolderPlus className="w-5 h-5 text-blue-600" />
               </button>
-            )}
+              {canDelete && (
+                <button
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="p-2 hover:bg-red-100 rounded-md transition-colors"
+                  title="Delete template"
+                >
+                  <Trash2 className="w-5 h-5 text-red-600" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -177,6 +188,13 @@ export default function TemplateDetail() {
           )}
         </div>
       </div>
+
+      {showAddToProjectModal && (
+        <AddTemplateToProjectModal
+          template={template}
+          onClose={() => setShowAddToProjectModal(false)}
+        />
+      )}
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>

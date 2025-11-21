@@ -5,6 +5,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/common/SearchBar';
 import CategoryPill from '@/components/library/CategoryPill';
 import TemplateCard from '@/components/library/TemplateCard';
+import AddTemplateToProjectModal from '@/components/library/AddTemplateToProjectModal';
 
 export default function Library() {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ export default function Library() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [templateToAdd, setTemplateToAdd] = useState(null);
 
   useEffect(() => {
     fetchCategories();
@@ -75,6 +77,10 @@ export default function Library() {
     navigate(`/library/templates/${template.id}`);
   };
 
+  const handleAddToProject = (template) => {
+    setTemplateToAdd(template);
+  };
+
   // Group templates by category for display
   const templatesByCategory = categories.reduce((acc, category) => {
     acc[category.id] = templates.filter(t => t.category_id === category.id);
@@ -123,6 +129,7 @@ export default function Library() {
                       key={template.id}
                       template={template}
                       onClick={() => handleTemplateClick(template)}
+                      onAddToProject={handleAddToProject}
                     />
                   ))}
                 </div>
@@ -135,6 +142,13 @@ export default function Library() {
             )}
           </div>
         </div>
+
+        {templateToAdd && (
+          <AddTemplateToProjectModal
+            template={templateToAdd}
+            onClose={() => setTemplateToAdd(null)}
+          />
+        )}
       </MainLayout>
     );
   }
@@ -183,6 +197,7 @@ export default function Library() {
                           <TemplateCard
                             template={template}
                             onClick={() => handleTemplateClick(template)}
+                            onAddToProject={handleAddToProject}
                           />
                         </div>
                       ))}
@@ -198,6 +213,13 @@ export default function Library() {
             </div>
           )}
         </div>
+
+        {templateToAdd && (
+          <AddTemplateToProjectModal
+            template={templateToAdd}
+            onClose={() => setTemplateToAdd(null)}
+          />
+        )}
       </div>
     </MainLayout>
   );
