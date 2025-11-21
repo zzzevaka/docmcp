@@ -9,7 +9,7 @@ import {
   SidebarGroup,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { FileText, Image, Plus, Pencil, Trash2 } from 'lucide-react';
+import { FileText, Image, Plus, Pencil, Trash2, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import axios from 'axios';
@@ -218,7 +218,16 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
           </div>
         ) : (
           <div className="flex items-center justify-between">
-            <span className="font-semibold p-1.5">{ project.name }</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate('/')}
+                className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+                title="Back to home"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <span className="font-semibold">{ project.name }</span>
+            </div>
           </div>
         )}
       </SidebarHeader>
