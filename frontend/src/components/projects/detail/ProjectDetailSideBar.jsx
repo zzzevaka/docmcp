@@ -219,20 +219,22 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
         ) : (
           <div className="flex items-center justify-between">
             <span className="font-semibold p-1.5">{ project.name }</span>
-            <button
-              onClick={onCreateDocument}
-              className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
-              title="Create new document"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
           </div>
         )}
       </SidebarHeader>
       <SidebarContent>
         {!isCollapsed && (
           <SidebarGroup>
-            <SidebarGroupLabel>Documents</SidebarGroupLabel>
+            <div className="flex items-center justify-between px-2 py-1.5">
+              <SidebarGroupLabel>Documents</SidebarGroupLabel>
+              <button
+                onClick={onCreateDocument}
+                className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                title="Create new document"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
             <SidebarGroupContent>
               {treeData.length > 0 ? (
                 <TreeView
