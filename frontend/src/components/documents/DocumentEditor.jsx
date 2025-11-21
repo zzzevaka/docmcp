@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import MarkdownEditor from '@/components/editors/MarkdownEditor'
 import ExcalidrawEditor, { generateExcalidrawImageBase64 } from '@/components/editors/ExcalidrawEditor'
@@ -6,22 +6,29 @@ import ExcalidrawEditor, { generateExcalidrawImageBase64 } from '@/components/ed
 
 export default function DocumentEditor({ document }) {
   const [content, setContent] = useState(null);
-  const [changed, setChanged] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('saved'); // 'saved', 'saving', 'unsaved'
   const excalidrawRef = useRef(null);
+  const saveTimeoutRef = useRef(null);
+  const contentRef = useRef(content);
+
+  // Keep contentRef in sync with content
+  useEffect(() => {
+    contentRef.current = content;
+  }, [content]);
 
   const handleMarkdownChange = (data) => {
     setContent(data);
-    setChanged(true);
+    setSaveStatus('unsaved');
   }
 
   const handleExcalidrawChange = (data) => {
     setContent(data);
-    setChanged(true);
+    setSaveStatus('unsaved');
   }
 
-  const handleSave = async () => {
-    setIsSaving(true);
+  const performSave = useCallback(async () => {
+    console.log('performSave called, status:', saveStatus);
+    setSaveStatus('saving');
     try {
       let contentToSave;
 
@@ -44,9 +51,11 @@ export default function DocumentEditor({ document }) {
         };
       } else {
         contentToSave = {
-          markdown: content,
+          markdown: contentRef.current,
         };
       }
+
+      console.log('Saving content:', contentToSave);
 
       // Call the PUT documents API
       await axios.put(
@@ -55,18 +64,44 @@ export default function DocumentEditor({ document }) {
         { withCredentials: true }
       );
 
+      console.log('Save successful');
       // After successful save:
-      setChanged(false);
+      setSaveStatus('saved');
     } catch (error) {
       console.error("Error saving document:", error);
+      setSaveStatus('unsaved');
       alert(`Failed to save document: ${error.response?.data?.detail || error.message}`);
-    } finally {
-      setIsSaving(false);
     }
-  };
+  }, [document.type, document.project_id, document.id, excalidrawRef]);
+
+  // Auto-save with debounce
+  useEffect(() => {
+    console.log('useEffect triggered, saveStatus:', saveStatus);
+    if (saveStatus === 'unsaved') {
+      // Clear any existing timeout
+      if (saveTimeoutRef.current) {
+        console.log('Clearing existing timeout');
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      // Set new timeout for 5 seconds
+      console.log('Setting new timeout for 5 seconds');
+      saveTimeoutRef.current = setTimeout(() => {
+        console.log('Timeout fired, calling performSave');
+        performSave();
+      }, 200);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [saveStatus, performSave]);
 
   return (
-    <>
+    <div className="relative w-full h-full">
       {
         document.type === "markdown" && (
           <MarkdownEditor
@@ -86,24 +121,6 @@ export default function DocumentEditor({ document }) {
           />
         )
       }
-
-      {changed && (
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className={`
-            absolute bottom-2.5 right-2.5
-            px-5 py-2.5
-            bg-black text-white
-            rounded
-            font-semibold text-sm
-            shadow-md
-            z-[1000]
-          `}
-        >
-          Save
-        </button>
-      )}
-    </>
+    </div>
   )
 }
