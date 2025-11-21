@@ -49,6 +49,9 @@ class Team(Base):
     projects: Mapped[List["Project"]] = relationship(  # noqa: F821
         back_populates="team", cascade="all, delete-orphan"
     )
+    templates: Mapped[List["Template"]] = relationship(  # noqa: F821
+        back_populates="team", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Team(id={self.id}, name={self.name})>"

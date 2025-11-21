@@ -6,11 +6,15 @@ import AuthCallback from './pages/AuthCallback'
 import Teams from './pages/Teams'
 import Projects from './pages/Projects'
 import ProjectDetail from './pages/ProjectDetail'
+import Library from './pages/Library'
+import TemplateDetail from './pages/TemplateDetail'
+import { Toaster } from '@/components/ui/sonner'
 
 function App() {
   return (
     <Router>
       <AuthProvider>
+        <Toaster />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
@@ -47,6 +51,34 @@ function App() {
             element={
               <ProtectedRoute>
                 <ProjectDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/library"
+            element={<Navigate to="/library/categories" replace />}
+          />
+          <Route
+            path="/library/categories"
+            element={
+              <ProtectedRoute>
+                <Library />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/library/categories/:categoryId"
+            element={
+              <ProtectedRoute>
+                <Library />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/library/templates/:templateId"
+            element={
+              <ProtectedRoute>
+                <TemplateDetail />
               </ProtectedRoute>
             }
           />

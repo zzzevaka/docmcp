@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.users.api import auth_routes, user_routes, team_routes, invitation_routes
 from app.projects.api import project_routes, document_routes
+from app.library.api import category_routes, template_routes
 
 app = FastAPI(
     title="DocMCP API",
@@ -27,6 +28,8 @@ app.include_router(team_routes.router)
 app.include_router(invitation_routes.router)
 app.include_router(project_routes.router)
 app.include_router(document_routes.router)
+app.include_router(category_routes.router)
+app.include_router(template_routes.router)
 
 
 @app.get("/health")

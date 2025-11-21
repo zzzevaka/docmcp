@@ -1,7 +1,19 @@
 from datetime import datetime
 from uuid import UUID
+from typing import List
 
 from pydantic import BaseModel, EmailStr
+
+
+class TeamSchema(BaseModel):
+    """Team schema."""
+
+    id: UUID
+    name: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
 
 
 class UserSchema(BaseModel):
@@ -10,17 +22,7 @@ class UserSchema(BaseModel):
     id: UUID
     username: str
     email: EmailStr
-    created_at: datetime
-    updated_at: datetime
-
-    model_config = {"from_attributes": True}
-
-
-class TeamSchema(BaseModel):
-    """Team schema."""
-
-    id: UUID
-    name: str
+    teams: List[TeamSchema] = []
     created_at: datetime
     updated_at: datetime
 

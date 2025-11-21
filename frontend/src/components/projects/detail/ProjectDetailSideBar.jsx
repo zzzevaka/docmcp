@@ -9,20 +9,25 @@ import {
   SidebarGroup,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { FileText, Image, Plus, Pencil, Trash2, ArrowLeft } from 'lucide-react';
+import { FileText, Image, Plus, MoreHorizontal, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import axios from 'axios';
+import { toast } from 'sonner';
 import { TreeView } from '@/components/ui/tree-view'
 import EditDocumentModal from '@/components/documents/EditDocumentModal'
 import DeleteDocumentModal from '@/components/documents/DeleteDocumentModal'
+import DocumentActionsModal from '@/components/documents/DocumentActionsModal'
+import CreateTemplateModal from '@/components/documents/CreateTemplateModal'
 
-export default function ProjectDetailSidebar({ project, documents, activeDocumentId, onCreateDocument, onDocumentsChange }) {
+export default function ProjectDetailSidebar({ project, documents, activeDocumentId, onCreateDocument, onDocumentsChange, onCreateTemplate }) {
   const navigate = useNavigate();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
   const [editingDocument, setEditingDocument] = useState(null);
   const [deletingDocument, setDeletingDocument] = useState(null);
+  const [actionsDocument, setActionsDocument] = useState(null);
+  const [creatingTemplateDocument, setCreatingTemplateDocument] = useState(null);
 
   const handleEditDocument = async (documentId, newName) => {
     try {
@@ -37,7 +42,7 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
       }
     } catch (error) {
       console.error('Failed to update document:', error);
-      alert(`Failed to update document: ${error.response?.data?.detail || error.message}`);
+      toast.error(`Failed to update document: ${error.response?.data?.detail || error.message}`);
       throw error;
     }
   };
@@ -54,7 +59,7 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
       }
     } catch (error) {
       console.error('Failed to delete document:', error);
-      alert(`Failed to delete document: ${error.response?.data?.detail || error.message}`);
+      toast.error(`Failed to delete document: ${error.response?.data?.detail || error.message}`);
       throw error;
     }
   };
@@ -70,28 +75,16 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
           icon: doc.type === 'markdown' ? FileText : Image,
           draggable: true,
           actions: (
-            <>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingDocument(doc);
-                }}
-                className="p-1 hover:bg-gray-200 rounded transition-all opacity-10 hover:opacity-100"
-                title="Rename"
-              >
-                <Pencil className="w-3.5 h-3.5 text-gray-600" />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDeletingDocument(doc);
-                }}
-                className="p-1 hover:bg-red-100 rounded transition-all opacity-40 hover:opacity-100"
-                title="Delete"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-gray-600 hover:text-red-600" />
-              </button>
-            </>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setActionsDocument(doc);
+              }}
+              className="p-1 hover:bg-gray-200 rounded transition-all opacity-40 hover:opacity-100"
+              title="Document actions"
+            >
+              <MoreHorizontal className="w-3.5 h-3.5 text-gray-600" />
+            </button>
           ),
         }
 
@@ -198,7 +191,7 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
       }
     } catch (error) {
       console.error('Failed to reorder document:', error);
-      alert(`Failed to reorder document: ${error.response?.data?.detail || error.message}`);
+      toast.error(`Failed to reorder document: ${error.response?.data?.detail || error.message}`);
     }
   }
 
@@ -277,6 +270,17 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
       </SidebarFooter>
     </Sidebar>
 
+    {/* Document Actions Modal */}
+    {actionsDocument && (
+      <DocumentActionsModal
+        document={actionsDocument}
+        onClose={() => setActionsDocument(null)}
+        onEdit={() => setEditingDocument(actionsDocument)}
+        onDelete={() => setDeletingDocument(actionsDocument)}
+        onCreateTemplate={() => setCreatingTemplateDocument(actionsDocument)}
+      />
+    )}
+
     {/* Edit Document Modal */}
     {editingDocument && (
       <EditDocumentModal
@@ -292,6 +296,15 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
         document={deletingDocument}
         onClose={() => setDeletingDocument(null)}
         onDelete={() => handleDeleteDocument(deletingDocument.id)}
+      />
+    )}
+
+    {/* Create Template Modal */}
+    {creatingTemplateDocument && onCreateTemplate && (
+      <CreateTemplateModal
+        document={creatingTemplateDocument}
+        onClose={() => setCreatingTemplateDocument(null)}
+        onSuccess={onCreateTemplate}
       />
     )}
   </>

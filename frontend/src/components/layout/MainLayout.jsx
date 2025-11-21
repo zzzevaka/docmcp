@@ -2,10 +2,18 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 
-function MainLayout({ children }) {
+function MainLayout({ children, activeTab = 'projects' }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [showUserMenu, setShowUserMenu] = useState(false)
+
+  const getTabClassName = (tab) => {
+    const baseClass = "inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2"
+    if (activeTab === tab) {
+      return `${baseClass} text-blue-600 border-blue-600`
+    }
+    return `${baseClass} text-gray-500 hover:text-gray-900 border-transparent hover:border-gray-300`
+  }
 
   const handleLogout = async () => {
     await logout()
@@ -33,20 +41,20 @@ function MainLayout({ children }) {
               {/* Main Navigation */}
               <div className="hidden sm:ml-8 sm:flex sm:space-x-8">
                 <Link
-                  to="/"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 border-b-2 border-transparent hover:border-gray-300"
+                  to="/projects"
+                  className={getTabClassName('projects')}
                 >
                   Projects
                 </Link>
                 <Link
                   to="/teams"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300"
+                  className={getTabClassName('teams')}
                 >
                   Teams
                 </Link>
                 <Link
-                  to="/library"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300"
+                  to="/library/categories"
+                  className={getTabClassName('library')}
                 >
                   Library
                 </Link>

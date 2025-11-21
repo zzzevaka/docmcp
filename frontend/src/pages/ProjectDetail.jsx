@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { toast } from 'sonner';
 
 import { SidebarProvider } from "@/components/ui/sidebar";
 import MainLayout from '@/components/layout/MainLayout'
@@ -75,7 +76,26 @@ function ProjectDetail() {
       navigate(`/projects/${projectId}/documents/${response.data.id}`);
     } catch (error) {
       console.error('Failed to create document:', error);
-      alert(`Failed to create document: ${error.response?.data?.detail || error.message}`);
+      toast.error(`Failed to create document: ${error.response?.data?.detail || error.message}`);
+    }
+  };
+
+  const handleCreateTemplate = async (documentId, templateName, categoryName) => {
+    try {
+      await axios.post(
+        `/api/v1/library/templates/`,
+        {
+          document_id: documentId,
+          name: templateName,
+          category_name: categoryName,
+        },
+        { withCredentials: true }
+      );
+      toast.success('Template created successfully!');
+    } catch (error) {
+      console.error('Failed to create template:', error);
+      toast.error(`Failed to create template: ${error.response?.data?.detail || error.message}`);
+      throw error;
     }
   };
 
@@ -101,6 +121,7 @@ function ProjectDetail() {
           activeDocumentId={activeDocument?.id}
           onCreateDocument={() => setShowCreateModal(true)}
           onDocumentsChange={fetchProjectData}
+          onCreateTemplate={handleCreateTemplate}
         />
         <div
           className="h-screen w-full pl-4 relative"

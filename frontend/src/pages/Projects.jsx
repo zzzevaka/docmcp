@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { toast } from 'sonner'
 import MainLayout from '../components/layout/MainLayout'
 
 function Projects() {
@@ -52,7 +53,7 @@ function Projects() {
       fetchData()
     } catch (error) {
       console.error('Failed to create project:', error)
-      alert('Failed to create project')
+      toast.error('Failed to create project')
     }
   }
 

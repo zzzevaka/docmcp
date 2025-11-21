@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import { toast } from 'sonner'
 import MainLayout from '../components/layout/MainLayout'
 
 function Teams() {
@@ -46,7 +47,7 @@ function Teams() {
       fetchData()
     } catch (error) {
       console.error('Failed to create team:', error)
-      alert('Failed to create team')
+      toast.error('Failed to create team')
     }
   }
 
@@ -63,10 +64,10 @@ function Teams() {
       setInviteEmail('')
       setShowInviteModal(false)
       setSelectedTeamForInvite(null)
-      alert('Invitation sent successfully!')
+      toast.success('Invitation sent successfully!')
     } catch (error) {
       console.error('Failed to send invitation:', error)
-      alert(error.response?.data?.detail || 'Failed to send invitation')
+      toast.error(error.response?.data?.detail || 'Failed to send invitation')
     }
   }
 
@@ -78,10 +79,10 @@ function Teams() {
         { withCredentials: true }
       )
       fetchData()
-      alert('Invitation accepted!')
+      toast.success('Invitation accepted!')
     } catch (error) {
       console.error('Failed to accept invitation:', error)
-      alert('Failed to accept invitation')
+      toast.error('Failed to accept invitation')
     }
   }
 
@@ -93,10 +94,10 @@ function Teams() {
         { withCredentials: true }
       )
       fetchData()
-      alert('Invitation rejected')
+      toast.info('Invitation rejected')
     } catch (error) {
       console.error('Failed to reject invitation:', error)
-      alert('Failed to reject invitation')
+      toast.error('Failed to reject invitation')
     }
   }
 

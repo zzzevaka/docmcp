@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { toast } from 'sonner';
 import MarkdownEditor from '@/components/editors/MarkdownEditor'
 import ExcalidrawEditor, { generateExcalidrawImageBase64 } from '@/components/editors/ExcalidrawEditor'
 
@@ -70,7 +71,7 @@ export default function DocumentEditor({ document }) {
     } catch (error) {
       console.error("Error saving document:", error);
       setSaveStatus('unsaved');
-      alert(`Failed to save document: ${error.response?.data?.detail || error.message}`);
+      toast.error(`Failed to save document: ${error.response?.data?.detail || error.message}`);
     }
   }, [document.type, document.project_id, document.id, excalidrawRef]);
 
