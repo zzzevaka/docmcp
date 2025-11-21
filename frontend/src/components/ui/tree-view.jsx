@@ -505,8 +505,7 @@ const TreeActions = ({
     isSelected
 }) => {
     return (
-        <div
-            className={cn(isSelected ? 'block' : 'hidden', 'absolute right-3 group-hover:block')}>
+        <div className="absolute right-3 flex items-center gap-0.5">
             {children}
         </div>
     );

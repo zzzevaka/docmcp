@@ -9,15 +9,55 @@ import {
   SidebarGroup,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { FileText, Image, Plus } from 'lucide-react';
+import { FileText, Image, Plus, Pencil, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import axios from 'axios';
 import { TreeView } from '@/components/ui/tree-view'
+import EditDocumentModal from '@/components/documents/EditDocumentModal'
+import DeleteDocumentModal from '@/components/documents/DeleteDocumentModal'
 
 export default function ProjectDetailSidebar({ project, documents, activeDocumentId, onCreateDocument, onDocumentsChange }) {
   const navigate = useNavigate();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const [editingDocument, setEditingDocument] = useState(null);
+  const [deletingDocument, setDeletingDocument] = useState(null);
+
+  const handleEditDocument = async (documentId, newName) => {
+    try {
+      await axios.put(
+        `/api/v1/projects/${project.id}/documents/${documentId}`,
+        { name: newName },
+        { withCredentials: true }
+      );
+
+      if (onDocumentsChange) {
+        await onDocumentsChange();
+      }
+    } catch (error) {
+      console.error('Failed to update document:', error);
+      alert(`Failed to update document: ${error.response?.data?.detail || error.message}`);
+      throw error;
+    }
+  };
+
+  const handleDeleteDocument = async (documentId) => {
+    try {
+      await axios.delete(
+        `/api/v1/projects/${project.id}/documents/${documentId}`,
+        { withCredentials: true }
+      );
+
+      if (onDocumentsChange) {
+        await onDocumentsChange();
+      }
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+      alert(`Failed to delete document: ${error.response?.data?.detail || error.message}`);
+      throw error;
+    }
+  };
 
   const buildTreeData = (docs, parentId = null) => {
     return docs
@@ -29,6 +69,30 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
           name: doc.name,
           icon: doc.type === 'markdown' ? FileText : Image,
           draggable: true,
+          actions: (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingDocument(doc);
+                }}
+                className="p-1 hover:bg-gray-200 rounded transition-all opacity-10 hover:opacity-100"
+                title="Rename"
+              >
+                <Pencil className="w-3.5 h-3.5 text-gray-600" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDeletingDocument(doc);
+                }}
+                className="p-1 hover:bg-red-100 rounded transition-all opacity-40 hover:opacity-100"
+                title="Delete"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-gray-600 hover:text-red-600" />
+              </button>
+            </>
+          ),
         }
 
         const children = buildTreeData(docs, doc.id);
@@ -139,6 +203,7 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
   }
 
   return (
+    <>
     <Sidebar collapsible="icon">
       <SidebarHeader>
         {isCollapsed ? (
@@ -200,5 +265,24 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
         <SidebarTrigger />
       </SidebarFooter>
     </Sidebar>
+
+    {/* Edit Document Modal */}
+    {editingDocument && (
+      <EditDocumentModal
+        document={editingDocument}
+        onClose={() => setEditingDocument(null)}
+        onSave={(newName) => handleEditDocument(editingDocument.id, newName)}
+      />
+    )}
+
+    {/* Delete Document Modal */}
+    {deletingDocument && (
+      <DeleteDocumentModal
+        document={deletingDocument}
+        onClose={() => setDeletingDocument(null)}
+        onDelete={() => handleDeleteDocument(deletingDocument.id)}
+      />
+    )}
+  </>
   )
 }
