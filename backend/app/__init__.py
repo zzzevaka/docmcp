@@ -1,0 +1,1 @@
+"""DocMCP Backend Application."""

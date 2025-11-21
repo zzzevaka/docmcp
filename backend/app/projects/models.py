@@ -1,0 +1,63 @@
+import enum
+from typing import List, Optional
+from uuid import UUID as UUID_TYPE
+
+from sqlalchemy import String, ForeignKey, Enum, Text, UUID as SQLUUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.database import Base
+
+
+class DocumentType(str, enum.Enum):
+    """Document type enum."""
+
+    MARKDOWN = "markdown"
+    WHITEBOARD = "whiteboard"
+
+
+class Project(Base):
+    """Project model."""
+
+    __tablename__ = "projects"
+
+    name: Mapped[str] = mapped_column(String(64), index=True)
+    team_id: Mapped[UUID_TYPE] = mapped_column(
+        SQLUUID, ForeignKey("teams.id"), index=True
+    )
+
+    # Relationships
+    team: Mapped["Team"] = relationship(back_populates="projects")  # noqa: F821
+    documents: Mapped[List["Document"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan"
+    )
+
+    def __repr__(self) -> str:
+        return f"<Project(id={self.id}, name={self.name}, team_id={self.team_id})>"
+
+
+class Document(Base):
+    """Document model."""
+
+    __tablename__ = "documents"
+
+    name: Mapped[str] = mapped_column(String(128), index=True)
+    project_id: Mapped[UUID_TYPE] = mapped_column(
+        SQLUUID, ForeignKey("projects.id"), index=True
+    )
+    type: Mapped[DocumentType] = mapped_column(Enum(DocumentType), index=True)
+    content: Mapped[dict] = mapped_column(Text)  # JSON stored as text
+    parent_id: Mapped[Optional[UUID_TYPE]] = mapped_column(
+        SQLUUID, ForeignKey("documents.id"), nullable=True, index=True
+    )
+
+    # Relationships
+    project: Mapped["Project"] = relationship(back_populates="documents")
+    parent: Mapped[Optional["Document"]] = relationship(
+        "Document", remote_side="Document.id", back_populates="children"
+    )
+    children: Mapped[List["Document"]] = relationship(
+        "Document", back_populates="parent", cascade="all, delete-orphan"
+    )
+
+    def __repr__(self) -> str:
+        return f"<Document(id={self.id}, name={self.name}, type={self.type})>"
