@@ -100,6 +100,7 @@ function ProjectDetail() {
           documents={documents}
           activeDocumentId={activeDocument?.id}
           onCreateDocument={() => setShowCreateModal(true)}
+          onDocumentsChange={fetchProjectData}
         />
         <div
           className="h-screen w-full pl-4 relative"

@@ -168,17 +168,33 @@ async def update_document(
     if not document or document.project_id != project_id:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    # Update fields
-    if payload.name is not None:
+    # Update fields - use model_dump to check which fields were actually set
+    update_data = payload.model_dump(exclude_unset=True)
+
+    if "name" in update_data:
         document.name = payload.name
 
-    if payload.content is not None:
+    if "content" in update_data:
         content_str = (
             json.dumps(payload.content)
             if isinstance(payload.content, dict)
             else payload.content
         )
         document.content = content_str
+
+    if "parent_id" in update_data:
+        # Validate that the parent exists and is in the same project
+        if payload.parent_id:
+            parent = await document_repo.get(payload.parent_id)
+            if not parent or parent.project_id != project_id:
+                raise HTTPException(status_code=400, detail="Invalid parent document")
+            # Prevent circular references
+            if payload.parent_id == document_id:
+                raise HTTPException(status_code=400, detail="Document cannot be its own parent")
+        document.parent_id = payload.parent_id
+
+    if "order" in update_data:
+        document.order = payload.order
 
     document = await document_repo.update(document)
     await db.commit()

@@ -40,6 +40,7 @@ class DocumentSchema(BaseModel):
     type: DocumentType
     content: dict | str  # JSON content or string
     parent_id: UUID | None
+    order: int
     created_at: datetime
     updated_at: datetime
 
@@ -60,3 +61,5 @@ class DocumentUpdateSchema(BaseModel):
 
     name: str | None = None
     content: dict | str | None = None
+    parent_id: UUID | None = None
+    order: int | None = None

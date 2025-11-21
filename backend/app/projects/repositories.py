@@ -114,6 +114,9 @@ class DocumentRepository:
         if filter_.type:
             query = query.where(Document.type == filter_.type)
 
+        # Order by order field, then by created_at
+        query = query.order_by(Document.order, Document.created_at)
+
         result = await self.db.execute(query)
         return result.scalars().all()
 

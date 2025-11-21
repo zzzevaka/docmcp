@@ -42,9 +42,9 @@ const TreeView = React.forwardRef((
         setDraggedItem(item)
     }, [])
 
-    const handleDrop = React.useCallback((targetItem) => {
+    const handleDrop = React.useCallback((targetItem, dropZone = 'on') => {
         if (draggedItem && onDocumentDrag && draggedItem.id !== targetItem.id) {
-            onDocumentDrag(draggedItem, targetItem)
+            onDocumentDrag(draggedItem, targetItem, dropZone)
         }
         setDraggedItem(null)
     }, [draggedItem, onDocumentDrag])
@@ -129,8 +129,44 @@ const TreeItem = React.forwardRef((
     if (!(Array.isArray(data))) {
         data = [data]
     }
+
+    const [isDropZoneActive, setIsDropZoneActive] = React.useState(false)
+
+    const handleTopDropZoneDragOver = (e) => {
+        if (draggedItem && level === 0) {
+            e.preventDefault()
+            setIsDropZoneActive(true)
+        }
+    }
+
+    const handleTopDropZoneDragLeave = () => {
+        setIsDropZoneActive(false)
+    }
+
+    const handleTopDropZoneDrop = (e) => {
+        e.preventDefault()
+        setIsDropZoneActive(false)
+        if (draggedItem && data.length > 0 && level === 0) {
+            // Drop before the first element
+            handleDrop?.(data[0], 'before')
+        }
+    }
+
     return (
         <div ref={ref} role="tree" className={className} {...props}>
+            {/* Drop zone before first element (only on top level) */}
+            {level === 0 && data.length > 0 && (
+                <div
+                    className={`h-8 -mb-8 relative ${isDropZoneActive ? 'bg-blue-50' : ''}`}
+                    onDragOver={handleTopDropZoneDragOver}
+                    onDragLeave={handleTopDropZoneDragLeave}
+                    onDrop={handleTopDropZoneDrop}
+                >
+                    {isDropZoneActive && (
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500 rounded" />
+                    )}
+                </div>
+            )}
             <ul>
                 {data.map((item) => (
                     <li key={item.id}>
@@ -181,7 +217,8 @@ const TreeNode = ({
     level = 0
 }) => {
     const [value, setValue] = React.useState(expandedItemIds.includes(item.id) ? [item.id] : [])
-    const [isDragOver, setIsDragOver] = React.useState(false)
+    const [dropZone, setDropZone] = React.useState(null) // 'before', 'on', 'after'
+    const elementRef = React.useRef(null)
     const hasChildren = !!item.children?.length
     const isSelected = selectedItemId === item.id
     const isOpen = value.includes(item.id)
@@ -195,42 +232,63 @@ const TreeNode = ({
         handleDragStart?.(item)
     }
 
+    const getDropZone = (e) => {
+        if (!elementRef.current) return 'on'
+        const rect = elementRef.current.getBoundingClientRect()
+        const y = e.clientY - rect.top
+        const height = rect.height
+
+        // Divide element into 3 zones: top 33%, middle 34%, bottom 33%
+        if (y < height * 0.33) return 'before'
+        if (y > height * 0.67) return 'after'
+        return 'on'
+    }
+
     const onDragOver = (e) => {
         if (item.droppable !== false && draggedItem && draggedItem.id !== item.id) {
             e.preventDefault()
-            setIsDragOver(true)
+            const zone = getDropZone(e)
+            setDropZone(zone)
         }
     }
 
     const onDragLeave = () => {
-        setIsDragOver(false)
+        setDropZone(null)
     }
 
     const onDrop = (e) => {
         e.preventDefault()
-        setIsDragOver(false)
-        handleDrop?.(item)
+        const zone = dropZone
+        setDropZone(null)
+        handleDrop?.(item, zone)
     }
 
     return (
         <AccordionPrimitive.Root type="multiple" value={value} onValueChange={(s) => setValue(s)}>
             <AccordionPrimitive.Item value={item.id}>
-                <AccordionTrigger
-                    className={cn(
-                        treeVariants(),
-                        isSelected && selectedTreeVariants(),
-                        isDragOver && dragOverVariants(),
-                        item.className
+                <div className="relative" ref={elementRef}>
+                    {dropZone === 'before' && (
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500 z-10 rounded" />
                     )}
-                    onClick={() => {
-                        handleSelectChange(item)
-                        item.onClick?.()
-                    }}
-                    draggable={!!item.draggable}
-                    onDragStart={onDragStart}
-                    onDragOver={onDragOver}
-                    onDragLeave={onDragLeave}
-                    onDrop={onDrop}>
+                    {dropZone === 'after' && (
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 z-10 rounded" />
+                    )}
+                    <AccordionTrigger
+                        className={cn(
+                            treeVariants(),
+                            isSelected && selectedTreeVariants(),
+                            dropZone === 'on' && dragOverVariants(),
+                            item.className
+                        )}
+                        onClick={() => {
+                            handleSelectChange(item)
+                            item.onClick?.()
+                        }}
+                        draggable={!!item.draggable}
+                        onDragStart={onDragStart}
+                        onDragOver={onDragOver}
+                        onDragLeave={onDragLeave}
+                        onDrop={onDrop}>
                     {renderItem ? (
                         renderItem({
                             item,
@@ -254,6 +312,7 @@ const TreeNode = ({
                         </>
                     )}
                 </AccordionTrigger>
+                </div>
                 <AccordionContent className="ml-4 pl-1 border-l">
                     <TreeItem
                         data={item.children ? item.children : item}
@@ -289,7 +348,8 @@ const TreeLeaf = React.forwardRef((
     },
     ref
 ) => {
-    const [isDragOver, setIsDragOver] = React.useState(false)
+    const [dropZone, setDropZone] = React.useState(null)
+    const elementRef = React.useRef(null)
     const isSelected = selectedItemId === item.id
 
     const onDragStart = (e) => {
@@ -301,47 +361,68 @@ const TreeLeaf = React.forwardRef((
         handleDragStart?.(item)
     }
 
+    const getDropZone = (e) => {
+        if (!elementRef.current) return 'on'
+        const rect = elementRef.current.getBoundingClientRect()
+        const y = e.clientY - rect.top
+        const height = rect.height
+
+        // Divide element into 3 zones: top 33%, middle 34%, bottom 33%
+        if (y < height * 0.33) return 'before'
+        if (y > height * 0.67) return 'after'
+        return 'on'
+    }
+
     const onDragOver = (e) => {
         if (item.droppable !== false && !item.disabled && draggedItem && draggedItem.id !== item.id) {
             e.preventDefault()
-            setIsDragOver(true)
+            const zone = getDropZone(e)
+            setDropZone(zone)
         }
     }
 
     const onDragLeave = () => {
-        setIsDragOver(false)
+        setDropZone(null)
     }
 
     const onDrop = (e) => {
         if (item.disabled) return
         e.preventDefault()
-        setIsDragOver(false)
-        handleDrop?.(item)
+        const zone = dropZone
+        setDropZone(null)
+        handleDrop?.(item, zone)
     }
 
     return (
-        <div
-            ref={ref}
-            className={cn(
-                'ml-5 flex text-left items-center py-2 cursor-pointer before:right-1',
-                treeVariants(),
-                className,
-                isSelected && selectedTreeVariants(),
-                isDragOver && dragOverVariants(),
-                item.disabled && 'opacity-50 cursor-not-allowed pointer-events-none',
-                item.className
+        <div className="relative" ref={elementRef}>
+            {dropZone === 'before' && (
+                <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-500 z-10" />
             )}
-            onClick={() => {
-                if (item.disabled) return
-                handleSelectChange(item)
-                item.onClick?.()
-            }}
-            draggable={!!item.draggable && !item.disabled}
-            onDragStart={onDragStart}
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            onDrop={onDrop}
-            {...props}>
+            {dropZone === 'after' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 z-10" />
+            )}
+            <div
+                ref={ref}
+                className={cn(
+                    'ml-5 flex text-left items-center py-2 cursor-pointer before:right-1',
+                    treeVariants(),
+                    className,
+                    isSelected && selectedTreeVariants(),
+                    dropZone === 'on' && dragOverVariants(),
+                    item.disabled && 'opacity-50 cursor-not-allowed pointer-events-none',
+                    item.className
+                )}
+                onClick={() => {
+                    if (item.disabled) return
+                    handleSelectChange(item)
+                    item.onClick?.()
+                }}
+                draggable={!!item.draggable && !item.disabled}
+                onDragStart={onDragStart}
+                onDragOver={onDragOver}
+                onDragLeave={onDragLeave}
+                onDrop={onDrop}
+                {...props}>
             {renderItem ? (
                 <>
                     <div className="h-4 w-4 shrink-0 mr-1" />
@@ -362,6 +443,7 @@ const TreeLeaf = React.forwardRef((
                     </TreeActions>
                 </>
             )}
+            </div>
         </div>
     );
 })

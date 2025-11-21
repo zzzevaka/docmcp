@@ -49,6 +49,7 @@ class Document(Base):
     parent_id: Mapped[Optional[UUID_TYPE]] = mapped_column(
         SQLUUID, ForeignKey("documents.id"), nullable=True, index=True
     )
+    order: Mapped[int] = mapped_column(default=0, server_default="0", index=True)
 
     # Relationships
     project: Mapped["Project"] = relationship(back_populates="documents")
