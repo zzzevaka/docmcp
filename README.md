@@ -35,7 +35,6 @@ Create comprehensive documentation for your projects with rich markdown support,
 Build reusable documentation templates that maintain consistency across projects. Create templates for common documentation patterns and deploy them instantly to new projects.
 
 ![Template Library](docs/screenshots/templates.png)
-*Screenshot placeholder: Template library view*
 
 **Use templates for:**
 - Standard README structures
@@ -50,7 +49,6 @@ Build reusable documentation templates that maintain consistency across projects
 Connect your documentation directly to AI assistants through Model Context Protocol. Your documentation becomes instantly queryable by Claude and other MCP-compatible agents.
 
 ![MCP Connection](docs/screenshots/mcp-integration.png)
-*Screenshot placeholder: MCP server configuration*
 
 **Benefits:**
 - AI assistants can access your project-specific knowledge
@@ -69,6 +67,17 @@ Connect your documentation directly to AI assistants through Model Context Proto
 - **Version Control**: Track changes to your documentation over time
 - **Search & Discovery**: Quickly find the documentation you need
 - **Google OAuth**: Secure authentication with your Google account
+
+## Deployment
+
+Ready to deploy to production? See the [Deployment Guide](DEPLOYMENT.md) for:
+
+- **Railway Deployment** - Step-by-step guide for deploying to Railway
+- **Production Dockerfiles** - Optimized containers for production
+- **Environment Configuration** - All required environment variables
+- **Troubleshooting** - Common deployment issues and solutions
+
+All production configuration files are in the [`deploy/`](deploy/) directory.
 
 ## Roadmap
 

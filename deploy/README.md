@@ -2,6 +2,24 @@
 
 This guide will walk you through deploying DocMCP to Railway in production mode.
 
+## Quick Start (TL;DR)
+
+For experienced users:
+
+1. **Create Railway Project** → Add PostgreSQL database
+2. **Create Backend Service**:
+   - New → Empty Service → GitHub repo
+   - Settings → Build → Dockerfile → Path: `deploy/Dockerfile.backend`
+   - Add env vars: `APP_ENV=production`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+3. **Create Frontend Service**:
+   - New → Empty Service → GitHub repo
+   - Settings → Build → Dockerfile → Path: `deploy/Dockerfile.frontend`
+   - Add env vars: `VITE_API_BASE_URL=<backend-url>/api`, `VITE_GOOGLE_CLIENT_ID`
+4. **Update Google OAuth** with Railway URLs
+5. **Deploy!**
+
+> **Important**: This is a monorepo. You must manually create each service and specify the Dockerfile path. Auto-detection won't work.
+
 ## Architecture Overview
 
 DocMCP consists of three main components:
@@ -36,14 +54,18 @@ DocMCP consists of three main components:
 
 ### Step 3: Configure Backend Service
 
-1. In your project, click "New" → "Service"
-2. Select your GitHub repository
-3. Configure the service:
-   - **Name**: `backend`
-   - **Root Directory**: `.` (project root)
-   - **Dockerfile Path**: `deploy/Dockerfile.backend`
+1. In your project, click "New" → "Empty Service"
+2. Select "Deploy from GitHub repo"
+3. Choose your repository
+4. Configure the service:
+   - **Service Name**: `backend`
+   - **Root Directory**: Leave empty (project root)
+   - Go to **Settings** → **Build**
+   - Set **Builder**: `Dockerfile`
+   - Set **Dockerfile Path**: `deploy/Dockerfile.backend`
+   - Click "Save"
 
-4. Add environment variables (Settings → Variables):
+5. Add environment variables (Settings → Variables):
    ```
    APP_ENV=production
    GOOGLE_CLIENT_ID=your-google-client-id
@@ -62,14 +84,18 @@ DocMCP consists of three main components:
 
 ### Step 4: Configure Frontend Service
 
-1. In your project, click "New" → "Service"
-2. Select your GitHub repository
-3. Configure the service:
-   - **Name**: `frontend`
-   - **Root Directory**: `.` (project root)
-   - **Dockerfile Path**: `deploy/Dockerfile.frontend`
+1. In your project, click "New" → "Empty Service"
+2. Select "Deploy from GitHub repo"
+3. Choose your repository
+4. Configure the service:
+   - **Service Name**: `frontend`
+   - **Root Directory**: Leave empty (project root)
+   - Go to **Settings** → **Build**
+   - Set **Builder**: `Dockerfile`
+   - Set **Dockerfile Path**: `deploy/Dockerfile.frontend`
+   - Click "Save"
 
-4. Add environment variables (Settings → Variables):
+5. Add environment variables (Settings → Variables):
    ```
    VITE_API_BASE_URL=https://your-backend-url.railway.app/api
    VITE_GOOGLE_CLIENT_ID=your-google-client-id
@@ -143,23 +169,58 @@ After getting the backend URL:
 
 ## Alternative Deployment: Using Railway CLI
 
-If you prefer using the CLI:
+For monorepo projects like DocMCP, you need to create services first and then deploy:
 
 ```bash
+# Install Railway CLI
+npm i -g @railway/cli
+
 # Login to Railway
 railway login
 
-# Link to your project
-railway link
+# Create a new project
+railway init
 
-# Deploy backend
-railway up --service backend --dockerfile deploy/Dockerfile.backend
+# Add PostgreSQL
+railway add --database postgres
 
-# Deploy frontend
-railway up --service frontend --dockerfile deploy/Dockerfile.frontend
+# For each service, you'll need to:
+# 1. Create the service in Railway UI first
+# 2. Link to it and deploy
+
+# Example for backend:
+railway link  # Select your project and backend service
+railway up --dockerfile deploy/Dockerfile.backend
+
+# For frontend (in a new terminal or after unlinking):
+railway link  # Select your project and frontend service
+railway up --dockerfile deploy/Dockerfile.frontend
 ```
 
+Note: Railway CLI works best when you've already created services via the UI for monorepo projects.
+
 ## Troubleshooting
+
+### "Railpack could not determine how to build the app"
+
+This error occurs when Railway tries to auto-detect your project type. For monorepo projects:
+
+**Solution 1: Use Railway UI (Recommended)**
+1. Create services manually via Railway UI
+2. Set **Builder** to `Dockerfile` in Settings → Build
+3. Specify the correct **Dockerfile Path** for each service
+
+**Solution 2: Deploy via CLI**
+```bash
+# Create service in UI first, then:
+railway link  # Select your service
+railway up --dockerfile deploy/Dockerfile.backend  # or frontend
+```
+
+**Why this happens:**
+- DocMCP is a monorepo with multiple services
+- Railway's auto-detection doesn't work with multiple Dockerfiles
+- You need to explicitly tell Railway which Dockerfile to use for each service
 
 ### Database Connection Issues
 
@@ -272,8 +333,12 @@ After deployment:
 - `Dockerfile.backend` - Production Dockerfile for FastAPI backend
 - `Dockerfile.frontend` - Production Dockerfile for React frontend with Nginx
 - `nginx.frontend.conf` - Nginx configuration for serving static frontend
-- `railway.toml` - Railway service configuration (optional)
-- `README.md` - This deployment guide
+- `railway.toml` - Railway service configuration (copy to project root)
+- `railway.json` - Railway build configuration
+- `docker-compose.prod.yml` - Local production testing setup
+- `.dockerignore` - Optimize Docker build context
+- `README.md` - This comprehensive deployment guide
+- `RAILWAY_COMMANDS.md` - Railway CLI commands cheat sheet
 
 ## Additional Notes
 
