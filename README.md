@@ -2,19 +2,7 @@
 
 ![Project Documentation](docs/screenshots/welcome.png)
 
-> Transform your project documentation into AI-accessible knowledge through Model Context Protocol
-
-DocMCP is a modern web platform that bridges the gap between human documentation and AI assistants. Create, organize, and share your project documentation while making it instantly accessible to LLM agents through MCP (Model Context Protocol).
-
-
-## Why DocMCP?
-
-Modern development teams face a challenge: documentation exists in scattered places, making it hard for both humans and AI assistants to access. DocMCP solves this by:
-
-- **Centralizing Documentation**: Keep all your project docs in one place with intuitive organization
-- **AI-Ready Knowledge**: Automatically expose documentation through MCP, making it accessible to Claude and other LLM agents
-- **Reusable Templates**: Create documentation templates once, reuse them across multiple projects
-- **Team Collaboration**: Share knowledge across your team with project-based organization
+DocMCP is a light-weight application that bridges the gap between human documentation and AI assistants. Create, organize, and share your project documentation while making it instantly accessible to LLM agents through MCP (Model Context Protocol).
 
 ## Quick start
 
@@ -32,15 +20,9 @@ docker run -d -p 8000:8000 \
 
 ### 1. Project Documentation Hub
 
-Create comprehensive documentation for your projects with rich markdown support, organized structure, and easy navigation.
+Create documentation for your projects with rich markdown and whiteboard support, organized structure, and easy navigation.
 
 ![Project Documentation](docs/screenshots/project-docs.png)
-
-**Perfect for:**
-- API documentation
-- Architecture decisions
-- Development guidelines
-- Project onboarding materials
 
 ### 2. Template Library
 
@@ -48,25 +30,11 @@ Build reusable documentation templates that maintain consistency across projects
 
 ![Template Library](docs/screenshots/templates.png)
 
-**Use templates for:**
-- Standard README structures
-- API endpoint documentation
-- Testing strategies
-- Deployment procedures
-- Code examples
-- For any documentation that you want to share across multiple projects
-
 ### 3. MCP Integration
 
 Connect your documentation directly to AI assistants through Model Context Protocol. Your documentation becomes instantly queryable by Claude and other MCP-compatible agents.
 
 ![MCP Connection](docs/screenshots/mcp-integration.png)
-
-**Benefits:**
-- AI assistants can access your project-specific knowledge
-- Provide context-aware responses based on your documentation
-- Keep AI responses aligned with your team's standards
-- Reduce repetitive explanations of project-specific concepts
 
 ## Features
 
