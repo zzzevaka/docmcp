@@ -171,7 +171,7 @@ export default function TemplateDetail() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-auto">
           {template.type === 'markdown' ? (
             <MarkdownEditor
               markdown={template.content?.markdown || ''}

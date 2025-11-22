@@ -39,8 +39,13 @@ export default function Library() {
   }, [categoryId, categories]);
 
   useEffect(() => {
+    // Don't fetch templates if we're waiting for categories to load
+    // (when categoryId is present in URL but selectedCategory is not yet set)
+    if (categoryId && !selectedCategory && categories.length === 0) {
+      return;
+    }
     fetchTemplates();
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory, searchQuery, categoryId, categories.length]);
 
   const fetchCategories = async () => {
     try {
