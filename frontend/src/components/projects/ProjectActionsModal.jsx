@@ -1,6 +1,6 @@
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Radio } from 'lucide-react';
 
-export default function ProjectActionsModal({ project, onClose, onEdit, onDelete }) {
+export default function ProjectActionsModal({ project, onClose, onEdit, onDelete, onConnectMCP }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-sm">
@@ -17,6 +17,19 @@ export default function ProjectActionsModal({ project, onClose, onEdit, onDelete
             <div>
               <div className="font-medium">Rename</div>
               <div className="text-sm text-gray-500">Change project name</div>
+            </div>
+          </button>
+          <button
+            onClick={() => {
+              onClose();
+              onConnectMCP();
+            }}
+            className="w-full text-left px-4 py-3 rounded-md hover:bg-blue-50 flex items-center gap-3 transition-colors"
+          >
+            <Radio className="w-5 h-5 text-blue-600" />
+            <div>
+              <div className="font-medium text-blue-600">Connect MCP</div>
+              <div className="text-sm text-gray-500">Expose docs to Claude Code</div>
             </div>
           </button>
           <button

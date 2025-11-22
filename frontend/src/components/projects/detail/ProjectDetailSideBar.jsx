@@ -22,6 +22,7 @@ import CreateTemplateModal from '@/components/documents/CreateTemplateModal'
 import ProjectActionsModal from '@/components/projects/ProjectActionsModal'
 import EditProjectModal from '@/components/projects/EditProjectModal'
 import DeleteProjectModal from '@/components/projects/DeleteProjectModal'
+import MCPInstructionsModal from '@/components/projects/MCPInstructionsModal'
 
 export default function ProjectDetailSidebar({ project, documents, activeDocumentId, onCreateDocument, onDocumentsChange, onCreateTemplate }) {
   const navigate = useNavigate();
@@ -34,6 +35,7 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
   const [showProjectActions, setShowProjectActions] = useState(false);
   const [editingProject, setEditingProject] = useState(false);
   const [deletingProject, setDeletingProject] = useState(false);
+  const [showMCPInstructions, setShowMCPInstructions] = useState(false);
 
   const handleEditDocument = async (documentId, newName) => {
     try {
@@ -368,6 +370,7 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
         onClose={() => setShowProjectActions(false)}
         onEdit={() => setEditingProject(true)}
         onDelete={() => setDeletingProject(true)}
+        onConnectMCP={() => setShowMCPInstructions(true)}
       />
     )}
 
@@ -386,6 +389,14 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
         project={project}
         onClose={() => setDeletingProject(false)}
         onDelete={handleDeleteProject}
+      />
+    )}
+
+    {/* MCP Instructions Modal */}
+    {showMCPInstructions && (
+      <MCPInstructionsModal
+        project={project}
+        onClose={() => setShowMCPInstructions(false)}
       />
     )}
   </>
