@@ -6,8 +6,9 @@ import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.users.models import User, Session
+from app.users.models import User, Session, AuthProvider
 from app.users.repositories import UserRepository, SessionRepository, UserFilter
+from app.users.utils.password import hash_password, verify_password
 
 
 class AuthService:
@@ -87,3 +88,50 @@ class AuthService:
     async def delete_session(self, session_token: str) -> None:
         """Delete a session."""
         await self.session_repo.delete_by_token(session_token)
+
+    async def register_local_user(self, email: str, password: str) -> User:
+        """Register a new local user with email and password."""
+        # Check if user already exists
+        existing_user = await self.user_repo.get_by_email(email)
+        if existing_user:
+            raise ValueError("User with this email already exists")
+
+        # Use email as username (ensure uniqueness with suffix if needed)
+        username = email
+        existing_users = await self.user_repo.find_by_filter(
+            UserFilter(username=username)
+        )
+        if existing_users:
+            # Append random suffix to make it unique
+            username = f"{email}_{secrets.token_hex(4)}"
+
+        # Hash password and create user
+        password_hash = hash_password(password)
+        user = User(
+            email=email,
+            username=username,
+            password_hash=password_hash,
+            auth_provider=AuthProvider.LOCAL,
+        )
+        user = await self.user_repo.create(user)
+        return user
+
+    async def login_local_user(self, email: str, password: str) -> User:
+        """Authenticate a local user with email and password."""
+        user = await self.user_repo.get_by_email(email)
+
+        if not user:
+            raise ValueError("Invalid email or password")
+
+        if user.auth_provider != AuthProvider.LOCAL:
+            raise ValueError(
+                f"This account uses {user.auth_provider.value} authentication"
+            )
+
+        if not user.password_hash:
+            raise ValueError("Invalid email or password")
+
+        if not verify_password(password, user.password_hash):
+            raise ValueError("Invalid email or password")
+
+        return user

@@ -16,6 +16,13 @@ user_team_association = Table(
 )
 
 
+class AuthProvider(str, enum.Enum):
+    """Authentication provider."""
+
+    LOCAL = "local"
+    GOOGLE = "google"
+
+
 class User(Base):
     """User model."""
 
@@ -23,6 +30,23 @@ class User(Base):
 
     username: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     email: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    _auth_provider: Mapped[str] = mapped_column(
+        "auth_provider",
+        String(20),
+        default="local",
+        nullable=False
+    )
+
+    @property
+    def auth_provider(self) -> AuthProvider:
+        """Get auth provider as enum."""
+        return AuthProvider(self._auth_provider)
+
+    @auth_provider.setter
+    def auth_provider(self, value: AuthProvider) -> None:
+        """Set auth provider from enum."""
+        self._auth_provider = value.value
 
     # Relationships
     teams: Mapped[List["Team"]] = relationship(
@@ -31,7 +55,7 @@ class User(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<User(id={self.id}, username={self.username}, email={self.email})>"
+        return f"<User(id={self.id}, username={self.username}, email={self.email}, provider={self.auth_provider})>"
 
 
 class Team(Base):

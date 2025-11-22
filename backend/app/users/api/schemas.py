@@ -69,5 +69,19 @@ class GoogleAuthCallbackSchema(BaseModel):
 class AuthResponseSchema(BaseModel):
     """Schema for auth response."""
 
-    user: UserSchema
+    user: UserBasicSchema
     message: str = "Authentication successful"
+
+
+class LocalRegisterSchema(BaseModel):
+    """Schema for local registration."""
+
+    email: EmailStr
+    password: str
+
+
+class LocalLoginSchema(BaseModel):
+    """Schema for local login."""
+
+    email: EmailStr
+    password: str

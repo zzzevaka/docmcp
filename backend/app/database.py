@@ -9,23 +9,33 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from app.config import settings
 
 
-# Convert sync URL to async
-async_database_url = settings.database_url.replace(
-    "postgresql+psycopg://", "postgresql+psycopg://"
-)
+# Configure engine based on database type
+engine_kwargs = {"echo": settings.app_env == "dev"}
 
-engine = create_async_engine(async_database_url, echo=settings.app_env == "dev")
+# SQLite specific configuration
+if settings.database_url.startswith("sqlite"):
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+
+engine = create_async_engine(settings.database_url, **engine_kwargs)
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
 # Type annotations for common columns
 uuid_pk = Annotated[UUID, mapped_column(primary_key=True, default=uuid4)]
+
+# Use default instead of server_default for SQLite compatibility
+from datetime import datetime as dt, timezone
+
+def utc_now() -> datetime:
+    """Get current UTC time."""
+    return dt.now(timezone.utc)
+
 created_at = Annotated[
-    datetime, mapped_column(DateTime(timezone=True), server_default=func.now())
+    datetime, mapped_column(DateTime(timezone=True), default=utc_now)
 ]
 updated_at = Annotated[
     datetime,
-    mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+    mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now),
 ]
 
 

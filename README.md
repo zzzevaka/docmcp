@@ -16,6 +16,17 @@ Modern development teams face a challenge: documentation exists in scattered pla
 - **Reusable Templates**: Create documentation templates once, reuse them across multiple projects
 - **Team Collaboration**: Share knowledge across your team with project-based organization
 
+## Quick start
+
+```bash
+docker build -t docmcp:latest .
+docker run --rm -p 8001:8000 \
+  -v docmcp_data:/app/data \
+  -e APP_ENV=production \
+  -e LOCAL_AUTH_ENABLED=true \
+  docmcp:latest
+```
+
 ## Key Use Cases
 
 ### 1. Project Documentation Hub
@@ -66,18 +77,39 @@ Connect your documentation directly to AI assistants through Model Context Proto
 - **Team Collaboration**: Share projects and docs with your team
 - **Version Control**: Track changes to your documentation over time
 - **Search & Discovery**: Quickly find the documentation you need
-- **Google OAuth**: Secure authentication with your Google account
+- **Flexible Authentication**: Local email/password registration or optional Google OAuth
 
 ## Deployment
 
-Ready to deploy to production? See the [Deployment Guide](DEPLOYMENT.md) for:
+### Local dev environment
 
-- **Railway Deployment** - Step-by-step guide for deploying to Railway
-- **Production Dockerfiles** - Optimized containers for production
-- **Environment Configuration** - All required environment variables
-- **Troubleshooting** - Common deployment issues and solutions
+Start the development environment:
 
-All production configuration files are in the [`deploy/`](deploy/) directory.
+```bash
+docker-compose up -d
+```
+
+Access at:
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:8000
+
+### Single container
+
+```bash
+docker build -t docmcp:latest .
+docker run --rm -p 8001:8000 \
+  -v docmcp_data:/app/data \
+  -e APP_ENV=production \
+  -e LOCAL_AUTH_ENABLED=true \
+  docmcp:latest
+```
+
+### Authentication
+- Local authentication:
+  - `LOCAL_AUTH_ENABLED=true`
+- Google OAuth2:
+  - `GOOGLE_CLIENT_ID=<client>`
+  - `GOOGLE_CLIENT_SECRET=<secret>`
 
 ## Roadmap
 

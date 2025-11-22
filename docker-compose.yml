@@ -7,9 +7,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-app}
     volumes:
       - pg_data:/var/lib/postgresql/data
-    # Port mapping commented out to avoid conflicts
-    # ports:
-    #   - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-app}"]
       interval: 5s
@@ -27,35 +24,32 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    ports:
+      - "8000:8000"
     volumes:
       - ./backend/app:/app/app
       - ./backend/tests:/app/tests
       - ./backend/alembic:/app/alembic
       - ./backend/alembic.ini:/app/alembic.ini
+      - ./backend/poetry.lock:/app/alembic.lock
+      - ./backend/pyproject.toml:/app/pyproject.toml
 
   frontend:
     build:
       context: ./frontend
     env_file: ./.env
     environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api}
       VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     depends_on:
       - backend
+    ports:
+      - "5173:5173"
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/index.html:/app/index.html
       - ./frontend/package.json:/app/package.json
-
-  nginx:
-    image: nginx:alpine
-    volumes:
-      - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
-    ports:
-      - "9080:80"
-    depends_on:
-      - frontend
-      - backend
+      - ./frontend/vite.config.js:/app/vite.config.js
 
 volumes:
   pg_data:

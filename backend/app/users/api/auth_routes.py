@@ -3,7 +3,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
-from app.users.api.schemas import GoogleAuthCallbackSchema, AuthResponseSchema, UserSchema
+from app.users.api.schemas import (
+    GoogleAuthCallbackSchema,
+    AuthResponseSchema,
+    UserSchema,
+    UserBasicSchema,
+    LocalRegisterSchema,
+    LocalLoginSchema,
+)
 from app.users.services.auth_service import AuthService
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -54,7 +61,7 @@ async def google_callback(
 
         await db.commit()
 
-        return AuthResponseSchema(user=UserSchema.model_validate(user))
+        return AuthResponseSchema(user=UserBasicSchema.model_validate(user))
 
     except HTTPException:
         raise
@@ -96,3 +103,108 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail="Invalid session")
 
     return UserSchema.model_validate(user)
+
+
+@router.post("/register", response_model=AuthResponseSchema)
+async def register(
+    payload: LocalRegisterSchema,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+) -> AuthResponseSchema:
+    """Register a new local user."""
+    if not settings.local_auth_enabled:
+        raise HTTPException(
+            status_code=403,
+            detail="Local authentication is disabled. Please use OAuth.",
+        )
+
+    auth_service = AuthService(db)
+
+    try:
+        # Register user
+        user = await auth_service.register_local_user(
+            email=payload.email,
+            password=payload.password,
+        )
+
+        # Create session
+        session_token = await auth_service.create_session(user.id)
+
+        # Set secure HTTP-only cookie
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            httponly=True,
+            secure=settings.app_env != "dev",
+            samesite="lax",
+            max_age=30 * 24 * 60 * 60,  # 30 days
+        )
+
+        await db.commit()
+
+        return AuthResponseSchema(
+            user=UserBasicSchema.model_validate(user),
+            message="Registration successful",
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+
+@router.post("/login", response_model=AuthResponseSchema)
+async def login(
+    payload: LocalLoginSchema,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+) -> AuthResponseSchema:
+    """Login with email and password."""
+    if not settings.local_auth_enabled:
+        raise HTTPException(
+            status_code=403,
+            detail="Local authentication is disabled. Please use OAuth.",
+        )
+
+    auth_service = AuthService(db)
+
+    try:
+        # Authenticate user
+        user = await auth_service.login_local_user(
+            email=payload.email,
+            password=payload.password,
+        )
+
+        # Create session
+        session_token = await auth_service.create_session(user.id)
+
+        # Set secure HTTP-only cookie
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            httponly=True,
+            secure=settings.app_env != "dev",
+            samesite="lax",
+            max_age=30 * 24 * 60 * 60,  # 30 days
+        )
+
+        await db.commit()
+
+        return AuthResponseSchema(
+            user=UserBasicSchema.model_validate(user),
+            message="Login successful",
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
+
+
+@router.get("/config")
+async def get_auth_config() -> dict[str, bool]:
+    """Get authentication configuration."""
+    return {
+        "google_oauth_enabled": bool(settings.google_client_id),
+        "local_auth_enabled": settings.local_auth_enabled,
+    }

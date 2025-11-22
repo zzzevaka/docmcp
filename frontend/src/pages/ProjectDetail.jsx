@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 
 import { SidebarProvider } from "@/components/ui/sidebar";
 import MainLayout from '@/components/layout/MainLayout'
-import ProjectDetailSidebar from "@/components/projects/detail/ProjectDetailSidebar";
+import ProjectDetailSidebar from "@/components/projects/detail/ProjectDetailSideBar";
 import DocumentEditor from "@/components/documents/DocumentEditor";
 
 
