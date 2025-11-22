@@ -1,147 +1,90 @@
 # DocMCP - Documentation as MCP
 
-DocMCP is a web application that allows individuals and teams to create project documentation and expose it as MCP (Model Context Protocol) for LLM agents.
+![Project Documentation](docs/screenshots/welcome.png)
 
-## Tech Stack
+> Transform your project documentation into AI-accessible knowledge through Model Context Protocol
 
-- **Backend**: Python 3.11+ with FastAPI
-- **Frontend**: React with Vite
-- **Database**: PostgreSQL 15
-- **Deployment**: Docker Compose
-- **Load Balancer**: NGINX with SSL
+DocMCP is a modern web platform that bridges the gap between human documentation and AI assistants. Create, organize, and share your project documentation while making it instantly accessible to LLM agents through MCP (Model Context Protocol).
 
-## Project Structure
 
-```
-docs_mcp/
-├── backend/               # FastAPI backend application
-│   ├── app/              # Application code
-│   ├── alembic/          # Database migrations
-│   ├── tests/            # Unit tests
-│   ├── Dockerfile        # Backend Docker configuration
-│   └── pyproject.toml    # Python dependencies (Poetry)
-├── frontend/             # React frontend application
-│   ├── src/              # Source code
-│   ├── Dockerfile        # Frontend Docker configuration
-│   └── package.json      # JavaScript dependencies
-├── nginx/                # NGINX configuration
-│   ├── nginx.conf        # NGINX config file
-│   └── ssl/              # Self-signed SSL certificates
-├── docker-compose.yml    # Docker Compose configuration
-├── .env                  # Environment variables (copy from .env.example)
-├── .env.example          # Environment variables template
-└── README.md             # This file
-```
+## Why DocMCP?
 
-## Quick Start
+Modern development teams face a challenge: documentation exists in scattered places, making it hard for both humans and AI assistants to access. DocMCP solves this by:
 
-### Prerequisites
+- **Centralizing Documentation**: Keep all your project docs in one place with intuitive organization
+- **AI-Ready Knowledge**: Automatically expose documentation through MCP, making it accessible to Claude and other LLM agents
+- **Reusable Templates**: Create documentation templates once, reuse them across multiple projects
+- **Team Collaboration**: Share knowledge across your team with project-based organization
 
-- Docker
-- Docker Compose
+## Key Use Cases
 
-### Installation
+### 1. Project Documentation Hub
 
-1. Clone the repository or navigate to the project directory
+Create comprehensive documentation for your projects with rich markdown support, organized structure, and easy navigation.
 
-2. Copy the environment file:
-   ```bash
-   cp .env.example .env
-   ```
+![Project Documentation](docs/screenshots/project-docs.png)
 
-3. Start the application:
-   ```bash
-   docker-compose up --build
-   ```
+**Perfect for:**
+- API documentation
+- Architecture decisions
+- Development guidelines
+- Project onboarding materials
 
-4. Wait for all services to start. The application will be available at:
-   - **HTTPS**: https://localhost:9443 (recommended)
-   - **HTTP**: http://localhost:9080 (redirects to HTTPS)
-   - **Backend API**: https://localhost:9443/api/v1
-   - **Health Check**: https://localhost:9443/health
+### 2. Template Library
 
-### Accessing the Services Directly
+Build reusable documentation templates that maintain consistency across projects. Create templates for common documentation patterns and deploy them instantly to new projects.
 
-During development, you can also access services directly:
-- **Backend**: http://localhost:8000
-- **Frontend**: http://localhost:5173
-- **Database**: localhost:5432
+![Template Library](docs/screenshots/templates.png)
+*Screenshot placeholder: Template library view*
 
-## Development
+**Use templates for:**
+- Standard README structures
+- API endpoint documentation
+- Testing strategies
+- Deployment procedures
+- Code examples
+- For any documentation that you want to share across multiple projects
 
-### Backend Development
+### 3. MCP Integration
 
-The backend uses Poetry for dependency management. See `backend/README.md` for details.
+Connect your documentation directly to AI assistants through Model Context Protocol. Your documentation becomes instantly queryable by Claude and other MCP-compatible agents.
 
-```bash
-# Run tests
-docker-compose exec backend poetry run pytest
+![MCP Connection](docs/screenshots/mcp-integration.png)
+*Screenshot placeholder: MCP server configuration*
 
-# Run migrations
-docker-compose exec backend poetry run alembic upgrade head
-```
+**Benefits:**
+- AI assistants can access your project-specific knowledge
+- Provide context-aware responses based on your documentation
+- Keep AI responses aligned with your team's standards
+- Reduce repetitive explanations of project-specific concepts
 
-### Frontend Development
+## Features
 
-The frontend uses npm/vite. See `frontend/README.md` for details.
+- **Rich Markdown Editor**: Write documentation with full markdown support including code blocks, tables, and more
+- **Whiteboard Support**: Visual collaboration with diagrams, flowcharts, and sketches embedded in your documentation
+- **Project Organization**: Organize docs by projects with hierarchical structure
+- **Template System**: Create and reuse documentation templates across projects
+- **MCP Integration**: Automatic exposure of documentation through Model Context Protocol
+- **Team Collaboration**: Share projects and docs with your team
+- **Version Control**: Track changes to your documentation over time
+- **Search & Discovery**: Quickly find the documentation you need
+- **Google OAuth**: Secure authentication with your Google account
 
-```bash
-# Run tests
-docker-compose exec frontend npm test
+## Roadmap
 
-# Lint code
-docker-compose exec frontend npm run lint
-```
+- [ ] Real-time collaboration on documents
+- [ ] Document version comparison
+- [ ] Custom MCP tool definitions
+- [ ] API documentation auto-generation
+- [ ] Integration with popular dev tools (GitHub, GitLab, Jira)
+- [ ] Advanced permissions and access control
+- [ ] Document analytics and insights
 
-## Stopping the Application
+## Contributing
 
-```bash
-docker-compose down
-```
+Contributions are welcome! Please feel free to submit issues and pull requests.
 
-To also remove volumes (database data):
-```bash
-docker-compose down -v
-```
-
-## SSL Certificates
-
-The project includes self-signed SSL certificates for local development. Your browser will show a security warning - this is expected for self-signed certificates. You can safely proceed to the site during development.
-
-## Environment Variables
-
-Key environment variables (see `.env.example`):
-
-- `POSTGRES_USER`: Database user (default: app)
-- `POSTGRES_PASSWORD`: Database password (default: app)
-- `POSTGRES_DB`: Database name (default: app)
-- `DATABASE_URL`: Full database connection string
-- `APP_ENV`: Application environment (dev/prod)
-- `GOOGLE_CLIENT_ID`: Google OAuth client ID (for authentication)
-
-## Architecture
-
-The application follows a microservices architecture:
-
-1. **NGINX**: Entry point, handles SSL termination and routes requests
-2. **Frontend**: React SPA served by Vite dev server (production: static files)
-3. **Backend**: FastAPI application with REST API
-4. **Database**: PostgreSQL for data persistence
-
-Request flow:
-```
-Client -> NGINX (SSL) -> Frontend (/) or Backend (/api)
-                              ↓
-                         PostgreSQL
-```
-
-## Next Steps
-
-- Implement authentication (Task-2)
-- Add user and team management
-- Implement project and document features (Task-3)
-- Add document library (Task-4)
-- Implement MCP endpoints
+For development setup and guidelines, see the [Development Guide](docs/dev/DEVELOPMENT.md).
 
 ## License
 
