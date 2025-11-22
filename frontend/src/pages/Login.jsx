@@ -14,7 +14,7 @@ function Login() {
   const error = searchParams.get('error')
 
   const [activeTab, setActiveTab] = useState('login') // 'login' or 'register'
-  const [authConfig, setAuthConfig] = useState({ google_oauth_enabled: false, local_auth_enabled: true })
+  const [authConfig, setAuthConfig] = useState();
   const [loading, setLoading] = useState(false)
 
   // Login form state
@@ -110,6 +110,8 @@ function Login() {
       setLoading(false)
     }
   }
+
+  if (!authConfig) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
