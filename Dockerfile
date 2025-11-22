@@ -30,9 +30,6 @@ RUN poetry config virtualenvs.create false
 # Copy backend application code first
 COPY backend/ ./
 
-# Update lock file if pyproject.toml changed
-RUN poetry lock --no-update
-
 # Install all dependencies (both SQLite and PostgreSQL drivers included)
 RUN poetry install --no-interaction --no-ansi --without dev
 
@@ -48,10 +45,5 @@ RUN mkdir -p /app/alembic/versions
 # Expose port
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
-
 # Run database migrations and start the application
-CMD alembic upgrade head && \
-    uvicorn app.main:app --host 0.0.0.0 --port 8000
+CMD alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000
