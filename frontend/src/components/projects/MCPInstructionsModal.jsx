@@ -9,9 +9,7 @@ export default function MCPInstructionsModal({ project, onClose }) {
   // For local development, use HTTP (port 9080)
   // For production, use the actual protocol from the browser
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  const mcpUrl = isLocal
-    ? `http://localhost:9080/api/mcp/${project.id}`
-    : `${window.location.protocol}//${window.location.host}/api/mcp/${project.id}`;
+  const mcpUrl = `${window.location.protocol}//${window.location.host}/api/mcp/${project.id}`;
 
   // Generate instructions based on selected system
   const getInstructions = () => {
@@ -121,14 +119,6 @@ export default function MCPInstructionsModal({ project, onClose }) {
                   <Copy className="w-4 h-4 text-gray-600" />
                 )}
               </button>
-            </div>
-
-            <div className="space-y-2 text-sm">
-              <p className="font-medium">What is MCP?</p>
-              <p>
-                MCP (Model Context Protocol) allows LLM agents like {instructions.title} to access your project documentation.
-                Once connected, the AI can read your documents to better understand your project.
-              </p>
             </div>
 
             <div className="space-y-2 text-sm">

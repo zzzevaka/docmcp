@@ -90,12 +90,3 @@ docker run --rm -p 8001:8000 \
 - [ ] Advanced permissions and access control
 - [ ] Document analytics and insights
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit issues and pull requests.
-
-For development setup and guidelines, see the [Development Guide](docs/dev/DEVELOPMENT.md).
-
-## License
-
-TBD
