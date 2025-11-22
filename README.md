@@ -18,13 +18,14 @@ Modern development teams face a challenge: documentation exists in scattered pla
 
 ## Quick start
 
+Run the pre-built image from Docker Hub:
+
 ```bash
-docker build -t docmcp:latest .
-docker run --rm -p 8001:8000 \
+docker run -d -p 8000:8000 \
   -v docmcp_data:/app/data \
   -e APP_ENV=production \
   -e LOCAL_AUTH_ENABLED=true \
-  docmcp:latest
+  zzzevaka/docmcp:latest
 ```
 
 ## Key Use Cases
