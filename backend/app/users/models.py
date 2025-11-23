@@ -52,6 +52,7 @@ class User(Base):
     teams: Mapped[List["Team"]] = relationship(
         secondary=user_team_association,
         back_populates="members",
+        lazy="selectin",
     )
 
     def __repr__(self) -> str:
@@ -69,12 +70,13 @@ class Team(Base):
     members: Mapped[List["User"]] = relationship(
         secondary=user_team_association,
         back_populates="teams",
+        lazy="selectin",
     )
     projects: Mapped[List["Project"]] = relationship(  # noqa: F821
-        back_populates="team", cascade="all, delete-orphan"
+        back_populates="team", cascade="all, delete-orphan", lazy="selectin"
     )
     templates: Mapped[List["Template"]] = relationship(  # noqa: F821
-        back_populates="team", cascade="all, delete-orphan"
+        back_populates="team", cascade="all, delete-orphan", lazy="selectin"
     )
 
     def __repr__(self) -> str:
@@ -92,7 +94,7 @@ class Session(Base):
     )
 
     # Relationship
-    user: Mapped["User"] = relationship()
+    user: Mapped["User"] = relationship(lazy="selectin")
 
     def __repr__(self) -> str:
         return f"<Session(id={self.id}, user_id={self.user_id})>"
@@ -121,8 +123,8 @@ class TeamInvitation(Base):
     )
 
     # Relationships
-    team: Mapped["Team"] = relationship()
-    inviter: Mapped["User"] = relationship()
+    team: Mapped["Team"] = relationship(lazy="selectin")
+    inviter: Mapped["User"] = relationship(lazy="selectin")
 
     def __repr__(self) -> str:
         return f"<TeamInvitation(id={self.id}, team_id={self.team_id}, invitee_email={self.invitee_email}, status={self.status})>"

@@ -34,7 +34,7 @@ class Category(Base):
 
     # Relationships
     templates: Mapped[List["Template"]] = relationship(
-        back_populates="category", cascade="all, delete-orphan"
+        back_populates="category", cascade="all, delete-orphan", lazy="selectin"
     )
 
     def __repr__(self) -> str:
@@ -57,8 +57,8 @@ class Template(Base):
     content: Mapped[dict] = mapped_column(Text)  # JSON stored as text
 
     # Relationships
-    team: Mapped["Team"] = relationship(back_populates="templates")  # noqa: F821
-    category: Mapped["Category"] = relationship(back_populates="templates")
+    team: Mapped["Team"] = relationship(back_populates="templates", lazy="selectin")  # noqa: F821
+    category: Mapped["Category"] = relationship(back_populates="templates", lazy="selectin")
 
     def __repr__(self) -> str:
         return f"<Template(id={self.id}, name={self.name}, type={self.type})>"
