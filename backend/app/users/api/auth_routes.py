@@ -80,11 +80,9 @@ async def google_callback(
         max_age=30 * 24 * 60 * 60,  # 30 days
     )
 
-    return AuthResponseSchema(
-        user_id=user.id,
-        email=user.email,
-        username=user.username,
-    )
+    await db.commit()
+
+    return AuthResponseSchema(user=UserBasicSchema.model_validate(user))
 
 
 @router.post("/logout")
