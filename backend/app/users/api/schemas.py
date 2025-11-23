@@ -63,7 +63,6 @@ class GoogleAuthCallbackSchema(BaseModel):
     """Schema for Google OAuth callback."""
 
     code: str
-    redirect_uri: str
 
 
 class AuthResponseSchema(BaseModel):
