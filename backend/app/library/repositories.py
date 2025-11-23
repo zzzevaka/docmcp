@@ -4,7 +4,7 @@ from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import defer, selectinload
 
 from app.library.models import Category, Template, TemplateType, TemplateVisibility
 from app.users.models import Team
@@ -96,6 +96,27 @@ class TemplateRepository:
     async def find_by_filter(self, filter_: TemplateFilter) -> Iterable[Template]:
         """Find templates by filter."""
         query = select(Template).options(
+            selectinload(Template.team).selectinload(Team.members),
+            selectinload(Template.category),
+        )
+
+        if filter_.team_id:
+            query = query.where(Template.team_id == filter_.team_id)
+        if filter_.category_id:
+            query = query.where(Template.category_id == filter_.category_id)
+        if filter_.type:
+            query = query.where(Template.type == filter_.type)
+
+        # Order by created_at
+        query = query.order_by(Template.created_at)
+
+        result = await self.db.execute(query)
+        return result.scalars().all()
+
+    async def find_by_filter_without_content(self, filter_: TemplateFilter) -> Iterable[Template]:
+        """Find templates by filter without loading content field."""
+        query = select(Template).options(
+            defer(Template.content),
             selectinload(Template.team).selectinload(Team.members),
             selectinload(Template.category),
         )

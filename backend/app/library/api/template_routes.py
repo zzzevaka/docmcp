@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.library.api.schemas import (
     TemplateCreateSchema,
+    TemplateListSchema,
     TemplateSchema,
     TemplateUpdateSchema,
 )
@@ -18,12 +19,12 @@ from app.users.api.user_routes import get_current_user_dependency
 router = APIRouter(prefix="/api/v1/library/templates", tags=["library", "templates"])
 
 
-@router.get("/", response_model=list[TemplateSchema])
+@router.get("/", response_model=list[TemplateListSchema])
 async def list_templates(
     category_name: str | None = Query(None, description="Filter by category name"),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user_dependency),
-) -> list[TemplateSchema]:
+) -> list[TemplateListSchema]:
     """List templates, optionally filtered by category."""
     template_repo = TemplateRepository(db)
     category_repo = CategoryRepository(db)
@@ -36,7 +37,7 @@ async def list_templates(
         if category:
             filter_params["category_id"] = category.id
 
-    templates = await template_repo.find_by_filter(TemplateFilter(**filter_params))
+    templates = await template_repo.find_by_filter_without_content(TemplateFilter(**filter_params))
 
     # Filter templates by visibility - user can see:
     # 1. Public templates
@@ -47,7 +48,7 @@ async def list_templates(
         if t.category.visibility == TemplateVisibility.PUBLIC or t.team_id in user_team_ids
     ]
 
-    return [TemplateSchema.model_validate(t) for t in visible_templates]
+    return [TemplateListSchema.model_validate(t) for t in visible_templates]
 
 
 @router.get("/{template_id}", response_model=TemplateSchema)
