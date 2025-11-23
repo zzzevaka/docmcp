@@ -38,18 +38,20 @@ async def google_login(request: Request):
 
 @router.get("/google/callback", response_model=AuthResponseSchema)
 async def google_callback(
-    payload: GoogleAuthCallbackSchema,
+    request: Request,
     response: Response,
+    payload: GoogleAuthCallbackSchema = Depends(),  # берём из query, а не из body
     db: AsyncSession = Depends(get_db),
 ) -> AuthResponseSchema:
     """Handle Google OAuth callback."""
     auth_service = AuthService(db)
 
+    base_url = str(request.base_url).rstrip("/").replace('http://', 'https://')
+    redirect_uri = f"{base_url}/api/v1/auth/google/callback"
+
     try:
         # Exchange code for access token
-        token_data = await auth_service.exchange_google_code(
-            payload.code, payload.redirect_uri
-        )
+        token_data = await auth_service.exchange_google_code(payload.code, redirect_uri)
         access_token = token_data.get("access_token")
 
         if not access_token:
@@ -79,14 +81,16 @@ async def google_callback(
             max_age=30 * 24 * 60 * 60,  # 30 days
         )
 
-        await db.commit()
-
-        return AuthResponseSchema(user=UserBasicSchema.model_validate(user))
+        return AuthResponseSchema(
+            user_id=user.id,
+            email=user.email,
+            username=user.username,
+        )
 
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Google OAuth callback failed")
 
 
 @router.post("/logout")
