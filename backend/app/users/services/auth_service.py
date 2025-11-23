@@ -4,10 +4,11 @@ from uuid import UUID
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.config import settings
-from app.users.models import User, Session, AuthProvider
-from app.users.repositories import UserRepository, SessionRepository, UserFilter
+from app.users.models import User, Session, AuthProvider, Team
+from app.users.repositories import UserRepository, SessionRepository, UserFilter, TeamRepository
 from app.users.utils.password import hash_password, verify_password
 
 
@@ -21,6 +22,7 @@ class AuthService:
         self.db = db_session
         self.user_repo = UserRepository(db_session)
         self.session_repo = SessionRepository(db_session)
+        self.team_repo = TeamRepository(db_session)
 
     async def exchange_google_code(
         self, code: str, redirect_uri: str
@@ -50,6 +52,19 @@ class AuthService:
             response.raise_for_status()
             return response.json()
 
+    async def _create_default_team(self, user: User) -> Team:
+        """Create a default team for a new user."""
+        # Refresh user with teams relationship loaded
+        await self.db.refresh(user, attribute_names=["teams"])
+
+        team = Team(name=user.email)
+        team = await self.team_repo.create(team)
+
+        # Add user to the team
+        user.teams.append(team)
+        await self.db.flush()
+        return team
+
     async def get_or_create_user(
         self, email: str, username: str | None = None
     ) -> User:
@@ -70,6 +85,9 @@ class AuthService:
 
             user = User(email=email, username=username)
             user = await self.user_repo.create(user)
+
+            # Create default team for new user
+            await self._create_default_team(user)
 
         return user
 
@@ -114,6 +132,10 @@ class AuthService:
             auth_provider=AuthProvider.LOCAL,
         )
         user = await self.user_repo.create(user)
+
+        # Create default team for new user
+        await self._create_default_team(user)
+
         return user
 
     async def login_local_user(self, email: str, password: str) -> User:
