@@ -21,7 +21,14 @@ RUN poetry config virtualenvs.create false
 
 COPY backend/ ./
 
-RUN poetry install --no-interaction --no-ansi --without dev
+ARG APP_ENV=production
+ENV APP_ENV=${APP_ENV}
+
+RUN if [ "$APP_ENV" = "dev" ]; then \
+        poetry install --no-interaction --no-ansi; \
+    else \
+        poetry install --no-interaction --no-ansi --without dev; \
+    fi
 
 COPY --from=frontend-builder /frontend/dist ./static
 
