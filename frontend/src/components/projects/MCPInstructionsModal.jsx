@@ -28,28 +28,12 @@ export default function MCPInstructionsModal({ project, onClose }) {
           content: JSON.stringify({
             "mcpServers": {
               "docs": {
-                "command": "npx",
-                "args": ["-y", "@modelcontextprotocol/server-http", mcpUrl]
+                "url": `"${mcpUrl}"`
               }
             }
           }, null, 2),
           type: 'json',
-          note: 'Open Cursor Settings → Features → MCP → Edit Config'
-        };
-      case 'windsurf':
-        return {
-          title: 'Windsurf',
-          description: 'To connect this project\'s documentation to Windsurf, add the following to your MCP settings:',
-          content: JSON.stringify({
-            "mcpServers": {
-              "docs": {
-                "command": "npx",
-                "args": ["-y", "@modelcontextprotocol/server-http", mcpUrl]
-              }
-            }
-          }, null, 2),
-          type: 'json',
-          note: 'Open Windsurf Settings → MCP Servers → Edit Config'
+          note: 'Open Settings -> Cursor Settings → Tools & MCP → New MCP Server'
         };
       default:
         return null;
@@ -86,7 +70,6 @@ export default function MCPInstructionsModal({ project, onClose }) {
             >
               <option value="claudeCode">Claude Code</option>
               <option value="cursor">Cursor</option>
-              <option value="windsurf">Windsurf</option>
             </select>
           </div>
         </div>
