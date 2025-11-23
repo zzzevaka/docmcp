@@ -80,7 +80,6 @@ function DocumentEditor() {
       )
       alert('Document saved successfully!')
     } catch (error) {
-      console.error('Failed to save document:', error)
       alert('Failed to save document')
     } finally {
       setSaving(false)

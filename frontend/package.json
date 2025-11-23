@@ -10,7 +10,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@excalidraw/excalidraw": "^0.17.6",
+    "@excalidraw/excalidraw": "^0.18.0",
     "@milkdown/core": "^7.17.1",
     "@milkdown/crepe": "^7.17.1",
     "@milkdown/kit": "^7.17.1",

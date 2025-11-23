@@ -4,6 +4,7 @@ import { exportToBlob } from "@excalidraw/excalidraw";
 const ExcalidrawLazy = React.lazy(async () => {
   return import("@excalidraw/excalidraw").then((m) => ({ default: m.Excalidraw }));
 });
+import "@excalidraw/excalidraw/index.css";
 
 const DEFAULT_EXCALIDRAW_DATA = { type: "excalidraw", version: 2, elements: [], appState: {}, files: {} };
 
