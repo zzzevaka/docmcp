@@ -21,8 +21,7 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 @router.get("/google/login")
 async def google_login(request: Request):
-    base_url = str(request.base_url).rstrip("/")
-
+    base_url = str(request.base_url).rstrip("/").replace('http://', 'https://')
     redirect_uri = f"{base_url}/api/v1/auth/google/callback"
 
     params = {
