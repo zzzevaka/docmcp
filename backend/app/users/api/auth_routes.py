@@ -49,48 +49,42 @@ async def google_callback(
     base_url = str(request.base_url).rstrip("/").replace('http://', 'https://')
     redirect_uri = f"{base_url}/api/v1/auth/google/callback"
 
-    try:
-        # Exchange code for access token
-        token_data = await auth_service.exchange_google_code(payload.code, redirect_uri)
-        access_token = token_data.get("access_token")
+    # Exchange code for access token
+    token_data = await auth_service.exchange_google_code(payload.code, redirect_uri)
+    access_token = token_data.get("access_token")
 
-        if not access_token:
-            raise HTTPException(status_code=400, detail="Failed to obtain access token")
+    if not access_token:
+        raise HTTPException(status_code=400, detail="Failed to obtain access token")
 
-        # Get user info from Google
-        user_info = await auth_service.get_google_user_info(access_token)
-        email = user_info.get("email")
-        name = user_info.get("name")
+    # Get user info from Google
+    user_info = await auth_service.get_google_user_info(access_token)
+    email = user_info.get("email")
+    name = user_info.get("name")
 
-        if not email:
-            raise HTTPException(status_code=400, detail="Email not provided by Google")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email not provided by Google")
 
-        # Get or create user
-        user = await auth_service.get_or_create_user(email=email, username=name)
+    # Get or create user
+    user = await auth_service.get_or_create_user(email=email, username=name)
 
-        # Create session
-        session_token = await auth_service.create_session(user.id)
+    # Create session
+    session_token = await auth_service.create_session(user.id)
 
-        # Set secure HTTP-only cookie
-        response.set_cookie(
-            key="session_token",
-            value=session_token,
-            httponly=True,
-            secure=settings.app_env != "dev",  # Use secure cookie in production
-            samesite="lax",
-            max_age=30 * 24 * 60 * 60,  # 30 days
-        )
+    # Set secure HTTP-only cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=settings.app_env != "dev",  # Use secure cookie in production
+        samesite="lax",
+        max_age=30 * 24 * 60 * 60,  # 30 days
+    )
 
-        return AuthResponseSchema(
-            user_id=user.id,
-            email=user.email,
-            username=user.username,
-        )
-
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=500, detail="Google OAuth callback failed")
+    return AuthResponseSchema(
+        user_id=user.id,
+        email=user.email,
+        username=user.username,
+    )
 
 
 @router.post("/logout")
