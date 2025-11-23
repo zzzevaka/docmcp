@@ -2,7 +2,8 @@ import enum
 from typing import List, Optional
 from uuid import UUID as UUID_TYPE
 
-from sqlalchemy import String, ForeignKey, Enum, Text, UUID as SQLUUID
+from sqlalchemy import UUID as SQLUUID
+from sqlalchemy import Enum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -26,9 +27,9 @@ class Project(Base):
     )
 
     # Relationships
-    team: Mapped["Team"] = relationship(back_populates="projects")  # noqa: F821
+    team: Mapped["Team"] = relationship(back_populates="projects", lazy="selectin")  # noqa: F821
     documents: Mapped[List["Document"]] = relationship(
-        back_populates="project", cascade="all, delete-orphan"
+        back_populates="project", cascade="all, delete-orphan", lazy="selectin"
     )
 
     def __repr__(self) -> str:
@@ -52,12 +53,12 @@ class Document(Base):
     order: Mapped[int] = mapped_column(default=0, server_default="0", index=True)
 
     # Relationships
-    project: Mapped["Project"] = relationship(back_populates="documents")
+    project: Mapped["Project"] = relationship(back_populates="documents", lazy="selectin")
     parent: Mapped[Optional["Document"]] = relationship(
-        "Document", remote_side="Document.id", back_populates="children"
+        "Document", remote_side="Document.id", back_populates="children", lazy="selectin"
     )
     children: Mapped[List["Document"]] = relationship(
-        "Document", back_populates="parent", cascade="all, delete-orphan"
+        "Document", back_populates="parent", cascade="all, delete-orphan", lazy="selectin"
     )
 
     def __repr__(self) -> str:

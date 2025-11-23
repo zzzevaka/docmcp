@@ -1,18 +1,18 @@
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, Cookie
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
 from app.users.api.schemas import (
-    GoogleAuthCallbackSchema,
     AuthResponseSchema,
-    UserSchema,
-    UserBasicSchema,
-    LocalRegisterSchema,
+    GoogleAuthCallbackSchema,
     LocalLoginSchema,
+    LocalRegisterSchema,
+    UserBasicSchema,
+    UserSchema,
 )
 from app.users.services.auth_service import AuthService
 
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 @router.get("/google/login")
 async def google_login(request: Request):
-    base_url = str(request.base_url).rstrip("/").replace('http://', 'https://')
+    base_url = str(request.base_url).rstrip("/").replace("http://", "https://")
     redirect_uri = f"{base_url}/api/v1/auth/google/callback"
 
     params = {
@@ -45,7 +45,7 @@ async def google_callback(
     """Handle Google OAuth callback."""
     auth_service = AuthService(db)
 
-    base_url = str(request.base_url).rstrip("/").replace('http://', 'https://')
+    base_url = str(request.base_url).rstrip("/").replace("http://", "https://")
     redirect_uri = f"{base_url}/api/v1/auth/google/callback"
 
     # Exchange code for access token
@@ -166,9 +166,9 @@ async def register(
         )
 
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}") from e
 
 
 @router.post("/login", response_model=AuthResponseSchema)
@@ -215,9 +215,9 @@ async def login(
         )
 
     except ValueError as e:
-        raise HTTPException(status_code=401, detail=str(e))
+        raise HTTPException(status_code=401, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}") from e
 
 
 @router.get("/config")

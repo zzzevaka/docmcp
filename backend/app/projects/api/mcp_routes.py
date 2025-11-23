@@ -5,12 +5,12 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select, or_, func
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.projects.models import Document
-from app.projects.repositories import ProjectRepository, DocumentRepository
+from app.projects.repositories import DocumentRepository, ProjectRepository
 
 router = APIRouter(prefix="/api/mcp", tags=["mcp"])
 
@@ -178,8 +178,8 @@ async def get_document_tool(
     # Parse document ID
     try:
         doc_uuid = UUID(document_id)
-    except ValueError:
-        raise ValueError("Invalid document ID format")
+    except ValueError as e:
+        raise ValueError("Invalid document ID format") from e
 
     # Get document
     document = await document_repo.get(doc_uuid)
@@ -323,13 +323,13 @@ async def mcp_endpoint(request: Request, project_id: UUID, db: AsyncSession = De
             # Regular JSON response
             return result
 
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON")
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail="Invalid JSON") from e
     except Exception as e:
         # Format error in JSON-RPC 2.0 format
         return {
             "jsonrpc": "2.0",
-            "id": request_data.get("id") if 'request_data' in locals() else None,
+            "id": request_data.get("id") if "request_data" in locals() else None,
             "error": {
                 "code": -32603,
                 "message": str(e)

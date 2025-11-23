@@ -5,13 +5,12 @@ Revises: a1b2c3d4e5f6
 Create Date: 2025-11-22 21:25:00.000000
 
 """
-from alembic import op
-import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = 'b2c3d4e5f6a7'
-down_revision = 'a1b2c3d4e5f6'
+revision = "b2c3d4e5f6a7"
+down_revision = "a1b2c3d4e5f6"
 branch_labels = None
 depends_on = None
 
@@ -24,7 +23,7 @@ def upgrade() -> None:
     connection = op.get_bind()
 
     # For PostgreSQL: alter column type and drop enum
-    if connection.dialect.name == 'postgresql':
+    if connection.dialect.name == "postgresql":
         # First, drop the default value
         op.execute("""
             ALTER TABLE users
@@ -49,7 +48,7 @@ def downgrade() -> None:
     # This downgrade recreates the enum type for PostgreSQL
     connection = op.get_bind()
 
-    if connection.dialect.name == 'postgresql':
+    if connection.dialect.name == "postgresql":
         # Recreate enum type
         op.execute("CREATE TYPE authprovider AS ENUM ('local', 'google')")
 

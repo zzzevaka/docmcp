@@ -1,13 +1,13 @@
-from datetime import datetime
+from datetime import datetime, timezone
+from datetime import datetime as dt
 from typing import Annotated
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, func
-from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy import DateTime
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.config import settings
-
 
 # Configure engine based on database type
 engine_kwargs = {"echo": settings.app_env == "dev"}
@@ -24,7 +24,7 @@ AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_co
 uuid_pk = Annotated[UUID, mapped_column(primary_key=True, default=uuid4)]
 
 # Use default instead of server_default for SQLite compatibility
-from datetime import datetime as dt, timezone
+
 
 def utc_now() -> datetime:
     """Get current UTC time."""

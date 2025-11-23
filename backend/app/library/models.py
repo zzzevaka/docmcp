@@ -1,8 +1,9 @@
 import enum
-from typing import List, Optional
+from typing import List
 from uuid import UUID as UUID_TYPE
 
-from sqlalchemy import String, ForeignKey, Enum, Text, UUID as SQLUUID
+from sqlalchemy import UUID as SQLUUID
+from sqlalchemy import Enum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -34,7 +35,7 @@ class Category(Base):
 
     # Relationships
     templates: Mapped[List["Template"]] = relationship(
-        back_populates="category", cascade="all, delete-orphan"
+        back_populates="category", cascade="all, delete-orphan", lazy="selectin"
     )
 
     def __repr__(self) -> str:
@@ -57,8 +58,8 @@ class Template(Base):
     content: Mapped[dict] = mapped_column(Text)  # JSON stored as text
 
     # Relationships
-    team: Mapped["Team"] = relationship(back_populates="templates")  # noqa: F821
-    category: Mapped["Category"] = relationship(back_populates="templates")
+    team: Mapped["Team"] = relationship(back_populates="templates", lazy="selectin")  # noqa: F821
+    category: Mapped["Category"] = relationship(back_populates="templates", lazy="selectin")
 
     def __repr__(self) -> str:
         return f"<Template(id={self.id}, name={self.name}, type={self.type})>"

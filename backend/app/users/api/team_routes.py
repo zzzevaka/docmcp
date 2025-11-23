@@ -4,10 +4,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.users.api.schemas import TeamSchema, TeamCreateSchema, TeamUpdateSchema, TeamWithMembersSchema
+from app.users.api.schemas import (
+    TeamCreateSchema,
+    TeamSchema,
+    TeamUpdateSchema,
+    TeamWithMembersSchema,
+)
 from app.users.api.user_routes import get_current_user_dependency
 from app.users.models import Team
-from app.users.repositories import TeamRepository, TeamFilter, UserRepository
+from app.users.repositories import TeamFilter, TeamRepository, UserRepository
 
 router = APIRouter(prefix="/api/v1/teams", tags=["teams"])
 

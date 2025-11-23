@@ -1,4 +1,3 @@
-import json
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -6,8 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.projects.api.schemas import (
-    ProjectSchema,
     ProjectCreateSchema,
+    ProjectSchema,
     ProjectUpdateSchema,
 )
 from app.projects.models import Project

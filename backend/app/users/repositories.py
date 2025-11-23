@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.users.models import User, Team, Session, TeamInvitation, InvitationStatus
+from app.users.models import InvitationStatus, Session, Team, TeamInvitation, User
 
 ModelT = TypeVar("ModelT")
 

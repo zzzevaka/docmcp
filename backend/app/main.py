@@ -1,15 +1,14 @@
-import os
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.users.api import auth_routes, user_routes, team_routes, invitation_routes
-from app.projects.api import project_routes, document_routes, mcp_routes
 from app.library.api import category_routes, template_routes
+from app.projects.api import document_routes, mcp_routes, project_routes
+from app.users.api import auth_routes, invitation_routes, team_routes, user_routes
 
 app = FastAPI(
     title="DocMCP API",
