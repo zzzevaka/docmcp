@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, Cookie
+from urllib.parse import urlencode
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, Cookie
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -14,6 +17,24 @@ from app.users.api.schemas import (
 from app.users.services.auth_service import AuthService
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+
+
+@router.get("/google/login")
+async def google_login(request: Request):
+    base_url = str(request.base_url).rstrip("/")
+
+    redirect_uri = f"{base_url}/api/v1/auth/google/callback"
+
+    params = {
+        "client_id": settings.google_client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "email profile openid",
+        "access_type": "offline",
+        "prompt": "consent",
+    }
+    url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
+    return RedirectResponse(url)
 
 
 @router.post("/google/callback", response_model=AuthResponseSchema)

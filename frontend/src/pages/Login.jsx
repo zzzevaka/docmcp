@@ -4,9 +4,6 @@ import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import { toast } from 'sonner'
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
-const REDIRECT_URI = `${window.location.origin}/auth/callback`
-
 function Login() {
   const navigate = useNavigate()
   const { user, checkAuth } = useAuth()
@@ -42,19 +39,6 @@ function Login() {
         console.error('Failed to fetch auth config:', err)
       })
   }, [])
-
-  const handleGoogleLogin = () => {
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
-      redirect_uri: REDIRECT_URI,
-      response_type: 'code',
-      scope: 'email profile openid',
-      access_type: 'offline',
-      prompt: 'consent',
-    })}`
-
-    window.location.href = authUrl
-  }
 
   const handleLocalLogin = async (e) => {
     e.preventDefault()
@@ -277,7 +261,7 @@ function Login() {
           {/* Google OAuth Button */}
           {authConfig.google_oauth_enabled && (
             <button
-              onClick={handleGoogleLogin}
+              onClick={() => {window.location.href = "/api/v1/auth/google/login"}}
               className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
