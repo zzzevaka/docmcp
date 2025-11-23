@@ -1,5 +1,4 @@
 """MCP (Model Context Protocol) routes for exposing project documents to LLM agents."""
-
 import json
 from typing import Any
 from uuid import UUID
@@ -220,9 +219,10 @@ async def get_document_tool(
     elif document.type.value == "whiteboard":
         # For whiteboard documents, return base64 image if available
         if isinstance(content, dict) and "image" in content:
+            content_image = content["image"].split(",")[-1]
             content_blocks.append({
                 "type": "image",
-                "data": content["image"],
+                "data": content_image,
                 "mimeType": "image/png"
             })
         else:
