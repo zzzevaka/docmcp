@@ -6,7 +6,7 @@ DocMCP is a light-weight application that bridges the gap between human document
 
 ## Quick start
 
-Try the [DEMO](https://docmcp-production.up.railway.app/) or run in Docker
+Try the [DEMO](https://docmcp-demo-production.up.railway.app/) or run in Docker
 
 ```bash
 docker run -d -p 8000:8000 \
