@@ -39,7 +39,6 @@ async def google_login(request: Request):
 @router.get("/google/callback")
 async def google_callback(
     request: Request,
-    response: Response,
     payload: GoogleAuthCallbackSchema = Depends(),  # берём из query, а не из body
     db: AsyncSession = Depends(get_db),
 ):
@@ -54,7 +53,7 @@ async def google_callback(
     access_token = token_data.get("access_token")
 
     if not access_token:
-        raise HTTPException(status_code=400, detail="Failed to obtain access token")
+        return RedirectResponse(f"{settings.frontend_url}/auth/error")
 
     # Get user info from Google
     user_info = await auth_service.get_google_user_info(access_token)
@@ -62,7 +61,7 @@ async def google_callback(
     name = user_info.get("name")
 
     if not email:
-        raise HTTPException(status_code=400, detail="Email not provided by Google")
+        return RedirectResponse(f"{settings.frontend_url}/auth/error")
 
     # Get or create user
     user = await auth_service.get_or_create_user(email=email, username=name)
@@ -70,19 +69,21 @@ async def google_callback(
     # Create session
     session_token = await auth_service.create_session(user.id)
 
-    # Set secure HTTP-only cookie
-    response.set_cookie(
+    await db.commit()
+
+    # Redirect to frontend with cookie
+    redirect_response = RedirectResponse(f"{settings.frontend_url}/")
+    redirect_response.set_cookie(
         key="session_token",
         value=session_token,
         httponly=True,
         secure=settings.app_env != "dev",  # Use secure cookie in production
         samesite="lax",
+        path="/",
         max_age=30 * 24 * 60 * 60,  # 30 days
     )
 
-    await db.commit()
-
-    return RedirectResponse("/")
+    return redirect_response
 
 
 @router.post("/logout")
@@ -98,7 +99,7 @@ async def logout(
         await db.commit()
 
     # Clear cookie
-    response.delete_cookie(key="session_token")
+    response.delete_cookie(key="session_token", path="/")
 
     return {"message": "Logged out successfully"}
 
@@ -153,6 +154,7 @@ async def register(
             httponly=True,
             secure=settings.app_env != "dev",
             samesite="lax",
+            path="/",
             max_age=30 * 24 * 60 * 60,  # 30 days
         )
 
@@ -201,6 +203,7 @@ async def login(
             httponly=True,
             secure=settings.app_env != "dev",
             samesite="lax",
+            path="/",
             max_age=30 * 24 * 60 * 60,  # 30 days
         )
 
