@@ -36,7 +36,7 @@ async def google_login(request: Request):
     return RedirectResponse(url)
 
 
-@router.post("/google/callback", response_model=AuthResponseSchema)
+@router.get("/google/callback", response_model=AuthResponseSchema)
 async def google_callback(
     payload: GoogleAuthCallbackSchema,
     response: Response,
