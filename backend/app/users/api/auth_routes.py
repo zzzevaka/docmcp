@@ -48,12 +48,17 @@ async def google_callback(
     base_url = str(request.base_url).rstrip("/").replace('http://', 'https://')
     redirect_uri = f"{base_url}/api/v1/auth/google/callback"
 
+    # Get frontend URL from referer or origin header
+    referer = request.headers.get("referer", "")
+    origin = request.headers.get("origin", "")
+    frontend_url = origin or (referer.rstrip("/") if referer else str(request.base_url).rstrip("/"))
+
     # Exchange code for access token
     token_data = await auth_service.exchange_google_code(payload.code, redirect_uri)
     access_token = token_data.get("access_token")
 
     if not access_token:
-        return RedirectResponse(f"{settings.frontend_url}/auth/error")
+        return RedirectResponse(f"{frontend_url}/auth/error")
 
     # Get user info from Google
     user_info = await auth_service.get_google_user_info(access_token)
@@ -61,7 +66,7 @@ async def google_callback(
     name = user_info.get("name")
 
     if not email:
-        return RedirectResponse(f"{settings.frontend_url}/auth/error")
+        return RedirectResponse(f"{frontend_url}/auth/error")
 
     # Get or create user
     user = await auth_service.get_or_create_user(email=email, username=name)
@@ -72,7 +77,7 @@ async def google_callback(
     await db.commit()
 
     # Redirect to frontend with cookie
-    redirect_response = RedirectResponse(f"{settings.frontend_url}/")
+    redirect_response = RedirectResponse(f"{frontend_url}/")
     redirect_response.set_cookie(
         key="session_token",
         value=session_token,

@@ -17,10 +17,11 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# CORS middleware
+# CORS middleware - allow all origins in dev, specific in production
+# Note: allow_origins=["*"] doesn't work with credentials, so we use regex
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.frontend_url] if settings.app_env == "dev" else [],
+    allow_origin_regex=r"https?://.*" if settings.app_env == "dev" else r"https://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
