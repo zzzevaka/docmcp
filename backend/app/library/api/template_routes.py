@@ -6,12 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.library.api.schemas import (
-    TemplateSchema,
     TemplateCreateSchema,
+    TemplateSchema,
     TemplateUpdateSchema,
 )
 from app.library.models import Template, TemplateType, TemplateVisibility
-from app.library.repositories import TemplateRepository, CategoryRepository, TemplateFilter
+from app.library.repositories import CategoryRepository, TemplateFilter, TemplateRepository
 from app.projects.repositories import DocumentRepository
 from app.users.api.user_routes import get_current_user_dependency
 

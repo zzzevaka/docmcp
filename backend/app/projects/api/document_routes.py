@@ -6,12 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.projects.api.schemas import (
-    DocumentSchema,
     DocumentCreateSchema,
+    DocumentSchema,
     DocumentUpdateSchema,
 )
 from app.projects.models import Document
-from app.projects.repositories import ProjectRepository, DocumentRepository
+from app.projects.repositories import DocumentRepository, ProjectRepository
 from app.users.api.user_routes import get_current_user_dependency
 
 router = APIRouter(prefix="/api/v1/projects", tags=["documents"])

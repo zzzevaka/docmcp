@@ -5,13 +5,13 @@ from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
 from app.main import app
-from app.projects.models import Project, Document, DocumentType
-from app.users.models import User, Team
+from app.projects.models import Document, DocumentType, Project
+from app.users.models import Team, User
 
 
 @pytest.fixture

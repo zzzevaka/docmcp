@@ -1,11 +1,11 @@
-from typing import List
 import enum
+from typing import List
 
-from sqlalchemy import String, ForeignKey, Table, Column, UUID as SQLUUID, Enum
+from sqlalchemy import UUID as SQLUUID
+from sqlalchemy import Column, Enum, ForeignKey, String, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-
 
 # Association table for User-Team many-to-many relationship
 user_team_association = Table(

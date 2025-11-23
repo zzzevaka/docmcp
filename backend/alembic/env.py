@@ -6,12 +6,13 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-
 from app.config import settings
 from app.database import Base
+
 # Import models for alembic autogenerate
-from app.users import models  # noqa: F401
-from app.projects import models  # noqa: F401
+from app.library import models as library_models  # noqa: F401
+from app.projects import models as project_models  # noqa: F401
+from app.users import models as user_models  # noqa: F401
 
 # this is the Alembic Config object
 config = context.config

@@ -1,14 +1,13 @@
 import secrets
-from typing import Dict, Any
+from typing import Any, Dict
 from uuid import UUID
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.config import settings
-from app.users.models import User, Session, AuthProvider, Team
-from app.users.repositories import UserRepository, SessionRepository, UserFilter, TeamRepository
+from app.users.models import AuthProvider, Session, Team, User
+from app.users.repositories import SessionRepository, TeamRepository, UserFilter, UserRepository
 from app.users.utils.password import hash_password, verify_password
 
 

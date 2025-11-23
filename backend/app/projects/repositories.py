@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.projects.models import Project, Document, DocumentType
+from app.projects.models import Document, DocumentType, Project
 from app.users.models import Team
 
 

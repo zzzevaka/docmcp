@@ -27,10 +27,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Run tests inside container
-        run: |
-          docker run --rm docmcp:test sh -c "cd /app && pytest -v --cov=app --cov-report=term-missing"
-
       - name: Run linter inside container
         run: |
           docker run --rm docmcp:test sh -c "cd /app && ruff check ."
+
+      - name: Run tests inside container
+        run: |
+          docker run --rm docmcp:test sh -c "cd /app && pytest -v --cov=app --cov-report=term-missing"

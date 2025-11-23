@@ -39,25 +39,25 @@ class TemplateSchema(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     @classmethod
     def extract_category_name(cls, data: Any) -> Any:
         """Extract category name from relationship if available."""
         if isinstance(data, dict):
             return data
         # data is a SQLAlchemy model instance
-        if hasattr(data, 'category') and data.category:
+        if hasattr(data, "category") and data.category:
             # Create a dict with all attributes
             result = {
-                'id': data.id,
-                'name': data.name,
-                'team_id': data.team_id,
-                'category_id': data.category_id,
-                'category_name': data.category.name,
-                'type': data.type,
-                'content': data.content,
-                'created_at': data.created_at,
-                'updated_at': data.updated_at,
+                "id": data.id,
+                "name": data.name,
+                "team_id": data.team_id,
+                "category_id": data.category_id,
+                "category_name": data.category.name,
+                "type": data.type,
+                "content": data.content,
+                "created_at": data.created_at,
+                "updated_at": data.updated_at,
             }
             return result
         return data

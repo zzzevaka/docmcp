@@ -1,8 +1,9 @@
 import enum
-from typing import List, Optional
+from typing import List
 from uuid import UUID as UUID_TYPE
 
-from sqlalchemy import String, ForeignKey, Enum, Text, UUID as SQLUUID
+from sqlalchemy import UUID as SQLUUID
+from sqlalchemy import Enum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
