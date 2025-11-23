@@ -36,13 +36,13 @@ async def google_login(request: Request):
     return RedirectResponse(url)
 
 
-@router.get("/google/callback", response_model=AuthResponseSchema)
+@router.get("/google/callback")
 async def google_callback(
     request: Request,
     response: Response,
     payload: GoogleAuthCallbackSchema = Depends(),  # берём из query, а не из body
     db: AsyncSession = Depends(get_db),
-) -> AuthResponseSchema:
+):
     """Handle Google OAuth callback."""
     auth_service = AuthService(db)
 
@@ -82,7 +82,7 @@ async def google_callback(
 
     await db.commit()
 
-    return AuthResponseSchema(user=UserBasicSchema.model_validate(user))
+    return RedirectResponse("/")
 
 
 @router.post("/logout")
