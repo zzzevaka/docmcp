@@ -185,6 +185,7 @@ export default function TemplateDetail() {
                 markdown={template.content?.markdown || ''}
                 onChange={() => {}}
                 readOnly={true}
+                key={template.id}
               />
             ) : (
               <ExcalidrawEditor
@@ -192,6 +193,7 @@ export default function TemplateDetail() {
                 onChange={() => {}}
                 readOnly={true}
                 excalidrawRef={excalidrawRef}
+                key={template.id}
               />
             )}
           </div>
