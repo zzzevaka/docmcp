@@ -358,6 +358,7 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
     {creatingTemplateDocument && onCreateTemplate && (
       <CreateTemplateModal
         document={creatingTemplateDocument}
+        teamName={project.team?.name}
         onClose={() => setCreatingTemplateDocument(null)}
         onSuccess={onCreateTemplate}
       />

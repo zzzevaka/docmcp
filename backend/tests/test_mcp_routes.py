@@ -2,6 +2,7 @@
 
 import json
 from uuid import uuid4
+from httpx import ASGITransport
 
 import pytest
 from httpx import AsyncClient
@@ -44,8 +45,6 @@ async def client_with_db(db_session: AsyncSession):
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
-
-    from httpx import ASGITransport
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"

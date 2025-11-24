@@ -29,26 +29,25 @@ async def list_templates(
     template_repo = TemplateRepository(db)
     category_repo = CategoryRepository(db)
 
-    # Build filter
-    filter_params = {}
-
+    # Get category_id if filtering by category
+    category_id = None
     if category_name:
         category = await category_repo.get_by_name(category_name)
         if category:
-            filter_params["category_id"] = category.id
+            category_id = category.id
 
-    templates = await template_repo.find_by_filter_without_content(TemplateFilter(**filter_params))
-
-    # Filter templates by visibility - user can see:
-    # 1. Public templates
-    # 2. Team templates from their own teams
+    # Get user teams
     user_team_ids = [team.id for team in current_user.teams]
-    visible_templates = [
-        t for t in templates
-        if t.category.visibility == TemplateVisibility.PUBLIC or t.team_id in user_team_ids
-    ]
 
-    return [TemplateListSchema.model_validate(t) for t in visible_templates]
+    # Filter templates by visibility in database
+    templates = await template_repo.find_visible_for_user(
+        user_id=current_user.id,
+        user_team_ids=user_team_ids,
+        category_id=category_id,
+        include_content=False,
+    )
+
+    return [TemplateListSchema.model_validate(t) for t in templates]
 
 
 @router.get("/{template_id}", response_model=TemplateSchema)
@@ -66,8 +65,19 @@ async def get_template(
 
     # Check visibility permissions
     user_team_ids = [team.id for team in current_user.teams]
-    if template.category.visibility == TemplateVisibility.TEAM and template.team_id not in user_team_ids:
-        raise HTTPException(status_code=403, detail="Cannot access this template")
+
+    # User can access template if:
+    # 1. It's public
+    # 2. It's team visibility and user is in the team
+    # 3. It's private and user is the creator
+    if template.visibility == TemplateVisibility.PUBLIC:
+        pass  # Everyone can access
+    elif template.visibility == TemplateVisibility.TEAM:
+        if template.team_id not in user_team_ids:
+            raise HTTPException(status_code=403, detail="Cannot access this template")
+    elif template.visibility == TemplateVisibility.PRIVATE:
+        if template.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Cannot access this template")
 
     return TemplateSchema.model_validate(template)
 
@@ -110,8 +120,10 @@ async def create_template(
     template = Template(
         name=payload.name,
         team_id=document.project.team_id,
+        user_id=current_user.id,
         category_id=category.id,
         type=template_type,
+        visibility=payload.visibility,
         content=json.dumps(content) if isinstance(content, dict) else content,
     )
 

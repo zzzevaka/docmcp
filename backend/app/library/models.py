@@ -12,8 +12,9 @@ from app.database import Base
 class TemplateVisibility(str, enum.Enum):
     """Template visibility enum."""
 
-    TEAM = "team"
-    PUBLIC = "public"
+    PRIVATE = "private"  # Only visible to the creator
+    TEAM = "team"  # Visible to team members
+    PUBLIC = "public"  # Visible to everyone
 
 
 class TemplateType(str, enum.Enum):
@@ -51,14 +52,21 @@ class Template(Base):
     team_id: Mapped[UUID_TYPE] = mapped_column(
         SQLUUID, ForeignKey("teams.id"), index=True
     )
+    user_id: Mapped[UUID_TYPE] = mapped_column(
+        SQLUUID, ForeignKey("users.id"), index=True
+    )
     category_id: Mapped[UUID_TYPE] = mapped_column(
         SQLUUID, ForeignKey("categories.id"), index=True
     )
     type: Mapped[TemplateType] = mapped_column(Enum(TemplateType), index=True)
+    visibility: Mapped[TemplateVisibility] = mapped_column(
+        Enum(TemplateVisibility), default=TemplateVisibility.TEAM, index=True
+    )
     content: Mapped[dict] = mapped_column(Text)  # JSON stored as text
 
     # Relationships
     team: Mapped["Team"] = relationship(back_populates="templates", lazy="selectin")  # noqa: F821
+    user: Mapped["User"] = relationship(lazy="selectin")  # noqa: F821
     category: Mapped["Category"] = relationship(back_populates="templates", lazy="selectin")
 
     def __repr__(self) -> str:

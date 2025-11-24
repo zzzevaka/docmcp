@@ -3,9 +3,10 @@ import { BookTemplate } from 'lucide-react';
 import axios from 'axios';
 import { Combobox } from '@/components/ui/combobox';
 
-export default function CreateTemplateModal({ document, onClose, onSuccess }) {
+export default function CreateTemplateModal({ document, teamName, onClose, onSuccess }) {
   const [templateName, setTemplateName] = useState(document.name);
   const [categoryName, setCategoryName] = useState('');
+  const [visibility, setVisibility] = useState('team');
   const [isCreating, setIsCreating] = useState(false);
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
@@ -33,7 +34,7 @@ export default function CreateTemplateModal({ document, onClose, onSuccess }) {
 
     setIsCreating(true);
     try {
-      await onSuccess(document.id, templateName.trim(), categoryName.trim());
+      await onSuccess(document.id, templateName.trim(), categoryName.trim(), visibility);
       onClose();
     } catch (error) {
       console.error('Failed to create template:', error);
@@ -92,6 +93,48 @@ export default function CreateTemplateModal({ document, onClose, onSuccess }) {
             <p className="mt-1 text-xs text-gray-500">
               Select existing category or type to create a new one
             </p>
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Visibility
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="private"
+                  checked={visibility === 'private'}
+                  onChange={(e) => setVisibility(e.target.value)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                />
+                <span className="ml-2 text-sm text-gray-700">Only me</span>
+              </label>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="team"
+                  checked={visibility === 'team'}
+                  onChange={(e) => setVisibility(e.target.value)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                />
+                <span className="ml-2 text-sm text-gray-700">
+                  {teamName || 'Team'}
+                </span>
+              </label>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="public"
+                  checked={visibility === 'public'}
+                  onChange={(e) => setVisibility(e.target.value)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                />
+                <span className="ml-2 text-sm text-gray-700">Public</span>
+              </label>
+            </div>
           </div>
           <div className="flex gap-2 justify-end">
             <button

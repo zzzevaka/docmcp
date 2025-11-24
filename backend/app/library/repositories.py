@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Iterable
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer, selectinload
 
@@ -113,20 +113,42 @@ class TemplateRepository:
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def find_by_filter_without_content(self, filter_: TemplateFilter) -> Iterable[Template]:
-        """Find templates by filter without loading content field."""
-        query = select(Template).options(
-            defer(Template.content),
+    async def find_visible_for_user(
+        self,
+        user_id: UUID,
+        user_team_ids: list[UUID],
+        category_id: UUID | None = None,
+        include_content: bool = True,
+    ) -> Iterable[Template]:
+        """Find templates visible to a specific user based on visibility rules.
+
+        User can see templates that are:
+        1. Public (visible to everyone)
+        2. Team visibility and user is in the team
+        3. Private and user is the creator
+        """
+        query = select(Template)
+
+        if not include_content:
+            query = query.options(defer(Template.content))
+
+        query = query.options(
             selectinload(Template.team).selectinload(Team.members),
             selectinload(Template.category),
         )
 
-        if filter_.team_id:
-            query = query.where(Template.team_id == filter_.team_id)
-        if filter_.category_id:
-            query = query.where(Template.category_id == filter_.category_id)
-        if filter_.type:
-            query = query.where(Template.type == filter_.type)
+        # Build visibility filter using OR conditions
+        visibility_conditions = [
+            Template.visibility == TemplateVisibility.PUBLIC,
+            (Template.visibility == TemplateVisibility.TEAM) & (Template.team_id.in_(user_team_ids)),
+            (Template.visibility == TemplateVisibility.PRIVATE) & (Template.user_id == user_id),
+        ]
+
+        query = query.where(or_(*visibility_conditions))
+
+        # Apply category filter if provided
+        if category_id:
+            query = query.where(Template.category_id == category_id)
 
         # Order by created_at
         query = query.order_by(Template.created_at)

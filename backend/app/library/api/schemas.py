@@ -32,9 +32,11 @@ class TemplateSchema(BaseModel):
     id: UUID
     name: str
     team_id: UUID
+    user_id: UUID
     category_id: UUID
     category_name: str | None = None
     type: TemplateType
+    visibility: TemplateVisibility
     content: dict | str  # JSON content or string
     created_at: datetime
     updated_at: datetime
@@ -52,9 +54,11 @@ class TemplateSchema(BaseModel):
                 "id": data.id,
                 "name": data.name,
                 "team_id": data.team_id,
+                "user_id": data.user_id,
                 "category_id": data.category_id,
                 "category_name": data.category.name,
                 "type": data.type,
+                "visibility": data.visibility,
                 "content": data.content,
                 "created_at": data.created_at,
                 "updated_at": data.updated_at,
@@ -71,6 +75,7 @@ class TemplateCreateSchema(BaseModel):
     document_id: UUID
     name: str
     category_name: str
+    visibility: TemplateVisibility = TemplateVisibility.TEAM
 
 
 class TemplateListSchema(BaseModel):
@@ -79,9 +84,11 @@ class TemplateListSchema(BaseModel):
     id: UUID
     name: str
     team_id: UUID
+    user_id: UUID
     category_id: UUID
     category_name: str | None = None
     type: TemplateType
+    visibility: TemplateVisibility
     created_at: datetime
     updated_at: datetime
 
@@ -98,9 +105,11 @@ class TemplateListSchema(BaseModel):
                 "id": data.id,
                 "name": data.name,
                 "team_id": data.team_id,
+                "user_id": data.user_id,
                 "category_id": data.category_id,
                 "category_name": data.category.name,
                 "type": data.type,
+                "visibility": data.visibility,
                 "created_at": data.created_at,
                 "updated_at": data.updated_at,
             }
