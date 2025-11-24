@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 
 const AuthContext = createContext(null)
@@ -14,6 +14,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const authChecked = useRef(false)
 
   const checkAuth = async () => {
     try {
@@ -29,6 +30,9 @@ export const AuthProvider = ({ children }) => {
   }
 
   useEffect(() => {
+    // Prevent double fetch in React StrictMode
+    if (authChecked.current) return
+    authChecked.current = true
     checkAuth()
   }, [])
 

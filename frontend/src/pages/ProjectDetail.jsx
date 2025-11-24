@@ -80,7 +80,7 @@ function ProjectDetail() {
     }
   };
 
-  const handleCreateTemplate = async (documentId, templateName, categoryName) => {
+  const handleCreateTemplate = async (documentId, templateName, categoryName, visibility, includeChildren = false) => {
     try {
       await axios.post(
         `/api/v1/library/templates/`,
@@ -88,6 +88,8 @@ function ProjectDetail() {
           document_id: documentId,
           name: templateName,
           category_name: categoryName,
+          visibility: visibility,
+          include_children: includeChildren,
         },
         { withCredentials: true }
       );

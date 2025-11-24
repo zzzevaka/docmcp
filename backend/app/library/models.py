@@ -1,5 +1,5 @@
 import enum
-from typing import List
+from typing import List, Optional
 from uuid import UUID as UUID_TYPE
 
 from sqlalchemy import UUID as SQLUUID
@@ -12,8 +12,9 @@ from app.database import Base
 class TemplateVisibility(str, enum.Enum):
     """Template visibility enum."""
 
-    TEAM = "team"
-    PUBLIC = "public"
+    PRIVATE = "private"  # Only visible to the creator
+    TEAM = "team"  # Visible to team members
+    PUBLIC = "public"  # Visible to everyone
 
 
 class TemplateType(str, enum.Enum):
@@ -51,15 +52,32 @@ class Template(Base):
     team_id: Mapped[UUID_TYPE] = mapped_column(
         SQLUUID, ForeignKey("teams.id"), index=True
     )
+    user_id: Mapped[UUID_TYPE] = mapped_column(
+        SQLUUID, ForeignKey("users.id"), index=True
+    )
     category_id: Mapped[UUID_TYPE] = mapped_column(
         SQLUUID, ForeignKey("categories.id"), index=True
     )
     type: Mapped[TemplateType] = mapped_column(Enum(TemplateType), index=True)
+    visibility: Mapped[TemplateVisibility] = mapped_column(
+        Enum(TemplateVisibility), default=TemplateVisibility.TEAM, index=True
+    )
     content: Mapped[dict] = mapped_column(Text)  # JSON stored as text
+    parent_id: Mapped[Optional[UUID_TYPE]] = mapped_column(
+        SQLUUID, ForeignKey("templates.id"), nullable=True, index=True
+    )
+    order: Mapped[int] = mapped_column(default=0, server_default="0", index=True)
 
     # Relationships
     team: Mapped["Team"] = relationship(back_populates="templates", lazy="selectin")  # noqa: F821
+    user: Mapped["User"] = relationship(lazy="selectin")  # noqa: F821
     category: Mapped["Category"] = relationship(back_populates="templates", lazy="selectin")
+    parent: Mapped[Optional["Template"]] = relationship(
+        "Template", remote_side="Template.id", back_populates="children", lazy="selectin"
+    )
+    children: Mapped[List["Template"]] = relationship(
+        "Template", back_populates="parent", cascade="all, delete-orphan", lazy="selectin"
+    )
 
     def __repr__(self) -> str:
         return f"<Template(id={self.id}, name={self.name}, type={self.type})>"

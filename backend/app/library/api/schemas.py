@@ -32,10 +32,14 @@ class TemplateSchema(BaseModel):
     id: UUID
     name: str
     team_id: UUID
+    user_id: UUID
     category_id: UUID
     category_name: str | None = None
     type: TemplateType
+    visibility: TemplateVisibility
     content: dict | str  # JSON content or string
+    parent_id: UUID | None
+    order: int
     created_at: datetime
     updated_at: datetime
 
@@ -52,10 +56,14 @@ class TemplateSchema(BaseModel):
                 "id": data.id,
                 "name": data.name,
                 "team_id": data.team_id,
+                "user_id": data.user_id,
                 "category_id": data.category_id,
                 "category_name": data.category.name,
                 "type": data.type,
+                "visibility": data.visibility,
                 "content": data.content,
+                "parent_id": data.parent_id,
+                "order": data.order,
                 "created_at": data.created_at,
                 "updated_at": data.updated_at,
             }
@@ -71,6 +79,8 @@ class TemplateCreateSchema(BaseModel):
     document_id: UUID
     name: str
     category_name: str
+    visibility: TemplateVisibility = TemplateVisibility.TEAM
+    include_children: bool = False
 
 
 class TemplateListSchema(BaseModel):
@@ -79,16 +89,21 @@ class TemplateListSchema(BaseModel):
     id: UUID
     name: str
     team_id: UUID
+    user_id: UUID
     category_id: UUID
     category_name: str | None = None
     type: TemplateType
+    visibility: TemplateVisibility
+    parent_id: UUID | None
+    order: int
+    has_children: bool = False
     created_at: datetime
     updated_at: datetime
 
     @model_validator(mode="before")
     @classmethod
     def extract_category_name(cls, data: Any) -> Any:
-        """Extract category name from relationship if available."""
+        """Extract category name and check for children if available."""
         if isinstance(data, dict):
             return data
         # data is a SQLAlchemy model instance
@@ -98,9 +113,14 @@ class TemplateListSchema(BaseModel):
                 "id": data.id,
                 "name": data.name,
                 "team_id": data.team_id,
+                "user_id": data.user_id,
                 "category_id": data.category_id,
                 "category_name": data.category.name,
                 "type": data.type,
+                "visibility": data.visibility,
+                "parent_id": data.parent_id,
+                "order": data.order,
+                "has_children": hasattr(data, "children") and len(data.children) > 0,
                 "created_at": data.created_at,
                 "updated_at": data.updated_at,
             }

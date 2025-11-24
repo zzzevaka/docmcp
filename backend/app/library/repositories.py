@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Iterable
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer, selectinload
 
@@ -89,9 +89,26 @@ class TemplateRepository:
             .options(
                 selectinload(Template.team).selectinload(Team.members),
                 selectinload(Template.category),
+                selectinload(Template.children),
             )
         )
         return result.scalar_one_or_none()
+
+    async def get_with_hierarchy(self, id_: UUID) -> Template | None:
+        """Get template by ID with full hierarchy of children loaded."""
+        template = await self.get(id_)
+        if template:
+            await self._load_children_recursive(template)
+        return template
+
+    async def _load_children_recursive(self, template: Template) -> None:
+        """Recursively load all children for a template."""
+        # Force load children if not already loaded
+        await self.db.refresh(template, ["children"])
+
+        # Recursively load children's children
+        for child in template.children:
+            await self._load_children_recursive(child)
 
     async def find_by_filter(self, filter_: TemplateFilter) -> Iterable[Template]:
         """Find templates by filter."""
@@ -113,20 +130,51 @@ class TemplateRepository:
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def find_by_filter_without_content(self, filter_: TemplateFilter) -> Iterable[Template]:
-        """Find templates by filter without loading content field."""
-        query = select(Template).options(
-            defer(Template.content),
+    async def find_visible_for_user(
+        self,
+        user_id: UUID,
+        user_team_ids: list[UUID],
+        category_id: UUID | None = None,
+        include_content: bool = True,
+        only_root: bool = True,
+    ) -> Iterable[Template]:
+        """Find templates visible to a specific user based on visibility rules.
+
+        User can see templates that are:
+        1. Public (visible to everyone)
+        2. Team visibility and user is in the team
+        3. Private and user is the creator
+
+        Args:
+            only_root: If True, only return root templates (parent_id is null)
+        """
+        query = select(Template)
+
+        if not include_content:
+            query = query.options(defer(Template.content))
+
+        query = query.options(
             selectinload(Template.team).selectinload(Team.members),
             selectinload(Template.category),
+            selectinload(Template.children),
         )
 
-        if filter_.team_id:
-            query = query.where(Template.team_id == filter_.team_id)
-        if filter_.category_id:
-            query = query.where(Template.category_id == filter_.category_id)
-        if filter_.type:
-            query = query.where(Template.type == filter_.type)
+        # Build visibility filter using OR conditions
+        visibility_conditions = [
+            Template.visibility == TemplateVisibility.PUBLIC,
+            (Template.visibility == TemplateVisibility.TEAM) & (Template.team_id.in_(user_team_ids)),
+            (Template.visibility == TemplateVisibility.PRIVATE) & (Template.user_id == user_id),
+        ]
+
+        query = query.where(or_(*visibility_conditions))
+
+        # Filter only root templates (without parent)
+        if only_root:
+            query = query.where(Template.parent_id.is_(None))
+
+        # Apply category filter if provided
+        if category_id:
+            query = query.where(Template.category_id == category_id)
 
         # Order by created_at
         query = query.order_by(Template.created_at)
