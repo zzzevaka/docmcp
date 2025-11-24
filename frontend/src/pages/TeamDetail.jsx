@@ -152,9 +152,9 @@ function TeamDetail() {
 
   return (
     <MainLayout activeTab="teams">
-      <div className="px-4 py-6">
+      <div className="py-6">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-12">
           <div className="flex justify-between items-center">
             <div>
               <Breadcrumb className="mb-4">

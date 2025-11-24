@@ -91,9 +91,6 @@ export default function CreateTemplateModal({ document, teamName, onClose, onSuc
                 allowCustom={true}
               />
             )}
-            <p className="mt-1 text-xs text-gray-500">
-              Select existing category or type to create a new one
-            </p>
           </div>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -149,9 +146,6 @@ export default function CreateTemplateModal({ document, teamName, onClose, onSuc
                 Include child documents
               </span>
             </label>
-            <p className="mt-1 ml-6 text-xs text-gray-500">
-              When checked, all child documents will also be saved as templates
-            </p>
           </div>
           <div className="flex gap-2 justify-end">
             <button

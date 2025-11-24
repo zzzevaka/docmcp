@@ -1,20 +1,27 @@
-import { FileText, Image, FolderPlus } from 'lucide-react';
+import { FileText, Image, FolderTree } from 'lucide-react';
 
 export default function TemplateCard({ template, onClick }) {
-  const Icon = template.type === 'markdown' ? FileText : Image;
+  // Choose icon based on whether template has children or its type
+  const Icon = template.has_children
+    ? FolderTree
+    : template.type === 'markdown'
+    ? FileText
+    : Image;
 
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-lg border border-gray-300 p-4 cursor-pointer hover:border-blue-500 hover:shadow-sm transition-all h-32 flex flex-col justify-between group"
+      className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 cursor-pointer"
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Icon className="w-4 h-4 text-gray-400" />
-          <span className="text-xs text-gray-500 capitalize">{template.type}</span>
-        </div>
+      <div className="flex items-start justify-between mb-2">
+        <h3 className="text-lg font-semibold text-gray-900 flex-1 pr-2">
+          {template.name}
+        </h3>
+        <Icon className="w-5 h-5 text-gray-400 flex-shrink-0" />
       </div>
-      <h3 className="font-medium text-gray-900 truncate">{template.name}</h3>
+      <p className="text-sm text-gray-600">
+        Created {new Date(template.created_at).toLocaleDateString()}
+      </p>
     </div>
   );
 }

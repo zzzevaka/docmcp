@@ -96,13 +96,14 @@ class TemplateListSchema(BaseModel):
     visibility: TemplateVisibility
     parent_id: UUID | None
     order: int
+    has_children: bool = False
     created_at: datetime
     updated_at: datetime
 
     @model_validator(mode="before")
     @classmethod
     def extract_category_name(cls, data: Any) -> Any:
-        """Extract category name from relationship if available."""
+        """Extract category name and check for children if available."""
         if isinstance(data, dict):
             return data
         # data is a SQLAlchemy model instance
@@ -119,6 +120,7 @@ class TemplateListSchema(BaseModel):
                 "visibility": data.visibility,
                 "parent_id": data.parent_id,
                 "order": data.order,
+                "has_children": hasattr(data, "children") and len(data.children) > 0,
                 "created_at": data.created_at,
                 "updated_at": data.updated_at,
             }

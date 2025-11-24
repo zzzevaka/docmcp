@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { Trash2, FolderPlus } from 'lucide-react';
 
 import { SidebarProvider } from "@/components/ui/sidebar";
 import TemplateDetailSidebar from '@/components/library/TemplateDetailSidebar';
@@ -10,14 +9,7 @@ import MarkdownEditor from '@/components/editors/MarkdownEditor';
 import ExcalidrawEditor from '@/components/editors/ExcalidrawEditor';
 import { useAuth } from '@/contexts/AuthContext';
 import AddTemplateToProjectModal from '@/components/library/AddTemplateToProjectModal';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
+import TemplateActionsModal from '@/components/library/TemplateActionsModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +30,7 @@ export default function TemplateDetail() {
   const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showAddToProjectModal, setShowAddToProjectModal] = useState(false);
+  const [showActionsModal, setShowActionsModal] = useState(false);
   const excalidrawRef = useRef(null);
 
   useEffect(() => {
@@ -60,7 +53,6 @@ export default function TemplateDetail() {
         }
       }
 
-      console.log('Template loaded:', templateData);
       setTemplate(templateData);
 
       // Find root template to fetch the whole hierarchy
@@ -182,56 +174,12 @@ export default function TemplateDetail() {
           template={template}
           templates={allTemplates}
           activeTemplateId={template.id}
+          canDelete={canDelete}
+          onAddToProject={() => setShowAddToProjectModal(true)}
+          onShowActions={() => setShowActionsModal(true)}
         />
-        <div className="h-screen w-full pl-4 relative flex flex-col">
-          {/* Header */}
-          <div className="border-b px-6 py-4 flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink href="/library/categories">Library</BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator />
-                  {template.category_name && (
-                    <>
-                      <BreadcrumbItem>
-                        <BreadcrumbLink href={`/library/categories/${template.category_id || ''}`}>
-                          {template.category_name}
-                        </BreadcrumbLink>
-                      </BreadcrumbItem>
-                      <BreadcrumbSeparator />
-                    </>
-                  )}
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>{template.name}</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowAddToProjectModal(true)}
-                  className="p-2 hover:bg-blue-100 rounded-md transition-colors"
-                  title="Add to project"
-                >
-                  <FolderPlus className="w-5 h-5 text-blue-600" />
-                </button>
-                {canDelete && (
-                  <button
-                    onClick={() => setShowDeleteDialog(true)}
-                    className="p-2 hover:bg-red-100 rounded-md transition-colors"
-                    title="Delete template"
-                  >
-                    <Trash2 className="w-5 h-5 text-red-600" />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-auto">
+        <div className="h-screen w-full pl-4 relative">
+          <div className="h-full">
             {template.type === 'markdown' ? (
               <MarkdownEditor
                 markdown={template.content?.markdown || ''}
@@ -254,6 +202,14 @@ export default function TemplateDetail() {
         <AddTemplateToProjectModal
           template={template}
           onClose={() => setShowAddToProjectModal(false)}
+        />
+      )}
+
+      {showActionsModal && (
+        <TemplateActionsModal
+          template={template}
+          onClose={() => setShowActionsModal(false)}
+          onDelete={() => setShowDeleteDialog(true)}
         />
       )}
 

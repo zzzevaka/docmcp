@@ -156,6 +156,7 @@ class TemplateRepository:
         query = query.options(
             selectinload(Template.team).selectinload(Team.members),
             selectinload(Template.category),
+            selectinload(Template.children),
         )
 
         # Build visibility filter using OR conditions

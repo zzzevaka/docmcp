@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import MainLayout from '@/components/layout/MainLayout';
@@ -23,8 +23,13 @@ export default function Library() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const initialFetchDone = useRef(false);
+  const categoriesFetched = useRef(false);
 
   useEffect(() => {
+    // Prevent double fetch in React StrictMode
+    if (categoriesFetched.current) return;
+    categoriesFetched.current = true;
     fetchCategories();
   }, []);
 
@@ -38,13 +43,20 @@ export default function Library() {
   }, [categoryId, categories]);
 
   useEffect(() => {
-    // Don't fetch templates if we're waiting for categories to load
-    // (when categoryId is present in URL but selectedCategory is not yet set)
-    if (categoryId && !selectedCategory && categories.length === 0) {
+    // Wait for categories to load before fetching templates
+    if (categories.length === 0) {
       return;
     }
+
+    // For initial load with categoryId, wait for selectedCategory to be set
+    if (!initialFetchDone.current && categoryId && !selectedCategory) {
+      return;
+    }
+
     fetchTemplates();
-  }, [selectedCategory, searchQuery, categoryId, categories.length]);
+    initialFetchDone.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categories.length, selectedCategory, searchQuery]);
 
   const fetchCategories = async () => {
     try {
@@ -108,7 +120,7 @@ export default function Library() {
       <MainLayout activeTab="library">
         <div className="h-full flex flex-col">
           {/* Header with breadcrumbs and search */}
-          <div className="px-6 py-4 flex items-center justify-between gap-4">
+          <div className="py-6 pb-12 flex items-center justify-between gap-4">
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
@@ -130,7 +142,7 @@ export default function Library() {
           </div>
 
           {/* Templates grid */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center h-64">
                 <div className="text-gray-500">Loading templates...</div>
@@ -164,7 +176,7 @@ export default function Library() {
     <MainLayout activeTab="library">
       <div className="h-full flex flex-col">
         {/* Header with title and search */}
-        <div className="px-6 py-4 flex justify-between items-center">
+        <div className="py-6 pb-12 flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900">Library</h1>
           <div className="w-80">
             <SearchBar
@@ -176,7 +188,7 @@ export default function Library() {
         </div>
 
         {/* Templates by category */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-gray-500">Loading templates...</div>

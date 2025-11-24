@@ -44,9 +44,13 @@ async def client(db_session: AsyncSession) -> AsyncClient:
     test_user = User(username="testuser", email="test@example.com")
     db_session.add(test_user)
     await db_session.flush()
+    # Load teams relationship
+    await db_session.refresh(test_user, ["teams"])
 
     # Override auth dependency
     async def override_get_current_user():
+        # Refresh to ensure teams are loaded
+        await db_session.refresh(test_user, ["teams"])
         return test_user
 
     app.dependency_overrides[get_db] = override_get_db

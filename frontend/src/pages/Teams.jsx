@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'sonner'
@@ -11,6 +11,7 @@ function Teams() {
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newTeamName, setNewTeamName] = useState('')
+  const dataFetched = useRef(false)
 
   const fetchData = async () => {
     try {
@@ -28,6 +29,9 @@ function Teams() {
   }
 
   useEffect(() => {
+    // Prevent double fetch in React StrictMode
+    if (dataFetched.current) return
+    dataFetched.current = true
     fetchData()
   }, [])
 
@@ -95,7 +99,7 @@ function Teams() {
 
   return (
     <MainLayout activeTab="teams">
-      <div className="px-4 py-6">
+      <div className="py-6">
         {/* Pending Invitations Section */}
         {pendingInvitations.length > 0 && (
           <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -137,7 +141,7 @@ function Teams() {
         )}
 
         {/* Teams Section */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-6 pb-12">
           <h1 className="text-3xl font-bold text-gray-900">Teams</h1>
           <button
             onClick={() => setShowCreateModal(true)}

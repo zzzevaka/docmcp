@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'sonner'
@@ -12,6 +12,7 @@ function Projects() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
   const [selectedTeamId, setSelectedTeamId] = useState('')
+  const dataFetched = useRef(false)
 
   const fetchData = async () => {
     try {
@@ -32,6 +33,9 @@ function Projects() {
   }
 
   useEffect(() => {
+    // Prevent double fetch in React StrictMode
+    if (dataFetched.current) return
+    dataFetched.current = true
     fetchData()
   }, [])
 
@@ -72,8 +76,8 @@ function Projects() {
 
   return (
     <MainLayout>
-      <div className="px-4 py-6">
-        <div className="flex justify-between items-center mb-6">
+      <div className="py-6">
+        <div className="flex justify-between items-center mb-6 pb-12">
           <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
           <button
             onClick={() => setShowCreateModal(true)}

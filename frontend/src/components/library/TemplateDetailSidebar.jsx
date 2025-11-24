@@ -9,11 +9,11 @@ import {
   SidebarGroup,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { FileText, Image, ArrowLeft } from 'lucide-react';
+import { FileText, Image, ArrowLeft, MoreHorizontal, FolderPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TreeView } from '@/components/ui/tree-view'
 
-export default function TemplateDetailSidebar({ template, templates, activeTemplateId }) {
+export default function TemplateDetailSidebar({ template, templates, activeTemplateId, canDelete, onAddToProject, onShowActions }) {
   const navigate = useNavigate();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -71,9 +71,29 @@ export default function TemplateDetailSidebar({ template, templates, activeTempl
               </button>
               <span className="font-semibold truncate">{template.name}</span>
             </div>
+            {canDelete && (
+              <button
+                onClick={onShowActions}
+                className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+                title="Template actions"
+              >
+                <MoreHorizontal className="w-5 h-5" />
+              </button>
+            )}
           </div>
         )}
       </SidebarHeader>
+      {!isCollapsed && (
+        <div className="px-4 py-3">
+          <button
+            onClick={onAddToProject}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            <FolderPlus className="w-5 h-5" />
+            Add to project
+          </button>
+        </div>
+      )}
       <SidebarContent>
         {!isCollapsed && (
           <SidebarGroup>
