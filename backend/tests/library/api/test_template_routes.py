@@ -1,8 +1,10 @@
 import pytest
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.library.models import Category, Template, TemplateType, TemplateVisibility
 from app.library.repositories import TemplateRepository
+from app.projects.models import Document, DocumentType, Project
 from app.users.models import Team, User
 
 
@@ -355,3 +357,284 @@ async def test_team_template_visible_to_all_team_members(
     # Should NOT see private templates of other users or team2 templates
     assert "Private User1 Template" not in template_names
     assert "Team2 Template" not in template_names
+
+
+@pytest.fixture
+async def setup_api_test_data(db_session: AsyncSession):
+    """Create test data for API integration tests."""
+    # Get the test user created by the client fixture
+    from sqlalchemy import select
+    result = await db_session.execute(select(User).where(User.username == "testuser"))
+    user = result.scalar_one()
+
+    # Create team
+    team = Team(name="API Test Team")
+    db_session.add(team)
+    await db_session.flush()
+
+    # Add user to team
+    user.teams = [team]
+    await db_session.flush()
+
+    # Create project
+    project = Project(name="API Test Project", team_id=team.id)
+    db_session.add(project)
+    await db_session.flush()
+
+    # Create category
+    category = Category(name="API Test Category", visibility=TemplateVisibility.PUBLIC)
+    db_session.add(category)
+    await db_session.flush()
+
+    # Create hierarchical documents
+    doc_root = Document(
+        name="API Root Document",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content='{"markdown": "Root content"}',
+        parent_id=None,
+        order=0,
+    )
+    db_session.add(doc_root)
+    await db_session.flush()
+
+    doc_child1 = Document(
+        name="API Child 1",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content='{"markdown": "Child 1 content"}',
+        parent_id=doc_root.id,
+        order=0,
+    )
+    doc_child2 = Document(
+        name="API Child 2",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content='{"markdown": "Child 2 content"}',
+        parent_id=doc_root.id,
+        order=1,
+    )
+    db_session.add(doc_child1)
+    db_session.add(doc_child2)
+    await db_session.flush()
+
+    doc_grandchild = Document(
+        name="API Grandchild",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content='{"markdown": "Grandchild content"}',
+        parent_id=doc_child1.id,
+        order=0,
+    )
+    db_session.add(doc_grandchild)
+    await db_session.commit()
+
+    return {
+        "team": team,
+        "user": user,
+        "project": project,
+        "category": category,
+        "documents": {
+            "root": doc_root,
+            "child1": doc_child1,
+            "child2": doc_child2,
+            "grandchild": doc_grandchild,
+        },
+    }
+
+
+@pytest.mark.asyncio
+async def test_create_template_without_children_via_api(
+    db_session: AsyncSession, client: AsyncClient, setup_api_test_data
+):
+    """Test creating a template without children via API."""
+    data = setup_api_test_data
+    doc_root = data["documents"]["root"]
+
+    # Create template without children
+    response = await client.post(
+        "/api/v1/library/templates/",
+        json={
+            "document_id": str(doc_root.id),
+            "name": "API Template Without Children",
+            "category_name": "API Test Category",
+            "visibility": "public",
+            "include_children": False,
+        },
+    )
+
+    assert response.status_code == 201
+    template_data = response.json()
+    assert template_data["name"] == "API Template Without Children"
+    assert template_data["parent_id"] is None
+    assert template_data["order"] == 0
+
+    # Verify only one template was created (no children)
+    templates_response = await client.get("/api/v1/library/templates/")
+    assert templates_response.status_code == 200
+    templates = templates_response.json()
+
+    # Filter templates for this test
+    api_templates = [t for t in templates if "API Template" in t["name"]]
+    assert len(api_templates) == 1
+
+
+@pytest.mark.asyncio
+async def test_create_template_with_children_via_api(
+    db_session: AsyncSession, client: AsyncClient, setup_api_test_data
+):
+    """Test creating a template with children via API - this is the 500 error case."""
+    data = setup_api_test_data
+    doc_root = data["documents"]["root"]
+
+    # Create template with children - this was causing 500 error
+    response = await client.post(
+        "/api/v1/library/templates/",
+        json={
+            "document_id": str(doc_root.id),
+            "name": "API Template With Children",
+            "category_name": "API Test Category",
+            "visibility": "public",
+            "include_children": True,
+        },
+    )
+
+    assert response.status_code == 201, f"Failed with: {response.text}"
+    template_data = response.json()
+    assert template_data["name"] == "API Template With Children"
+    assert template_data["parent_id"] is None
+
+    # Verify all templates were created (root + 2 children + 1 grandchild = 4)
+    # Use only_root=false to get all templates including children
+    templates_response = await client.get("/api/v1/library/templates/", params={"only_root": False})
+    assert templates_response.status_code == 200
+    templates = templates_response.json()
+
+    # Filter templates for this test
+    api_templates = [t for t in templates if "API Template With Children" in t["name"] or "API Child" in t["name"] or "API Grandchild" in t["name"]]
+    assert len(api_templates) == 4
+
+    # Verify parent-child relationships
+    root_template = next((t for t in api_templates if t["name"] == "API Template With Children"), None)
+    assert root_template is not None
+    assert root_template["parent_id"] is None
+
+    child_templates = [t for t in api_templates if t["parent_id"] == root_template["id"]]
+    assert len(child_templates) == 2
+
+    # Verify grandchild
+    child1_template = next((t for t in child_templates if t["name"] == "API Child 1"), None)
+    assert child1_template is not None
+
+    grandchild_templates = [t for t in api_templates if t["parent_id"] == child1_template["id"]]
+    assert len(grandchild_templates) == 1
+    assert grandchild_templates[0]["name"] == "API Grandchild"
+
+
+@pytest.mark.asyncio
+async def test_add_template_to_project_via_api(
+    db_session: AsyncSession, client: AsyncClient, setup_api_test_data
+):
+    """Test adding a template with children to a project via API."""
+    data = setup_api_test_data
+    doc_root = data["documents"]["root"]
+    project = data["project"]
+
+    # First, create a template with children
+    create_response = await client.post(
+        "/api/v1/library/templates/",
+        json={
+            "document_id": str(doc_root.id),
+            "name": "Template For Project",
+            "category_name": "API Test Category",
+            "visibility": "public",
+            "include_children": True,
+        },
+    )
+
+    assert create_response.status_code == 201
+    template_data = create_response.json()
+    template_id = template_data["id"]
+
+    # Get initial document count
+    initial_docs_response = await client.get(f"/api/v1/projects/{project.id}/documents/")
+    assert initial_docs_response.status_code == 200
+    initial_docs = initial_docs_response.json()
+    initial_count = len(initial_docs)
+
+    # Now add the template to the project
+    add_response = await client.post(
+        f"/api/v1/projects/{project.id}/documents/from-template/{template_id}"
+    )
+
+    assert add_response.status_code == 201, f"Failed with: {add_response.text}"
+    document_data = add_response.json()
+    assert document_data["name"] == "Template For Project"
+    assert document_data["parent_id"] is None
+
+    # Verify all documents were created (should have 4 more: root + 2 children + 1 grandchild)
+    final_docs_response = await client.get(f"/api/v1/projects/{project.id}/documents/")
+    assert final_docs_response.status_code == 200
+    final_docs = final_docs_response.json()
+
+    # We should have 4 more documents than initially (the original 4 + 4 from template)
+    assert len(final_docs) == initial_count + 4
+
+    # Verify the new documents have correct hierarchy
+    new_root = next((d for d in final_docs if d["name"] == "Template For Project" and d["parent_id"] is None), None)
+    assert new_root is not None
+
+    new_children = [d for d in final_docs if d["parent_id"] == new_root["id"]]
+    assert len(new_children) == 2
+
+    new_child1 = next((d for d in new_children if d["name"] == "API Child 1"), None)
+    assert new_child1 is not None
+
+    new_grandchildren = [d for d in final_docs if d["parent_id"] == new_child1["id"]]
+    assert len(new_grandchildren) == 1
+    assert new_grandchildren[0]["name"] == "API Grandchild"
+
+
+@pytest.mark.asyncio
+async def test_create_template_with_empty_children(
+    db_session: AsyncSession, client: AsyncClient, setup_api_test_data
+):
+    """Test creating a template with include_children=True but document has no children."""
+    data = setup_api_test_data
+    project = data["project"]
+
+    # Create a document without children
+    doc_no_children = Document(
+        name="Childless Document",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content='{"markdown": "No children"}',
+        parent_id=None,
+        order=0,
+    )
+    db_session.add(doc_no_children)
+    await db_session.commit()
+
+    # Create template with include_children=True
+    response = await client.post(
+        "/api/v1/library/templates/",
+        json={
+            "document_id": str(doc_no_children.id),
+            "name": "Template Without Children",
+            "category_name": "API Test Category",
+            "visibility": "public",
+            "include_children": True,
+        },
+    )
+
+    assert response.status_code == 201
+    template_data = response.json()
+    assert template_data["name"] == "Template Without Children"
+
+    # Should only create one template
+    templates_response = await client.get("/api/v1/library/templates/")
+    assert templates_response.status_code == 200
+    templates = templates_response.json()
+
+    childless_templates = [t for t in templates if t["name"] == "Template Without Children"]
+    assert len(childless_templates) == 1

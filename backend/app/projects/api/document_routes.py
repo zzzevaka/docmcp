@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.library.models import TemplateVisibility
+from app.library.repositories import TemplateRepository
 from app.projects.api.schemas import (
     DocumentCreateSchema,
     DocumentSchema,
@@ -237,3 +239,107 @@ async def delete_document(
 
     await document_repo.delete(document_id)
     await db.commit()
+
+
+async def _create_document_from_template(
+    template,
+    project_id: UUID,
+    parent_document_id: UUID | None,
+    document_repo: DocumentRepository,
+    db: AsyncSession,
+    order: int = 0,
+) -> Document:
+    """Recursively create documents from a template and its children."""
+    # Parse template content
+    content = template.content
+    if isinstance(content, str):
+        try:
+            content = json.loads(content)
+        except json.JSONDecodeError:
+            pass
+
+    # Create document
+    document = Document(
+        name=template.name,
+        project_id=project_id,
+        type=template.type.value,  # Convert template type to document type
+        content=json.dumps(content) if isinstance(content, dict) else content,
+        parent_id=parent_document_id,
+        order=order,
+    )
+    document = await document_repo.create(document)
+
+    # Recursively create documents for template children
+    # Children are already loaded by get_with_hierarchy
+    if template.children:
+        for idx, child_template in enumerate(sorted(template.children, key=lambda t: t.order)):
+            await _create_document_from_template(
+                template=child_template,
+                project_id=project_id,
+                parent_document_id=document.id,
+                document_repo=document_repo,
+                db=db,
+                order=idx,
+            )
+
+    return document
+
+
+@router.post("/{project_id}/documents/from-template/{template_id}", response_model=DocumentSchema, status_code=201)
+async def create_document_from_template(
+    project_id: UUID,
+    template_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user_dependency),
+) -> DocumentSchema:
+    """Create document(s) from a template, including all children."""
+    project_repo = ProjectRepository(db)
+    document_repo = DocumentRepository(db)
+    template_repo = TemplateRepository(db)
+
+    # Check if project exists and user has access
+    project = await project_repo.get(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    if project.team not in current_user.teams:
+        raise HTTPException(status_code=403, detail="Not a member of this project's team")
+
+    # Get the template with full hierarchy
+    template = await template_repo.get_with_hierarchy(template_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    # Check visibility permissions for template
+    user_team_ids = [team.id for team in current_user.teams]
+
+    if template.visibility == TemplateVisibility.PUBLIC:
+        pass  # Everyone can access
+    elif template.visibility == TemplateVisibility.TEAM:
+        if template.team_id not in user_team_ids:
+            raise HTTPException(status_code=403, detail="Cannot access this template")
+    elif template.visibility == TemplateVisibility.PRIVATE:
+        if template.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Cannot access this template")
+
+    # Create document from template (including children)
+    document = await _create_document_from_template(
+        template=template,
+        project_id=project_id,
+        parent_document_id=None,
+        document_repo=document_repo,
+        db=db,
+    )
+
+    await db.commit()
+    await db.refresh(document)
+
+    # Parse content for response
+    doc_dict = DocumentSchema.model_validate(document).model_dump()
+    if isinstance(doc_dict["content"], str):
+        try:
+            doc_dict["content"] = json.loads(doc_dict["content"])
+        except json.JSONDecodeError:
+            pass
+
+    return DocumentSchema(**doc_dict)

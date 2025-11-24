@@ -30,9 +30,32 @@ async def db_session():
 
 
 @pytest.fixture
-async def client() -> AsyncClient:
-    """Create test client."""
+async def client(db_session: AsyncSession) -> AsyncClient:
+    """Create test client with mocked database and auth."""
+    from app.database import get_db
+    from app.users.api.user_routes import get_current_user_dependency
+    from app.users.models import User
+
+    # Override database dependency
+    async def override_get_db():
+        yield db_session
+
+    # Create a test user for authentication
+    test_user = User(username="testuser", email="test@example.com")
+    db_session.add(test_user)
+    await db_session.flush()
+
+    # Override auth dependency
+    async def override_get_current_user():
+        return test_user
+
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_user_dependency] = override_get_current_user
+
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as ac:
         yield ac
+
+    # Clear overrides
+    app.dependency_overrides.clear()

@@ -40,18 +40,14 @@ export default function AddTemplateToProjectModal({ template, onClose }) {
 
     setAdding(true);
     try {
-      // Create document from template
+      // Create document(s) from template including all children
       const response = await axios.post(
-        `/api/v1/projects/${selectedProjectId}/documents/`,
-        {
-          name: template.name,
-          type: template.type,
-          content: template.content,
-        },
+        `/api/v1/projects/${selectedProjectId}/documents/from-template/${template.id}`,
+        {},
         { withCredentials: true }
       );
 
-      toast.success('Template added to project!');
+      toast.success('Template added to project with all children!');
       onClose();
 
       // Redirect to the newly created document
@@ -73,7 +69,7 @@ export default function AddTemplateToProjectModal({ template, onClose }) {
           <div>
             <h2 className="text-xl font-bold text-gray-900">Add to Project</h2>
             <p className="mt-1 text-sm text-gray-600">
-              Add "{template.name}" as a document to a project
+              Add "{template.name}" and all its children as documents to a project
             </p>
           </div>
         </div>

@@ -7,6 +7,7 @@ export default function CreateTemplateModal({ document, teamName, onClose, onSuc
   const [templateName, setTemplateName] = useState(document.name);
   const [categoryName, setCategoryName] = useState('');
   const [visibility, setVisibility] = useState('team');
+  const [includeChildren, setIncludeChildren] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
@@ -34,7 +35,7 @@ export default function CreateTemplateModal({ document, teamName, onClose, onSuc
 
     setIsCreating(true);
     try {
-      await onSuccess(document.id, templateName.trim(), categoryName.trim(), visibility);
+      await onSuccess(document.id, templateName.trim(), categoryName.trim(), visibility, includeChildren);
       onClose();
     } catch (error) {
       console.error('Failed to create template:', error);
@@ -135,6 +136,22 @@ export default function CreateTemplateModal({ document, teamName, onClose, onSuc
                 <span className="ml-2 text-sm text-gray-700">Public</span>
               </label>
             </div>
+          </div>
+          <div className="mb-4">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeChildren}
+                onChange={(e) => setIncludeChildren(e.target.checked)}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="ml-2 text-sm text-gray-700">
+                Include child documents
+              </span>
+            </label>
+            <p className="mt-1 ml-6 text-xs text-gray-500">
+              When checked, all child documents will also be saved as templates
+            </p>
           </div>
           <div className="flex gap-2 justify-end">
             <button

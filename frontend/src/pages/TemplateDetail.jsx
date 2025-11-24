@@ -4,7 +4,8 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Trash2, FolderPlus } from 'lucide-react';
 
-import MainLayout from '@/components/layout/MainLayout';
+import { SidebarProvider } from "@/components/ui/sidebar";
+import TemplateDetailSidebar from '@/components/library/TemplateDetailSidebar';
 import MarkdownEditor from '@/components/editors/MarkdownEditor';
 import ExcalidrawEditor from '@/components/editors/ExcalidrawEditor';
 import { useAuth } from '@/contexts/AuthContext';
@@ -33,16 +34,17 @@ export default function TemplateDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [template, setTemplate] = useState(null);
+  const [allTemplates, setAllTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showAddToProjectModal, setShowAddToProjectModal] = useState(false);
   const excalidrawRef = useRef(null);
 
   useEffect(() => {
-    fetchTemplate();
+    fetchTemplateData();
   }, [templateId]);
 
-  const fetchTemplate = async () => {
+  const fetchTemplateData = async () => {
     try {
       const response = await axios.get(`/api/v1/library/templates/${templateId}`, {
         withCredentials: true,
@@ -60,6 +62,9 @@ export default function TemplateDetail() {
 
       console.log('Template loaded:', templateData);
       setTemplate(templateData);
+
+      // Find root template to fetch the whole hierarchy
+      await fetchTemplateHierarchy(templateData);
     } catch (error) {
       console.error('Failed to fetch template:', error);
       if (error.response?.status === 404 || error.response?.status === 403) {
@@ -68,6 +73,59 @@ export default function TemplateDetail() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchTemplateHierarchy = async (currentTemplate) => {
+    try {
+      // Find the root template ID
+      let rootTemplateId = currentTemplate.id;
+      let checkTemplate = currentTemplate;
+
+      // Walk up the parent chain to find root
+      while (checkTemplate.parent_id) {
+        const parentResponse = await axios.get(`/api/v1/library/templates/${checkTemplate.parent_id}`, {
+          withCredentials: true,
+        });
+        checkTemplate = parentResponse.data;
+        rootTemplateId = checkTemplate.id;
+      }
+
+      // Fetch all templates (including children) from the same category
+      const templatesResponse = await axios.get('/api/v1/library/templates/', {
+        params: {
+          category_name: currentTemplate.category_name,
+          only_root: false  // Get all templates including children
+        },
+        withCredentials: true,
+      });
+
+      // Filter to get only templates in this hierarchy (starting from root)
+      const hierarchyTemplates = filterTemplateHierarchy(templatesResponse.data, rootTemplateId);
+      setAllTemplates(hierarchyTemplates);
+    } catch (error) {
+      console.error('Failed to fetch template hierarchy:', error);
+    }
+  };
+
+  const filterTemplateHierarchy = (templates, rootId) => {
+    const result = [];
+    const visited = new Set();
+
+    const addTemplateAndChildren = (templateId) => {
+      if (visited.has(templateId)) return;
+      visited.add(templateId);
+
+      const tmpl = templates.find(t => t.id === templateId);
+      if (tmpl) {
+        result.push(tmpl);
+        // Find and add all children
+        const children = templates.filter(t => t.parent_id === templateId);
+        children.forEach(child => addTemplateAndChildren(child.id));
+      }
+    };
+
+    addTemplateAndChildren(rootId);
+    return result;
   };
 
   const handleDelete = async () => {
@@ -94,26 +152,22 @@ export default function TemplateDetail() {
 
   if (loading) {
     return (
-      <MainLayout activeTab="library">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-gray-600">Loading template...</p>
-          </div>
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Loading template...</p>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
   if (!template) {
     return (
-      <MainLayout activeTab="library">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <p className="text-gray-600">Template not found</p>
-          </div>
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="text-gray-600">Template not found</p>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
@@ -122,72 +176,79 @@ export default function TemplateDetail() {
   const canDelete = isTeamMember;
 
   return (
-    <MainLayout activeTab="library">
-      <div className="flex flex-col" style={{ height: 'calc(100vh - 8rem)' }}>
-        {/* Header */}
-        <div className="border-b px-6 py-4 flex-shrink-0">
-          <div className="flex items-center justify-between mb-3">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/library/categories">Library</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                {template.category_name && (
-                  <>
-                    <BreadcrumbItem>
-                      <BreadcrumbLink href={`/library/categories/${template.category_id || ''}`}>
-                        {template.category_name}
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator />
-                  </>
-                )}
-                <BreadcrumbItem>
-                  <BreadcrumbPage>{template.name}</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
+    <>
+      <SidebarProvider>
+        <TemplateDetailSidebar
+          template={template}
+          templates={allTemplates}
+          activeTemplateId={template.id}
+        />
+        <div className="h-screen w-full pl-4 relative flex flex-col">
+          {/* Header */}
+          <div className="border-b px-6 py-4 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <Breadcrumb>
+                <BreadcrumbList>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink href="/library/categories">Library</BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  {template.category_name && (
+                    <>
+                      <BreadcrumbItem>
+                        <BreadcrumbLink href={`/library/categories/${template.category_id || ''}`}>
+                          {template.category_name}
+                        </BreadcrumbLink>
+                      </BreadcrumbItem>
+                      <BreadcrumbSeparator />
+                    </>
+                  )}
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>{template.name}</BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowAddToProjectModal(true)}
-                className="p-2 hover:bg-blue-100 rounded-md transition-colors"
-                title="Add to project"
-              >
-                <FolderPlus className="w-5 h-5 text-blue-600" />
-              </button>
-              {canDelete && (
+              <div className="flex gap-2">
                 <button
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="p-2 hover:bg-red-100 rounded-md transition-colors"
-                  title="Delete template"
+                  onClick={() => setShowAddToProjectModal(true)}
+                  className="p-2 hover:bg-blue-100 rounded-md transition-colors"
+                  title="Add to project"
                 >
-                  <Trash2 className="w-5 h-5 text-red-600" />
+                  <FolderPlus className="w-5 h-5 text-blue-600" />
                 </button>
-              )}
+                {canDelete && (
+                  <button
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="p-2 hover:bg-red-100 rounded-md transition-colors"
+                    title="Delete template"
+                  >
+                    <Trash2 className="w-5 h-5 text-red-600" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-auto">
-          {template.type === 'markdown' ? (
-            <MarkdownEditor
-              markdown={template.content?.markdown || ''}
-              onChange={() => {}}
-              readOnly={true}
-            />
-          ) : (
-            <ExcalidrawEditor
-              initialData={excalidrawInitialData}
-              onChange={() => {}}
-              readOnly={true}
-              excalidrawRef={excalidrawRef}
-            />
-          )}
+          {/* Content */}
+          <div className="flex-1 overflow-auto">
+            {template.type === 'markdown' ? (
+              <MarkdownEditor
+                markdown={template.content?.markdown || ''}
+                onChange={() => {}}
+                readOnly={true}
+              />
+            ) : (
+              <ExcalidrawEditor
+                initialData={excalidrawInitialData}
+                onChange={() => {}}
+                readOnly={true}
+                excalidrawRef={excalidrawRef}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      </SidebarProvider>
 
       {showAddToProjectModal && (
         <AddTemplateToProjectModal
@@ -218,6 +279,6 @@ export default function TemplateDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </MainLayout>
+    </>
   );
 }

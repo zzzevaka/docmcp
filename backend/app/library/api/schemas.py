@@ -38,6 +38,8 @@ class TemplateSchema(BaseModel):
     type: TemplateType
     visibility: TemplateVisibility
     content: dict | str  # JSON content or string
+    parent_id: UUID | None
+    order: int
     created_at: datetime
     updated_at: datetime
 
@@ -60,6 +62,8 @@ class TemplateSchema(BaseModel):
                 "type": data.type,
                 "visibility": data.visibility,
                 "content": data.content,
+                "parent_id": data.parent_id,
+                "order": data.order,
                 "created_at": data.created_at,
                 "updated_at": data.updated_at,
             }
@@ -76,6 +80,7 @@ class TemplateCreateSchema(BaseModel):
     name: str
     category_name: str
     visibility: TemplateVisibility = TemplateVisibility.TEAM
+    include_children: bool = False
 
 
 class TemplateListSchema(BaseModel):
@@ -89,6 +94,8 @@ class TemplateListSchema(BaseModel):
     category_name: str | None = None
     type: TemplateType
     visibility: TemplateVisibility
+    parent_id: UUID | None
+    order: int
     created_at: datetime
     updated_at: datetime
 
@@ -110,6 +117,8 @@ class TemplateListSchema(BaseModel):
                 "category_name": data.category.name,
                 "type": data.type,
                 "visibility": data.visibility,
+                "parent_id": data.parent_id,
+                "order": data.order,
                 "created_at": data.created_at,
                 "updated_at": data.updated_at,
             }

@@ -89,9 +89,26 @@ class TemplateRepository:
             .options(
                 selectinload(Template.team).selectinload(Team.members),
                 selectinload(Template.category),
+                selectinload(Template.children),
             )
         )
         return result.scalar_one_or_none()
+
+    async def get_with_hierarchy(self, id_: UUID) -> Template | None:
+        """Get template by ID with full hierarchy of children loaded."""
+        template = await self.get(id_)
+        if template:
+            await self._load_children_recursive(template)
+        return template
+
+    async def _load_children_recursive(self, template: Template) -> None:
+        """Recursively load all children for a template."""
+        # Force load children if not already loaded
+        await self.db.refresh(template, ["children"])
+
+        # Recursively load children's children
+        for child in template.children:
+            await self._load_children_recursive(child)
 
     async def find_by_filter(self, filter_: TemplateFilter) -> Iterable[Template]:
         """Find templates by filter."""
@@ -119,6 +136,7 @@ class TemplateRepository:
         user_team_ids: list[UUID],
         category_id: UUID | None = None,
         include_content: bool = True,
+        only_root: bool = True,
     ) -> Iterable[Template]:
         """Find templates visible to a specific user based on visibility rules.
 
@@ -126,6 +144,9 @@ class TemplateRepository:
         1. Public (visible to everyone)
         2. Team visibility and user is in the team
         3. Private and user is the creator
+
+        Args:
+            only_root: If True, only return root templates (parent_id is null)
         """
         query = select(Template)
 
@@ -145,6 +166,10 @@ class TemplateRepository:
         ]
 
         query = query.where(or_(*visibility_conditions))
+
+        # Filter only root templates (without parent)
+        if only_root:
+            query = query.where(Template.parent_id.is_(None))
 
         # Apply category filter if provided
         if category_id:

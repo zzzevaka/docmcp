@@ -59,6 +59,7 @@ build/
 # Testing
 .coverage
 htmlcov/
+coverage.json
 .pytest_cache/
 
 # Alembic
