@@ -2,10 +2,9 @@
 
 import json
 from uuid import uuid4
-from httpx import ASGITransport
 
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 

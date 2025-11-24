@@ -12,7 +12,7 @@ from app.library.api.schemas import (
     TemplateUpdateSchema,
 )
 from app.library.models import Template, TemplateType, TemplateVisibility
-from app.library.repositories import CategoryRepository, TemplateFilter, TemplateRepository
+from app.library.repositories import CategoryRepository, TemplateRepository
 from app.projects.repositories import DocumentRepository
 from app.users.api.user_routes import get_current_user_dependency
 

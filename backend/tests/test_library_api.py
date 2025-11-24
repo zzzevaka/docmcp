@@ -2,9 +2,8 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.library.models import Category, Template, TemplateType, TemplateVisibility
-from app.users.models import Team, User
-
 from app.library.repositories import TemplateRepository
+from app.users.models import Team, User
 
 
 @pytest.fixture
@@ -286,8 +285,8 @@ async def test_list_templates_excludes_content_when_requested(
         # it should be deferred and not present in the loaded attributes
         # This is a simplified check - in real scenario, SQLAlchemy's
         # inspection would be used to verify deferred attributes
-        assert hasattr(template, 'name')
-        assert hasattr(template, 'visibility')
+        assert hasattr(template, "name")
+        assert hasattr(template, "visibility")
 
 
 @pytest.mark.asyncio
