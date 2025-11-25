@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -9,6 +9,22 @@ from app.config import settings
 from app.library.api import category_routes, template_routes
 from app.projects.api import document_routes, mcp_routes, project_routes
 from app.users.api import auth_routes, invitation_routes, team_routes, user_routes
+
+
+class CachedStaticFiles(StaticFiles):
+    """StaticFiles with cache control headers."""
+
+    async def __call__(self, scope, receive, send):
+        """Add cache headers to static files."""
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start":
+                headers = dict(message.get("headers", []))
+                # Cache static assets for 1 year (they have content hashes)
+                headers[b"cache-control"] = b"public, max-age=31536000, immutable"
+                message["headers"] = list(headers.items())
+            await send(message)
+
+        await super().__call__(scope, receive, send_wrapper)
 
 app = FastAPI(
     title="DocMCP API",
@@ -55,7 +71,8 @@ async def api_root() -> dict[str, str]:
 # Check if static files directory exists (for production)
 static_dir = Path(__file__).parent.parent / "static"
 if static_dir.exists():
-    app.mount("/assets", StaticFiles(directory=str(static_dir / "assets")), name="assets")
+    # Mount assets with long-term caching (files have content hashes)
+    app.mount("/assets", CachedStaticFiles(directory=str(static_dir / "assets")), name="assets")
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
@@ -69,9 +86,17 @@ if static_dir.exists():
         if file_path.is_file():
             return FileResponse(file_path)
 
-        # Otherwise serve index.html for SPA routing
+        # Otherwise serve index.html for SPA routing with no-cache
+        # (so users always get the latest version with updated asset references)
         index_path = static_dir / "index.html"
         if index_path.exists():
-            return FileResponse(index_path)
+            return FileResponse(
+                index_path,
+                headers={
+                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    "Pragma": "no-cache",
+                    "Expires": "0",
+                },
+            )
 
         return {"detail": "Not Found"}
