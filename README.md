@@ -66,7 +66,7 @@ Access at:
 
 ```bash
 docker build -t docmcp:latest .
-docker run --rm -p 8001:8000 \
+docker run --rm -p 8002:8000 \
   -v docmcp_data:/app/data \
   -e APP_ENV=production \
   -e LOCAL_AUTH_ENABLED=true \

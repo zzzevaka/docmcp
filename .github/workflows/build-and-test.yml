@@ -8,6 +8,21 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -34,3 +49,26 @@ jobs:
       - name: Run tests inside container
         run: |
           docker run --rm docmcp:test sh -c "cd /app && pytest -v --cov=app --cov-report=term-missing"
+
+      - name: Test SQLite migrations
+        env:
+          DATABASE_URL: "sqlite+aiosqlite:///./data/test_migrations.db"
+        run: |
+          docker run --rm \
+            -e DATABASE_URL="$DATABASE_URL" \
+            docmcp:test sh -c "
+              cd /app &&
+              alembic upgrade head
+            "
+
+      - name: Test PostgreSQL migrations
+        env:
+          DATABASE_URL: "postgresql+psycopg://app:app@localhost:5432/app"
+        run: |
+          docker run --rm \
+            --network host \
+            -e DATABASE_URL="$DATABASE_URL" \
+            docmcp:test sh -c "
+              cd /app &&
+              alembic upgrade head
+            "
