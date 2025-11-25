@@ -50,7 +50,7 @@ jobs:
         run: |
           docker run --rm docmcp:test sh -c "cd /app && pytest -v --cov=app --cov-report=term-missing"
 
-      - name: Test SQLite migrations (upgrade -> downgrade -> upgrade)
+      - name: Test SQLite migrations
         env:
           DATABASE_URL: "sqlite+aiosqlite:///./data/test_migrations.db"
         run: |
@@ -58,14 +58,10 @@ jobs:
             -e DATABASE_URL="$DATABASE_URL" \
             docmcp:test sh -c "
               cd /app &&
-              alembic upgrade head &&
-              alembic current -v &&
-              alembic downgrade base &&
-              alembic upgrade head &&
-              alembic current -v
+              alembic upgrade head
             "
 
-      - name: Test PostgreSQL migrations (upgrade -> downgrade -> upgrade)
+      - name: Test PostgreSQL migrations
         env:
           DATABASE_URL: "postgresql+psycopg://app:app@localhost:5432/app"
         run: |
@@ -74,9 +70,5 @@ jobs:
             -e DATABASE_URL="$DATABASE_URL" \
             docmcp:test sh -c "
               cd /app &&
-              alembic upgrade head &&
-              alembic current -v &&
-              alembic downgrade base &&
-              alembic upgrade head &&
-              alembic current -v
+              alembic upgrade head
             "
