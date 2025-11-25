@@ -17,8 +17,10 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Add PRIVATE to templatevisibility enum
-    op.execute("ALTER TYPE templatevisibility ADD VALUE IF NOT EXISTS 'PRIVATE'")
+    # Add PRIVATE to templatevisibility enum (PostgreSQL only)
+    # SQLite doesn't have ALTER TYPE - it handles enum values via CHECK constraints
+    if op.get_bind().dialect.name == "postgresql":
+        op.execute("ALTER TYPE templatevisibility ADD VALUE IF NOT EXISTS 'PRIVATE'")
 
     # Add user_id column to templates
     op.add_column("templates", sa.Column("user_id", sa.UUID(), nullable=True))
