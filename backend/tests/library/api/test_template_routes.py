@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.library.models import Category, Template, TemplateType, TemplateVisibility
 from app.library.repositories import TemplateRepository
 from app.projects.models import Document, DocumentType, Project
-from app.users.models import Team, User
+from app.users.models import Team, TeamMember, TeamRole, User
 
 
 @pytest.fixture
@@ -24,9 +24,9 @@ async def setup_test_data(db_session: AsyncSession):
     user3 = User(username="user3", email="user3@example.com")
 
     # Assign users to teams
-    user1.teams = [team1]  # user1 is in team1
-    user2.teams = [team2]  # user2 is in team2
-    user3.teams = []  # user3 is not in any team
+    user1.team_membership = [team1]  # user1 is in team1
+    user2.team_membership = [team2]  # user2 is in team2
+    user3.team_membership = []  # user3 is not in any team
 
     db_session.add(user1)
     db_session.add(user2)
@@ -218,9 +218,7 @@ async def test_list_templates_user_not_in_any_team_sees_only_public(
 
 
 @pytest.mark.asyncio
-async def test_list_templates_filters_by_category(
-    db_session: AsyncSession, setup_test_data
-):
+async def test_list_templates_filters_by_category(db_session: AsyncSession, setup_test_data):
     """Test that templates can be filtered by category."""
     data = setup_test_data
     user1 = data["users"]["user1"]
@@ -292,9 +290,7 @@ async def test_list_templates_excludes_content_when_requested(
 
 
 @pytest.mark.asyncio
-async def test_private_template_visible_only_to_creator(
-    db_session: AsyncSession, setup_test_data
-):
+async def test_private_template_visible_only_to_creator(db_session: AsyncSession, setup_test_data):
     """Test that private templates are visible only to their creator."""
     data = setup_test_data
     user1 = data["users"]["user1"]
@@ -326,16 +322,14 @@ async def test_private_template_visible_only_to_creator(
 
 
 @pytest.mark.asyncio
-async def test_team_template_visible_to_all_team_members(
-    db_session: AsyncSession, setup_test_data
-):
+async def test_team_template_visible_to_all_team_members(db_session: AsyncSession, setup_test_data):
     """Test that team templates are visible to all members of that team."""
     data = setup_test_data
 
     # Add another user to team1
     user4 = User(username="user4", email="user4@example.com")
     team1 = data["teams"]["team1"]
-    user4.teams = [team1]
+    user4.team_membership = [team1]
     db_session.add(user4)
     await db_session.commit()
 
@@ -364,6 +358,7 @@ async def setup_api_test_data(db_session: AsyncSession):
     """Create test data for API integration tests."""
     # Get the test user created by the client fixture
     from sqlalchemy import select
+
     result = await db_session.execute(select(User).where(User.username == "testuser"))
     user = result.scalar_one()
 
@@ -373,7 +368,9 @@ async def setup_api_test_data(db_session: AsyncSession):
     await db_session.flush()
 
     # Add user to team
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     # Create project
@@ -511,11 +508,19 @@ async def test_create_template_with_children_via_api(
     templates = templates_response.json()
 
     # Filter templates for this test
-    api_templates = [t for t in templates if "API Template With Children" in t["name"] or "API Child" in t["name"] or "API Grandchild" in t["name"]]
+    api_templates = [
+        t
+        for t in templates
+        if "API Template With Children" in t["name"]
+        or "API Child" in t["name"]
+        or "API Grandchild" in t["name"]
+    ]
     assert len(api_templates) == 4
 
     # Verify parent-child relationships
-    root_template = next((t for t in api_templates if t["name"] == "API Template With Children"), None)
+    root_template = next(
+        (t for t in api_templates if t["name"] == "API Template With Children"), None
+    )
     assert root_template is not None
     assert root_template["parent_id"] is None
 
@@ -581,7 +586,10 @@ async def test_add_template_to_project_via_api(
     assert len(final_docs) == initial_count + 4
 
     # Verify the new documents have correct hierarchy
-    new_root = next((d for d in final_docs if d["name"] == "Template For Project" and d["parent_id"] is None), None)
+    new_root = next(
+        (d for d in final_docs if d["name"] == "Template For Project" and d["parent_id"] is None),
+        None,
+    )
     assert new_root is not None
 
     new_children = [d for d in final_docs if d["parent_id"] == new_root["id"]]

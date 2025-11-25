@@ -6,7 +6,7 @@ import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.users.models import AuthProvider, Session, Team, User
+from app.users.models import AuthProvider, Session, Team, TeamMember, TeamRole, User
 from app.users.repositories import SessionRepository, TeamRepository, UserFilter, UserRepository
 from app.users.utils.password import hash_password, verify_password
 
@@ -23,9 +23,7 @@ class AuthService:
         self.session_repo = SessionRepository(db_session)
         self.team_repo = TeamRepository(db_session)
 
-    async def exchange_google_code(
-        self, code: str, redirect_uri: str
-    ) -> Dict[str, Any]:
+    async def exchange_google_code(self, code: str, redirect_uri: str) -> Dict[str, Any]:
         """Exchange Google authorization code for access token."""
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -53,20 +51,20 @@ class AuthService:
 
     async def _create_default_team(self, user: User) -> Team:
         """Create a default team for a new user."""
-        # Refresh user with teams relationship loaded
-        await self.db.refresh(user, attribute_names=["teams"])
+        # Refresh user with team_memberships relationship loaded
+        await self.db.refresh(user, attribute_names=["team_memberships"])
 
         team = Team(name=user.email)
         team = await self.team_repo.create(team)
+        await self.db.flush()
 
-        # Add user to the team
-        user.teams.append(team)
+        # Add user to the team as administrator
+        team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.ADMINISTRATOR)
+        self.db.add(team_member)
         await self.db.flush()
         return team
 
-    async def get_or_create_user(
-        self, email: str, username: str | None = None
-    ) -> User:
+    async def get_or_create_user(self, email: str, username: str | None = None) -> User:
         """Get existing user by email or create a new one."""
         user = await self.user_repo.get_by_email(email)
         if not user:
@@ -75,9 +73,7 @@ class AuthService:
                 username = email.split("@")[0]
 
             # Ensure username is unique
-            existing_users = await self.user_repo.find_by_filter(
-                UserFilter(username=username)
-            )
+            existing_users = await self.user_repo.find_by_filter(UserFilter(username=username))
             if existing_users:
                 # Append random suffix to make it unique
                 username = f"{username}_{secrets.token_hex(4)}"
@@ -115,9 +111,7 @@ class AuthService:
 
         # Use email as username (ensure uniqueness with suffix if needed)
         username = email
-        existing_users = await self.user_repo.find_by_filter(
-            UserFilter(username=username)
-        )
+        existing_users = await self.user_repo.find_by_filter(UserFilter(username=username))
         if existing_users:
             # Append random suffix to make it unique
             username = f"{email}_{secrets.token_hex(4)}"
@@ -145,9 +139,7 @@ class AuthService:
             raise ValueError("Invalid email or password")
 
         if user.auth_provider != AuthProvider.LOCAL:
-            raise ValueError(
-                f"This account uses {user.auth_provider.value} authentication"
-            )
+            raise ValueError(f"This account uses {user.auth_provider.value} authentication")
 
         if not user.password_hash:
             raise ValueError("Invalid email or password")

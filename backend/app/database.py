@@ -30,9 +30,8 @@ def utc_now() -> datetime:
     """Get current UTC time."""
     return dt.now(timezone.utc)
 
-created_at = Annotated[
-    datetime, mapped_column(DateTime(timezone=True), default=utc_now)
-]
+
+created_at = Annotated[datetime, mapped_column(DateTime(timezone=True), default=utc_now)]
 updated_at = Annotated[
     datetime,
     mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now),

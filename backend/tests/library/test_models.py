@@ -18,7 +18,7 @@ async def setup_hierarchy_test_data(db_session: AsyncSession):
 
     # Create user
     user = User(username="testuser", email="test@example.com")
-    user.teams = [team]
+    user.team_membership = [team]
     db_session.add(user)
     await db_session.flush()
 
@@ -93,9 +93,7 @@ async def setup_hierarchy_test_data(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_create_template_hierarchy(
-    db_session: AsyncSession, setup_hierarchy_test_data
-):
+async def test_create_template_hierarchy(db_session: AsyncSession, setup_hierarchy_test_data):
     """Test creating templates with parent-child relationships."""
     data = setup_hierarchy_test_data
     category = data["category"]
@@ -212,9 +210,7 @@ async def test_template_children_cascade_delete(
 
 
 @pytest.mark.asyncio
-async def test_template_order_preserved(
-    db_session: AsyncSession, setup_hierarchy_test_data
-):
+async def test_template_order_preserved(db_session: AsyncSession, setup_hierarchy_test_data):
     """Test that template order is preserved."""
     data = setup_hierarchy_test_data
     category = data["category"]

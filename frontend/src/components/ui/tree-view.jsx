@@ -280,10 +280,6 @@ const TreeNode = ({
                             dropZone === 'on' && dragOverVariants(),
                             item.className
                         )}
-                        onClick={() => {
-                            handleSelectChange(item)
-                            item.onClick?.()
-                        }}
                         draggable={!!item.draggable}
                         onDragStart={onDragStart}
                         onDragOver={onDragOver}
@@ -300,12 +296,21 @@ const TreeNode = ({
                         })
                     ) : (
                         <>
-                            <TreeIcon
-                                item={item}
-                                isSelected={isSelected}
-                                isOpen={isOpen}
-                                default={defaultNodeIcon} />
-                            <span className="text-sm truncate">{item.name}</span>
+                            <div
+                                className="flex items-center flex-1 min-w-0"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleSelectChange(item)
+                                    item.onClick?.()
+                                }}
+                            >
+                                <TreeIcon
+                                    item={item}
+                                    isSelected={isSelected}
+                                    isOpen={isOpen}
+                                    default={defaultNodeIcon} />
+                                <span className="text-sm truncate">{item.name}</span>
+                            </div>
                             <TreeActions isSelected={isSelected}>
                                 {item.actions}
                             </TreeActions>

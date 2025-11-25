@@ -1,4 +1,5 @@
 """Password hashing utilities."""
+
 import bcrypt
 
 

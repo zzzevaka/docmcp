@@ -22,9 +22,7 @@ class Project(Base):
     __tablename__ = "projects"
 
     name: Mapped[str] = mapped_column(String(64), index=True)
-    team_id: Mapped[UUID_TYPE] = mapped_column(
-        SQLUUID, ForeignKey("teams.id"), index=True
-    )
+    team_id: Mapped[UUID_TYPE] = mapped_column(SQLUUID, ForeignKey("teams.id"), index=True)
 
     # Relationships
     team: Mapped["Team"] = relationship(back_populates="projects", lazy="selectin")  # noqa: F821
@@ -42,9 +40,7 @@ class Document(Base):
     __tablename__ = "documents"
 
     name: Mapped[str] = mapped_column(String(128), index=True)
-    project_id: Mapped[UUID_TYPE] = mapped_column(
-        SQLUUID, ForeignKey("projects.id"), index=True
-    )
+    project_id: Mapped[UUID_TYPE] = mapped_column(SQLUUID, ForeignKey("projects.id"), index=True)
     type: Mapped[DocumentType] = mapped_column(Enum(DocumentType), index=True)
     content: Mapped[dict] = mapped_column(Text)  # JSON stored as text
     parent_id: Mapped[Optional[UUID_TYPE]] = mapped_column(

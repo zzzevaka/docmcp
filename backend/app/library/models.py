@@ -49,15 +49,9 @@ class Template(Base):
     __tablename__ = "templates"
 
     name: Mapped[str] = mapped_column(String(128), index=True)
-    team_id: Mapped[UUID_TYPE] = mapped_column(
-        SQLUUID, ForeignKey("teams.id"), index=True
-    )
-    user_id: Mapped[UUID_TYPE] = mapped_column(
-        SQLUUID, ForeignKey("users.id"), index=True
-    )
-    category_id: Mapped[UUID_TYPE] = mapped_column(
-        SQLUUID, ForeignKey("categories.id"), index=True
-    )
+    team_id: Mapped[UUID_TYPE] = mapped_column(SQLUUID, ForeignKey("teams.id"), index=True)
+    user_id: Mapped[UUID_TYPE] = mapped_column(SQLUUID, ForeignKey("users.id"), index=True)
+    category_id: Mapped[UUID_TYPE] = mapped_column(SQLUUID, ForeignKey("categories.id"), index=True)
     type: Mapped[TemplateType] = mapped_column(Enum(TemplateType), index=True)
     visibility: Mapped[TemplateVisibility] = mapped_column(
         Enum(TemplateVisibility), default=TemplateVisibility.TEAM, index=True

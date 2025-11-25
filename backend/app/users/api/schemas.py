@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr
 
+from app.users.models import TeamRole
+
 
 class UserBasicSchema(BaseModel):
     """Basic user schema without teams."""
@@ -13,6 +15,7 @@ class UserBasicSchema(BaseModel):
     email: EmailStr
     created_at: datetime
     updated_at: datetime
+    role: TeamRole | None = None  # Role in the context of a specific team
 
     model_config = {"from_attributes": True}
 

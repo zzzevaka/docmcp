@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.users.models import InvitationStatus, Session, Team, TeamInvitation, User
+from app.users.models import InvitationStatus, Session, Team, TeamInvitation, TeamMember, User
 
 ModelT = TypeVar("ModelT")
 
@@ -44,13 +44,17 @@ class UserRepository:
     async def get(self, id_: UUID) -> User | None:
         """Get user by ID."""
         result = await self.db.execute(
-            select(User).where(User.id == id_).options(selectinload(User.teams))
+            select(User)
+            .where(User.id == id_)
+            .options(selectinload(User.team_memberships).selectinload(TeamMember.team))
         )
         return result.scalar_one_or_none()
 
     async def find_by_filter(self, filter_: UserFilter) -> Iterable[User]:
         """Find users by filter."""
-        query = select(User).options(selectinload(User.teams))
+        query = select(User).options(
+            selectinload(User.team_memberships).selectinload(TeamMember.team)
+        )
 
         if filter_.email:
             query = query.where(User.email == filter_.email)
@@ -88,17 +92,21 @@ class TeamRepository:
     async def get(self, id_: UUID) -> Team | None:
         """Get team by ID."""
         result = await self.db.execute(
-            select(Team).where(Team.id == id_).options(selectinload(Team.members))
+            select(Team)
+            .where(Team.id == id_)
+            .options(selectinload(Team.team_memberships).selectinload(TeamMember.user))
         )
         return result.scalar_one_or_none()
 
     async def find_by_filter(self, filter_: TeamFilter) -> Iterable[Team]:
         """Find teams by filter."""
-        query = select(Team).options(selectinload(Team.members))
+        query = select(Team).options(
+            selectinload(Team.team_memberships).selectinload(TeamMember.user)
+        )
 
         if filter_.user_id:
             # Filter teams where user is a member
-            query = query.join(Team.members).where(User.id == filter_.user_id)
+            query = query.join(Team.team_memberships).where(TeamMember.user_id == filter_.user_id)
 
         result = await self.db.execute(query)
         return result.scalars().unique().all()
@@ -106,7 +114,7 @@ class TeamRepository:
     async def list_all(self) -> Iterable[Team]:
         """List all teams."""
         result = await self.db.execute(
-            select(Team).options(selectinload(Team.members))
+            select(Team).options(selectinload(Team.team_memberships).selectinload(TeamMember.user))
         )
         return result.scalars().all()
 
@@ -141,7 +149,11 @@ class SessionRepository:
         result = await self.db.execute(
             select(Session)
             .where(Session.session_token == token)
-            .options(selectinload(Session.user).selectinload(User.teams))
+            .options(
+                selectinload(Session.user)
+                .selectinload(User.team_memberships)
+                .selectinload(TeamMember.team)
+            )
         )
         return result.scalar_one_or_none()
 
@@ -161,9 +173,7 @@ class SessionRepository:
 
     async def delete_by_token(self, token: str) -> None:
         """Delete a session by token."""
-        result = await self.db.execute(
-            select(Session).where(Session.session_token == token)
-        )
+        result = await self.db.execute(select(Session).where(Session.session_token == token))
         session = result.scalar_one_or_none()
         if session:
             await self.db.delete(session)
@@ -185,9 +195,7 @@ class TeamInvitationRepository:
         )
         return result.scalar_one_or_none()
 
-    async def find_by_filter(
-        self, filter_: TeamInvitationFilter
-    ) -> Iterable[TeamInvitation]:
+    async def find_by_filter(self, filter_: TeamInvitationFilter) -> Iterable[TeamInvitation]:
         """Find team invitations by filter."""
         query = select(TeamInvitation).options(
             selectinload(TeamInvitation.team),
