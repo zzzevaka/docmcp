@@ -307,31 +307,31 @@ function DocumentEditor() {
 
         {/* Create Document Modal */}
         {showCreateModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-background rounded-lg p-6 w-full max-w-md border shadow-lg">
-              <h2 className="text-2xl font-bold mb-4">Create New Document</h2>
+          <div className="fixed inset-0 bg-black/50 dark:bg-black/80 flex items-center justify-center z-50">
+            <div className="bg-background border border-border rounded-lg p-6 w-full max-w-md shadow-lg">
+              <h2 className="text-2xl font-bold mb-4 text-foreground">Create New Document</h2>
               <form onSubmit={handleCreateDocument}>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Document Name
                   </label>
                   <input
                     type="text"
                     value={newDocName}
                     onChange={(e) => setNewDocName(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                     placeholder="Enter document name"
                     autoFocus
                   />
                 </div>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Document Type
                   </label>
                   <select
                     value={newDocType}
                     onChange={(e) => setNewDocType(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <option value="markdown">Markdown</option>
                     <option value="whiteboard">Whiteboard</option>

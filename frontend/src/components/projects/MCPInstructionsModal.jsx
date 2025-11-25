@@ -49,15 +49,15 @@ export default function MCPInstructionsModal({ project, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[80vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/80 flex items-center justify-center z-50 p-4">
+      <div className="bg-background border border-border rounded-lg w-full max-w-2xl max-h-[80vh] flex flex-col shadow-lg">
         {/* Header - fixed */}
-        <div className="p-6 pb-4 border-b flex-shrink-0">
-          <h2 className="text-xl font-bold mb-4">Connect MCP</h2>
+        <div className="p-6 pb-4 border-b border-border flex-shrink-0">
+          <h2 className="text-xl font-bold mb-4 text-foreground">Connect MCP</h2>
 
           {/* System selector */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Select your AI coding assistant:
             </label>
             <select
@@ -66,7 +66,7 @@ export default function MCPInstructionsModal({ project, onClose }) {
                 setSelectedSystem(e.target.value);
                 setCopied(false);
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="claudeCode">Claude Code</option>
               <option value="cursor">Cursor</option>
@@ -76,30 +76,30 @@ export default function MCPInstructionsModal({ project, onClose }) {
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto p-6">
-          <div className="space-y-4 text-gray-700">
+          <div className="space-y-4 text-foreground">
             <p className="text-sm">
               {instructions.description}
             </p>
 
             {instructions.note && (
-              <p className="text-sm bg-blue-50 border border-blue-200 rounded-md p-3 text-blue-800">
+              <p className="text-sm bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-3 text-blue-800 dark:text-blue-300">
                 <strong>Note:</strong> {instructions.note}
               </p>
             )}
 
-            <div className="bg-gray-50 rounded-lg p-4 relative">
-              <code className="text-sm font-mono break-all block pr-12 whitespace-pre-wrap">
+            <div className="bg-muted rounded-lg p-4 relative">
+              <code className="text-sm font-mono break-all block pr-12 whitespace-pre-wrap text-foreground">
                 {instructions.content}
               </code>
               <button
                 onClick={handleCopy}
-                className="absolute top-4 right-4 p-2 rounded-md hover:bg-gray-200 transition-colors"
+                className="absolute top-4 right-4 p-2 rounded-md hover:bg-accent transition-colors"
                 title="Copy to clipboard"
               >
                 {copied ? (
-                  <Check className="w-4 h-4 text-green-600" />
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
                 ) : (
-                  <Copy className="w-4 h-4 text-gray-600" />
+                  <Copy className="w-4 h-4 text-muted-foreground" />
                 )}
               </button>
             </div>
@@ -107,19 +107,19 @@ export default function MCPInstructionsModal({ project, onClose }) {
             <div className="space-y-2 text-sm">
               <p className="font-medium">Available tools:</p>
               <ul className="list-disc list-inside space-y-1 ml-2">
-                <li><code className="text-xs bg-gray-100 px-1 rounded">list_documents</code> - List all documents with their hierarchy</li>
-                <li><code className="text-xs bg-gray-100 px-1 rounded">search_documents</code> - Search documents by name or content</li>
-                <li><code className="text-xs bg-gray-100 px-1 rounded">get_document</code> - Get the full content of a specific document</li>
+                <li><code className="text-xs bg-muted px-1 rounded">list_documents</code> - List all documents with their hierarchy</li>
+                <li><code className="text-xs bg-muted px-1 rounded">search_documents</code> - Search documents by name or content</li>
+                <li><code className="text-xs bg-muted px-1 rounded">get_document</code> - Get the full content of a specific document</li>
               </ul>
             </div>
           </div>
         </div>
 
         {/* Footer - fixed */}
-        <div className="p-6 pt-4 border-t flex-shrink-0">
+        <div className="p-6 pt-4 border-t border-border flex-shrink-0">
           <button
             onClick={onClose}
-            className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
+            className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
           >
             Close
           </button>

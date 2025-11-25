@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { ThemeProvider } from 'next-themes'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 import Login from './pages/Login'
@@ -13,10 +14,11 @@ import { Toaster } from '@/components/ui/sonner'
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <Toaster />
-        <Routes>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <Router>
+        <AuthProvider>
+          <Toaster />
+          <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route
@@ -94,6 +96,7 @@ function App() {
         </Routes>
       </AuthProvider>
     </Router>
+    </ThemeProvider>
   )
 }
 

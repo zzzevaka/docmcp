@@ -1,12 +1,25 @@
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import { Crepe } from "@milkdown/crepe";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 import "@milkdown/crepe/theme/common/style.css";
 import "@milkdown/crepe/theme/frame.css";
+import "./MarkdownEditor.css";
 
 function MilkdownEditor({ markdown, onChange, readOnly }) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEditor((root) => {
-    const crepe = new Crepe({ root, defaultValue: markdown });
+    const crepe = new Crepe({
+      root,
+      defaultValue: markdown,
+    });
     crepe.setReadonly(readOnly);
 
     crepe.on((listener) => {
@@ -18,7 +31,21 @@ function MilkdownEditor({ markdown, onChange, readOnly }) {
     return crepe;
   });
 
-  return <Milkdown />;
+  if (!mounted) {
+    return <div className="w-full h-full bg-background" />;
+  }
+
+  return (
+    <div
+      className={`w-full h-full ${
+        (resolvedTheme === 'dark')
+          ? 'dark milkdown-theme-dark'
+          : 'milkdown-theme-light'
+      }`}
+    >
+      <Milkdown />
+    </div>
+  );
 }
 
 export default function MarkdownEditor({ markdown, onChange, readOnly }) {

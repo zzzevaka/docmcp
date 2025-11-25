@@ -72,8 +72,8 @@ function Projects() {
       <MainLayout>
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-gray-600">Loading projects...</p>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <p className="mt-4 text-muted-foreground">Loading projects...</p>
           </div>
         </div>
       </MainLayout>
@@ -93,7 +93,7 @@ function Projects() {
           </Breadcrumb>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
             disabled={teams.length === 0}
           >
             Create Project
@@ -101,23 +101,23 @@ function Projects() {
         </div>
 
         {teams.length === 0 ? (
-          <div className="text-center py-12 bg-yellow-50 rounded-lg border border-yellow-200">
-            <p className="text-gray-700 mb-4">
+          <div className="text-center py-12 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+            <p className="text-foreground mb-4">
               You need to create a team first before creating projects
             </p>
             <button
               onClick={() => navigate('/teams')}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
             >
               Go to Teams
             </button>
           </div>
         ) : projects.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-600 mb-4">No projects yet</p>
+            <p className="text-muted-foreground mb-4">No projects yet</p>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
             >
               Create Your First Project
             </button>
@@ -128,12 +128,12 @@ function Projects() {
               <div
                 key={project.id}
                 onClick={() => navigate(`/projects/${project.id}`)}
-                className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer"
+                className="bg-card border border-border p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
               >
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-lg font-semibold text-card-foreground mb-2">
                   {project.name}
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Created {new Date(project.created_at).toLocaleDateString()}
                 </p>
               </div>
@@ -143,31 +143,31 @@ function Projects() {
 
         {/* Create Project Modal */}
         {showCreateModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h2 className="text-2xl font-bold mb-4">Create New Project</h2>
+          <div className="fixed inset-0 bg-black/50 dark:bg-black/80 flex items-center justify-center z-50">
+            <div className="bg-background border border-border rounded-lg p-6 w-full max-w-md shadow-lg">
+              <h2 className="text-2xl font-bold mb-4 text-foreground">Create New Project</h2>
               <form onSubmit={handleCreateProject}>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Project Name
                   </label>
                   <input
                     type="text"
                     value={newProjectName}
                     onChange={(e) => setNewProjectName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                     placeholder="Enter project name"
                     autoFocus
                   />
                 </div>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Team
                   </label>
                   <select
                     value={selectedTeamId}
                     onChange={(e) => setSelectedTeamId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     {teams.map((team) => (
                       <option key={team.id} value={team.id}>
@@ -179,7 +179,7 @@ function Projects() {
                 <div className="flex gap-2 justify-end">
                   <button
                     type="button"
-                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                    className="px-4 py-2 text-foreground bg-muted rounded-md hover:bg-accent"
                     onClick={() => {
                       setShowCreateModal(false)
                       setNewProjectName('')
@@ -189,7 +189,7 @@ function Projects() {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
                   >
                     Create
                   </button>

@@ -1,5 +1,6 @@
 import React, { Suspense, useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { exportToBlob } from "@excalidraw/excalidraw";
+import { useTheme } from "next-themes";
 
 const ExcalidrawLazy = React.lazy(async () => {
   return import("@excalidraw/excalidraw").then((m) => ({ default: m.Excalidraw }));
@@ -66,23 +67,25 @@ const UIOptions = { canvasActions: { export: false, loadScene: false } }
 
 
 export default function ExcalidrawEditor({ initialData, onChange, readOnly, excalidrawRef }) {
-  // Мемоизируем sanitized data чтобы избежать лишних реинициализаций
-  // В режиме read-only добавляем viewModeEnabled в appState
+  const { resolvedTheme } = useTheme();
+
   const clean = useMemo(() => {
     const sanitized = sanitizeInitialData(initialData);
-    if (readOnly) {
-      return {
-        ...sanitized,
-        appState: {
-          ...sanitized.appState,
-          viewModeEnabled: true,
-        }
-      };
-    }
-    return sanitized;
-  }, [initialData, readOnly]);
+    const appState = {
+      ...sanitized.appState,
+      theme: resolvedTheme === 'dark' ? 'dark' : 'light',
+    };
 
-  // Вызываем onChange только когда НЕ в режиме read-only
+    if (readOnly) {
+      appState.viewModeEnabled = true;
+    }
+
+    return {
+      ...sanitized,
+      appState,
+    };
+  }, [initialData, readOnly, resolvedTheme]);
+
   const handleChange = useCallback((elements, appState, files) => {
     if (!readOnly && onChange) {
       onChange({ elements, appState, files });
