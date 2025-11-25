@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.projects.models import Document, DocumentType, Project
-from app.users.models import Team
+from app.users.models import Team, TeamMember
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -37,14 +37,20 @@ class ProjectRepository:
         result = await self.db.execute(
             select(Project)
             .where(Project.id == id_)
-            .options(selectinload(Project.team).selectinload(Team.members))
+            .options(
+                selectinload(Project.team)
+                .selectinload(Team.team_memberships)
+                .selectinload(TeamMember.user)
+            )
         )
         return result.scalar_one_or_none()
 
     async def find_by_filter(self, filter_: ProjectFilter) -> Iterable[Project]:
         """Find projects by filter."""
         query = select(Project).options(
-            selectinload(Project.team).selectinload(Team.members)
+            selectinload(Project.team)
+            .selectinload(Team.team_memberships)
+            .selectinload(TeamMember.user)
         )
 
         if filter_.team_id:

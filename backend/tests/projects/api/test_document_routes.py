@@ -1,4 +1,5 @@
 """Test document routes."""
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -6,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.library.models import Category, Template, TemplateType, TemplateVisibility
 from app.projects.models import Document, DocumentType, Project
-from app.users.models import Team, User
+from app.users.models import Team, TeamMember, TeamRole, User
 
 
 @pytest.mark.asyncio
@@ -16,6 +17,7 @@ async def test_add_template_hierarchy_creates_all_documents(
     """Test that adding a template with children creates all documents in the hierarchy."""
     # Get test user
     from sqlalchemy import select
+
     result = await db_session.execute(select(User).where(User.username == "testuser"))
     user = result.scalar_one()
 
@@ -24,7 +26,9 @@ async def test_add_template_hierarchy_creates_all_documents(
     db_session.add(team)
     await db_session.flush()
 
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     # Create project
@@ -151,6 +155,7 @@ async def test_add_template_without_children_creates_only_root(
     """Test that adding a template without children creates only one document."""
     # Get test user
     from sqlalchemy import select
+
     result = await db_session.execute(select(User).where(User.username == "testuser"))
     user = result.scalar_one()
 
@@ -159,7 +164,9 @@ async def test_add_template_without_children_creates_only_root(
     db_session.add(team)
     await db_session.flush()
 
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     # Create project
@@ -211,7 +218,9 @@ async def test_list_documents(db_session: AsyncSession, client: AsyncClient):
     team = Team(name="List Test Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project = Project(name="List Test Project", team_id=team.id)
@@ -278,7 +287,9 @@ async def test_get_document(db_session: AsyncSession, client: AsyncClient):
     team = Team(name="Get Test Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project = Project(name="Get Test Project", team_id=team.id)
@@ -312,7 +323,9 @@ async def test_get_document_not_found(db_session: AsyncSession, client: AsyncCli
     team = Team(name="Get NF Test Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project = Project(name="Get NF Test Project", team_id=team.id)
@@ -333,7 +346,9 @@ async def test_create_document(db_session: AsyncSession, client: AsyncClient):
     team = Team(name="Create Test Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project = Project(name="Create Test Project", team_id=team.id)
@@ -346,9 +361,7 @@ async def test_create_document(db_session: AsyncSession, client: AsyncClient):
         "content": {"markdown": "New content"},
     }
 
-    response = await client.post(
-        f"/api/v1/projects/{project.id}/documents/", json=payload
-    )
+    response = await client.post(f"/api/v1/projects/{project.id}/documents/", json=payload)
     assert response.status_code == 201
     data = response.json()
     assert data["name"] == "New Document"
@@ -364,7 +377,9 @@ async def test_create_document_with_parent(db_session: AsyncSession, client: Asy
     team = Team(name="Create Parent Test Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project = Project(name="Create Parent Test Project", team_id=team.id)
@@ -387,9 +402,7 @@ async def test_create_document_with_parent(db_session: AsyncSession, client: Asy
         "parent_id": str(parent_doc.id),
     }
 
-    response = await client.post(
-        f"/api/v1/projects/{project.id}/documents/", json=payload
-    )
+    response = await client.post(f"/api/v1/projects/{project.id}/documents/", json=payload)
     assert response.status_code == 201
     data = response.json()
     assert data["parent_id"] == str(parent_doc.id)
@@ -406,7 +419,9 @@ async def test_create_document_invalid_parent(db_session: AsyncSession, client: 
     team = Team(name="Create Invalid Test Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project = Project(name="Create Invalid Test Project", team_id=team.id)
@@ -420,9 +435,7 @@ async def test_create_document_invalid_parent(db_session: AsyncSession, client: 
         "parent_id": str(uuid4()),
     }
 
-    response = await client.post(
-        f"/api/v1/projects/{project.id}/documents/", json=payload
-    )
+    response = await client.post(f"/api/v1/projects/{project.id}/documents/", json=payload)
     assert response.status_code == 404
 
 
@@ -435,7 +448,9 @@ async def test_update_document(db_session: AsyncSession, client: AsyncClient):
     team = Team(name="Update Test Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project = Project(name="Update Test Project", team_id=team.id)
@@ -456,9 +471,7 @@ async def test_update_document(db_session: AsyncSession, client: AsyncClient):
         "content": {"markdown": "Updated content"},
     }
 
-    response = await client.put(
-        f"/api/v1/projects/{project.id}/documents/{doc.id}", json=payload
-    )
+    response = await client.put(f"/api/v1/projects/{project.id}/documents/{doc.id}", json=payload)
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == "Updated Name"
@@ -474,7 +487,9 @@ async def test_update_document_parent_id(db_session: AsyncSession, client: Async
     team = Team(name="Update Parent Test Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project = Project(name="Update Parent Test Project", team_id=team.id)
@@ -507,9 +522,7 @@ async def test_update_document_parent_id(db_session: AsyncSession, client: Async
 
     payload = {"parent_id": str(parent2.id)}
 
-    response = await client.put(
-        f"/api/v1/projects/{project.id}/documents/{child.id}", json=payload
-    )
+    response = await client.put(f"/api/v1/projects/{project.id}/documents/{child.id}", json=payload)
     assert response.status_code == 200
     data = response.json()
     assert data["parent_id"] == str(parent2.id)
@@ -524,7 +537,9 @@ async def test_update_document_circular_reference(db_session: AsyncSession, clie
     team = Team(name="Circular Test Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project = Project(name="Circular Test Project", team_id=team.id)
@@ -542,9 +557,7 @@ async def test_update_document_circular_reference(db_session: AsyncSession, clie
 
     payload = {"parent_id": str(doc.id)}
 
-    response = await client.put(
-        f"/api/v1/projects/{project.id}/documents/{doc.id}", json=payload
-    )
+    response = await client.put(f"/api/v1/projects/{project.id}/documents/{doc.id}", json=payload)
     assert response.status_code == 400
     assert "own parent" in response.json()["detail"].lower()
 
@@ -558,7 +571,9 @@ async def test_update_document_order(db_session: AsyncSession, client: AsyncClie
     team = Team(name="Order Test Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project = Project(name="Order Test Project", team_id=team.id)
@@ -577,9 +592,7 @@ async def test_update_document_order(db_session: AsyncSession, client: AsyncClie
 
     payload = {"order": 5}
 
-    response = await client.put(
-        f"/api/v1/projects/{project.id}/documents/{doc.id}", json=payload
-    )
+    response = await client.put(f"/api/v1/projects/{project.id}/documents/{doc.id}", json=payload)
     assert response.status_code == 200
     data = response.json()
     assert data["order"] == 5
@@ -594,7 +607,9 @@ async def test_delete_document(db_session: AsyncSession, client: AsyncClient):
     team = Team(name="Delete Test Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project = Project(name="Delete Test Project", team_id=team.id)
@@ -629,7 +644,9 @@ async def test_delete_document_not_found(db_session: AsyncSession, client: Async
     team = Team(name="Delete NF Test Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project = Project(name="Delete NF Test Project", team_id=team.id)
@@ -652,7 +669,9 @@ async def test_create_from_template_not_found(db_session: AsyncSession, client: 
     team = Team(name="Template NF Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project = Project(name="Template NF Project", team_id=team.id)
@@ -682,7 +701,9 @@ async def test_create_from_template_private_not_owner(
     team = Team(name="Private Template Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project = Project(name="Private Template Project", team_id=team.id)
@@ -713,9 +734,7 @@ async def test_create_from_template_private_not_owner(
 
 
 @pytest.mark.asyncio
-async def test_create_from_template_team_not_member(
-    db_session: AsyncSession, client: AsyncClient
-):
+async def test_create_from_template_team_not_member(db_session: AsyncSession, client: AsyncClient):
     """Test creating from team template when not team member."""
     result = await db_session.execute(select(User).where(User.username == "testuser"))
     user = result.scalar_one()
@@ -723,7 +742,9 @@ async def test_create_from_template_team_not_member(
     user_team = Team(name="User Team")
     db_session.add(user_team)
     await db_session.flush()
-    user.teams = [user_team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=user_team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     other_team = Team(name="Other Team")
@@ -766,7 +787,9 @@ async def test_get_document_wrong_project(db_session: AsyncSession, client: Asyn
     team = Team(name="Wrong Project Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project1 = Project(name="Project 1", team_id=team.id)
@@ -887,7 +910,9 @@ async def test_update_document_not_found(db_session: AsyncSession, client: Async
     team = Team(name="Update NF Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project = Project(name="Update NF Project", team_id=team.id)
@@ -912,7 +937,9 @@ async def test_update_document_wrong_project(db_session: AsyncSession, client: A
     team = Team(name="Update Wrong Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project1 = Project(name="Project 1", team_id=team.id)
@@ -933,9 +960,7 @@ async def test_update_document_wrong_project(db_session: AsyncSession, client: A
     payload = {"name": "Updated"}
 
     # Try to update doc from project1 using project2's ID
-    response = await client.put(
-        f"/api/v1/projects/{project2.id}/documents/{doc.id}", json=payload
-    )
+    response = await client.put(f"/api/v1/projects/{project2.id}/documents/{doc.id}", json=payload)
     assert response.status_code == 404
 
 
@@ -961,14 +986,14 @@ async def test_update_document_not_team_member(db_session: AsyncSession, client:
 
     payload = {"name": "Updated"}
 
-    response = await client.put(
-        f"/api/v1/projects/{project.id}/documents/{doc.id}", json=payload
-    )
+    response = await client.put(f"/api/v1/projects/{project.id}/documents/{doc.id}", json=payload)
     assert response.status_code == 403
 
 
 @pytest.mark.asyncio
-async def test_update_document_invalid_parent_project(db_session: AsyncSession, client: AsyncClient):
+async def test_update_document_invalid_parent_project(
+    db_session: AsyncSession, client: AsyncClient
+):
     """Test updating document with parent from different project."""
     result = await db_session.execute(select(User).where(User.username == "testuser"))
     user = result.scalar_one()
@@ -976,7 +1001,9 @@ async def test_update_document_invalid_parent_project(db_session: AsyncSession, 
     team = Team(name="Invalid Parent Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project1 = Project(name="Project 1", team_id=team.id)
@@ -1031,7 +1058,9 @@ async def test_delete_document_wrong_project(db_session: AsyncSession, client: A
     team = Team(name="Delete Wrong Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project1 = Project(name="Project 1", team_id=team.id)
@@ -1079,7 +1108,9 @@ async def test_delete_document_not_team_member(db_session: AsyncSession, client:
 
 
 @pytest.mark.asyncio
-async def test_create_from_template_project_not_found(db_session: AsyncSession, client: AsyncClient):
+async def test_create_from_template_project_not_found(
+    db_session: AsyncSession, client: AsyncClient
+):
     """Test creating from template when project doesn't exist."""
     from uuid import uuid4
 
@@ -1089,7 +1120,9 @@ async def test_create_from_template_project_not_found(db_session: AsyncSession, 
     team = Team(name="Template PNF Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     category = Category(name="PNF Cat", visibility=TemplateVisibility.PUBLIC)
@@ -1126,7 +1159,9 @@ async def test_create_from_template_project_not_team_member(
     user_team = Team(name="User Template Team")
     db_session.add(user_team)
     await db_session.flush()
-    user.teams = [user_team]
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=user_team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     other_team = Team(name="Other Project Team")

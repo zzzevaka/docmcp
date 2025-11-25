@@ -122,16 +122,16 @@ function Teams() {
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => handleAcceptInvitation(invitation.id)}
-                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                    >
-                      Accept
-                    </button>
-                    <button
                       onClick={() => handleRejectInvitation(invitation.id)}
                       className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
                     >
                       Reject
+                    </button>
+                    <button
+                      onClick={() => handleAcceptInvitation(invitation.id)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                      Accept
                     </button>
                   </div>
                 </div>

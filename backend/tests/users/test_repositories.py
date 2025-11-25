@@ -1,8 +1,7 @@
-
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.users.models import Team, User
+from app.users.models import Team, TeamMember, User
 from app.users.repositories import TeamFilter, TeamRepository, UserRepository
 
 
@@ -71,8 +70,8 @@ async def test_team_repository_filter_by_user(db_session: AsyncSession) -> None:
     user = await user_repo.create(user)
 
     team1 = Team(name="Team 1")
-    team1.members.append(user)
     await team_repo.create(team1)
+    await team_repo.create(TeamMember(user=user, team=team1))
 
     team2 = Team(name="Team 2")
     await team_repo.create(team2)

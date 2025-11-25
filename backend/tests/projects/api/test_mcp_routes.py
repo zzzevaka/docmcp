@@ -22,9 +22,7 @@ async def client_with_db(db_session: AsyncSession):
 
     app.dependency_overrides[get_db] = override_get_db
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
     app.dependency_overrides.clear()
@@ -83,11 +81,13 @@ async def test_project(db_session: AsyncSession):
         name="Architecture",
         project_id=project.id,
         type=DocumentType.WHITEBOARD,
-        content=json.dumps({
-            "elements": [],
-            "appState": {},
-            "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="  # 1x1 transparent PNG
-        }),
+        content=json.dumps(
+            {
+                "elements": [],
+                "appState": {},
+                "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",  # 1x1 transparent PNG
+            }
+        ),
         parent_id=None,
         order=1,
     )
@@ -111,22 +111,12 @@ async def test_project(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_initialize(
-    client_with_db: AsyncClient, test_project: dict
-) -> None:
+async def test_initialize(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test MCP initialize method."""
     project = test_project["project"]
-    request_data = {
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "initialize",
-        "params": {}
-    }
+    request_data = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}
 
-    response = await client_with_db.post(
-        f"/api/mcp/{project.id}",
-        json=request_data
-    )
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -140,22 +130,12 @@ async def test_initialize(
 
 
 @pytest.mark.asyncio
-async def test_tools_list(
-    client_with_db: AsyncClient, test_project: dict
-) -> None:
+async def test_tools_list(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test MCP tools/list method."""
     project = test_project["project"]
-    request_data = {
-        "jsonrpc": "2.0",
-        "id": 2,
-        "method": "tools/list",
-        "params": {}
-    }
+    request_data = {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}
 
-    response = await client_with_db.post(
-        f"/api/mcp/{project.id}",
-        json=request_data
-    )
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -173,25 +153,17 @@ async def test_tools_list(
 
 
 @pytest.mark.asyncio
-async def test_list_documents_tool(
-    client_with_db: AsyncClient, test_project: dict
-) -> None:
+async def test_list_documents_tool(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test list_documents tool."""
     project = test_project["project"]
     request_data = {
         "jsonrpc": "2.0",
         "id": 3,
         "method": "tools/call",
-        "params": {
-            "name": "list_documents",
-            "arguments": {}
-        }
+        "params": {"name": "list_documents", "arguments": {}},
     }
 
-    response = await client_with_db.post(
-        f"/api/mcp/{project.id}",
-        json=request_data
-    )
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -216,27 +188,17 @@ async def test_list_documents_tool(
 
 
 @pytest.mark.asyncio
-async def test_search_documents_tool(
-    client_with_db: AsyncClient, test_project: dict
-) -> None:
+async def test_search_documents_tool(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test search_documents tool."""
     project = test_project["project"]
     request_data = {
         "jsonrpc": "2.0",
         "id": 4,
         "method": "tools/call",
-        "params": {
-            "name": "search_documents",
-            "arguments": {
-                "query": "installation"
-            }
-        }
+        "params": {"name": "search_documents", "arguments": {"query": "installation"}},
     }
 
-    response = await client_with_db.post(
-        f"/api/mcp/{project.id}",
-        json=request_data
-    )
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -254,9 +216,7 @@ async def test_search_documents_tool(
 
 
 @pytest.mark.asyncio
-async def test_get_document_tool(
-    client_with_db: AsyncClient, test_project: dict
-) -> None:
+async def test_get_document_tool(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test get_document tool."""
     project = test_project["project"]
     doc = test_project["root_doc1"]
@@ -265,18 +225,10 @@ async def test_get_document_tool(
         "jsonrpc": "2.0",
         "id": 5,
         "method": "tools/call",
-        "params": {
-            "name": "get_document",
-            "arguments": {
-                "id": str(doc.id)
-            }
-        }
+        "params": {"name": "get_document", "arguments": {"id": str(doc.id)}},
     }
 
-    response = await client_with_db.post(
-        f"/api/mcp/{project.id}",
-        json=request_data
-    )
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -293,9 +245,7 @@ async def test_get_document_tool(
 
 
 @pytest.mark.asyncio
-async def test_get_document_whiteboard(
-    client_with_db: AsyncClient, test_project: dict
-) -> None:
+async def test_get_document_whiteboard(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test get_document with whiteboard document returns base64 image."""
     project = test_project["project"]
     doc = test_project["root_doc2"]
@@ -304,18 +254,10 @@ async def test_get_document_whiteboard(
         "jsonrpc": "2.0",
         "id": 6,
         "method": "tools/call",
-        "params": {
-            "name": "get_document",
-            "arguments": {
-                "id": str(doc.id)
-            }
-        }
+        "params": {"name": "get_document", "arguments": {"id": str(doc.id)}},
     }
 
-    response = await client_with_db.post(
-        f"/api/mcp/{project.id}",
-        json=request_data
-    )
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -334,22 +276,12 @@ async def test_get_document_whiteboard(
 
 
 @pytest.mark.asyncio
-async def test_unknown_method(
-    client_with_db: AsyncClient, test_project: dict
-) -> None:
+async def test_unknown_method(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test unknown method returns error."""
     project = test_project["project"]
-    request_data = {
-        "jsonrpc": "2.0",
-        "id": 7,
-        "method": "unknown_method",
-        "params": {}
-    }
+    request_data = {"jsonrpc": "2.0", "id": 7, "method": "unknown_method", "params": {}}
 
-    response = await client_with_db.post(
-        f"/api/mcp/{project.id}",
-        json=request_data
-    )
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
 
     # Unknown method should return HTTP 400 or JSON-RPC error
     if response.status_code == 200:
@@ -360,16 +292,11 @@ async def test_unknown_method(
 
 
 @pytest.mark.asyncio
-async def test_invalid_json(
-    client_with_db: AsyncClient, test_project: dict
-) -> None:
+async def test_invalid_json(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test invalid JSON returns error."""
     project = test_project["project"]
 
-    response = await client_with_db.post(
-        f"/api/mcp/{project.id}",
-        content=b"invalid json"
-    )
+    response = await client_with_db.post(f"/api/mcp/{project.id}", content=b"invalid json")
 
     assert response.status_code == 400
 
@@ -384,16 +311,10 @@ async def test_nonexistent_project(
         "jsonrpc": "2.0",
         "id": 8,
         "method": "tools/call",
-        "params": {
-            "name": "list_documents",
-            "arguments": {}
-        }
+        "params": {"name": "list_documents", "arguments": {}},
     }
 
-    response = await client_with_db.post(
-        f"/api/mcp/{fake_uuid}",
-        json=request_data
-    )
+    response = await client_with_db.post(f"/api/mcp/{fake_uuid}", json=request_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -404,9 +325,7 @@ async def test_nonexistent_project(
 
 
 @pytest.mark.asyncio
-async def test_empty_project(
-    client_with_db: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_empty_project(client_with_db: AsyncClient, db_session: AsyncSession) -> None:
     """Test list_documents with project that has no documents."""
     # Create empty project
     team = Team(name="Empty Team")
@@ -421,16 +340,10 @@ async def test_empty_project(
         "jsonrpc": "2.0",
         "id": 9,
         "method": "tools/call",
-        "params": {
-            "name": "list_documents",
-            "arguments": {}
-        }
+        "params": {"name": "list_documents", "arguments": {}},
     }
 
-    response = await client_with_db.post(
-        f"/api/mcp/{project.id}",
-        json=request_data
-    )
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -470,18 +383,10 @@ async def test_whiteboard_without_image(
         "jsonrpc": "2.0",
         "id": 10,
         "method": "tools/call",
-        "params": {
-            "name": "get_document",
-            "arguments": {
-                "id": str(doc.id)
-            }
-        }
+        "params": {"name": "get_document", "arguments": {"id": str(doc.id)}},
     }
 
-    response = await client_with_db.post(
-        f"/api/mcp/{project.id}",
-        json=request_data
-    )
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -498,25 +403,17 @@ async def test_whiteboard_without_image(
 
 
 @pytest.mark.asyncio
-async def test_unknown_tool(
-    client_with_db: AsyncClient, test_project: dict
-) -> None:
+async def test_unknown_tool(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test calling unknown tool."""
     project = test_project["project"]
     request_data = {
         "jsonrpc": "2.0",
         "id": 11,
         "method": "tools/call",
-        "params": {
-            "name": "unknown_tool",
-            "arguments": {}
-        }
+        "params": {"name": "unknown_tool", "arguments": {}},
     }
 
-    response = await client_with_db.post(
-        f"/api/mcp/{project.id}",
-        json=request_data
-    )
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -527,27 +424,17 @@ async def test_unknown_tool(
 
 
 @pytest.mark.asyncio
-async def test_get_document_invalid_id(
-    client_with_db: AsyncClient, test_project: dict
-) -> None:
+async def test_get_document_invalid_id(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test get_document with invalid document ID format."""
     project = test_project["project"]
     request_data = {
         "jsonrpc": "2.0",
         "id": 12,
         "method": "tools/call",
-        "params": {
-            "name": "get_document",
-            "arguments": {
-                "id": "not-a-valid-uuid"
-            }
-        }
+        "params": {"name": "get_document", "arguments": {"id": "not-a-valid-uuid"}},
     }
 
-    response = await client_with_db.post(
-        f"/api/mcp/{project.id}",
-        json=request_data
-    )
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -558,9 +445,7 @@ async def test_get_document_invalid_id(
 
 
 @pytest.mark.asyncio
-async def test_get_nonexistent_document(
-    client_with_db: AsyncClient, test_project: dict
-) -> None:
+async def test_get_nonexistent_document(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test get_document with valid UUID but non-existent document."""
     project = test_project["project"]
     fake_doc_id = uuid4()
@@ -569,18 +454,10 @@ async def test_get_nonexistent_document(
         "jsonrpc": "2.0",
         "id": 13,
         "method": "tools/call",
-        "params": {
-            "name": "get_document",
-            "arguments": {
-                "id": str(fake_doc_id)
-            }
-        }
+        "params": {"name": "get_document", "arguments": {"id": str(fake_doc_id)}},
     }
 
-    response = await client_with_db.post(
-        f"/api/mcp/{project.id}",
-        json=request_data
-    )
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -591,27 +468,17 @@ async def test_get_nonexistent_document(
 
 
 @pytest.mark.asyncio
-async def test_search_no_results(
-    client_with_db: AsyncClient, test_project: dict
-) -> None:
+async def test_search_no_results(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test search_documents with query that matches nothing."""
     project = test_project["project"]
     request_data = {
         "jsonrpc": "2.0",
         "id": 14,
         "method": "tools/call",
-        "params": {
-            "name": "search_documents",
-            "arguments": {
-                "query": "xyzabc123nonexistent"
-            }
-        }
+        "params": {"name": "search_documents", "arguments": {"query": "xyzabc123nonexistent"}},
     }
 
-    response = await client_with_db.post(
-        f"/api/mcp/{project.id}",
-        json=request_data
-    )
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -623,23 +490,14 @@ async def test_search_no_results(
 
 
 @pytest.mark.asyncio
-async def test_sse_support(
-    client_with_db: AsyncClient, test_project: dict
-) -> None:
+async def test_sse_support(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test SSE (Server-Sent Events) support."""
     project = test_project["project"]
-    request_data = {
-        "jsonrpc": "2.0",
-        "id": 15,
-        "method": "initialize",
-        "params": {}
-    }
+    request_data = {"jsonrpc": "2.0", "id": 15, "method": "initialize", "params": {}}
 
     # Send request with SSE Accept header
     response = await client_with_db.post(
-        f"/api/mcp/{project.id}",
-        json=request_data,
-        headers={"Accept": "text/event-stream"}
+        f"/api/mcp/{project.id}", json=request_data, headers={"Accept": "text/event-stream"}
     )
 
     assert response.status_code == 200

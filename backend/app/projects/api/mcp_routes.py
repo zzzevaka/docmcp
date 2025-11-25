@@ -1,4 +1,5 @@
 """MCP (Model Context Protocol) routes for exposing project documents to LLM agents."""
+
 import json
 from typing import Any
 from uuid import UUID
@@ -16,10 +17,7 @@ router = APIRouter(prefix="/api/mcp", tags=["mcp"])
 
 
 PROTOCOL_VERSION = "2024-11-05"
-SERVER_INFO = {
-    "name": "docs-mcp-server",
-    "version": "1.0.0"
-}
+SERVER_INFO = {"name": "docs-mcp-server", "version": "1.0.0"}
 
 
 TOOLS = [
@@ -63,9 +61,7 @@ TOOLS = [
 ]
 
 
-def build_document_tree(
-    document: Document, all_docs: list[Document]
-) -> dict[str, Any]:
+def build_document_tree(document: Document, all_docs: list[Document]) -> dict[str, Any]:
     """Build a document tree structure with descendants."""
     children = [doc for doc in all_docs if doc.parent_id == document.id]
 
@@ -75,9 +71,7 @@ def build_document_tree(
     }
 
     if children:
-        result["descendants"] = [
-            build_document_tree(child, all_docs) for child in children
-        ]
+        result["descendants"] = [build_document_tree(child, all_docs) for child in children]
 
     return result
 
@@ -104,17 +98,13 @@ async def list_documents_tool(project_id: UUID, db: AsyncSession) -> dict[str, A
         "content": [
             {
                 "type": "text",
-                "text": json.dumps(
-                    {"documents": document_trees}, indent=2, ensure_ascii=False
-                ),
+                "text": json.dumps({"documents": document_trees}, indent=2, ensure_ascii=False),
             }
         ]
     }
 
 
-async def search_documents_tool(
-    project_id: UUID, query: str, db: AsyncSession
-) -> dict[str, Any]:
+async def search_documents_tool(project_id: UUID, query: str, db: AsyncSession) -> dict[str, Any]:
     """Search for documents by name or content using SQL full-text search."""
 
     project_repo = ProjectRepository(db)
@@ -133,8 +123,8 @@ async def search_documents_tool(
             Document.project_id == project_id,
             or_(
                 func.lower(Document.name).ilike(func.lower(search_pattern)),
-                func.lower(Document.content).ilike(func.lower(search_pattern))
-            )
+                func.lower(Document.content).ilike(func.lower(search_pattern)),
+            ),
         )
         .order_by(Document.created_at.asc())
     )
@@ -163,9 +153,7 @@ async def search_documents_tool(
     }
 
 
-async def get_document_tool(
-    project_id: UUID, document_id: str, db: AsyncSession
-) -> dict[str, Any]:
+async def get_document_tool(project_id: UUID, document_id: str, db: AsyncSession) -> dict[str, Any]:
     """Get the full content of a specific document."""
     project_repo = ProjectRepository(db)
     document_repo = DocumentRepository(db)
@@ -207,30 +195,32 @@ async def get_document_tool(
     if document.type.value == "markdown":
         # For markdown documents, add the markdown text
         if isinstance(content, dict) and "text" in content:
-            content_blocks.append({
-                "type": "text",
-                "text": content["text"],
-            })
+            content_blocks.append(
+                {
+                    "type": "text",
+                    "text": content["text"],
+                }
+            )
         else:
-            content_blocks.append({
-                "type": "text",
-                "text": json.dumps(content, indent=2),
-            })
+            content_blocks.append(
+                {
+                    "type": "text",
+                    "text": json.dumps(content, indent=2),
+                }
+            )
     elif document.type.value == "whiteboard":
         # For whiteboard documents, return base64 image if available
         if isinstance(content, dict) and "image" in content:
             content_image = content["image"].split(",")[-1]
-            content_blocks.append({
-                "type": "image",
-                "data": content_image,
-                "mimeType": "image/png"
-            })
+            content_blocks.append({"type": "image", "data": content_image, "mimeType": "image/png"})
         else:
             # Fallback to JSON if image not available
-            content_blocks.append({
-                "type": "text",
-                "text": f"Excalidraw whiteboard content:\n{json.dumps(content, indent=2)}",
-            })
+            content_blocks.append(
+                {
+                    "type": "text",
+                    "text": f"Excalidraw whiteboard content:\n{json.dumps(content, indent=2)}",
+                }
+            )
 
     return {"content": content_blocks}
 
@@ -261,16 +251,12 @@ async def handle_mcp_request(
     if method == "initialize":
         return {
             "protocolVersion": PROTOCOL_VERSION,
-            "capabilities": {
-                "tools": {}
-            },
-            "serverInfo": SERVER_INFO
+            "capabilities": {"tools": {}},
+            "serverInfo": SERVER_INFO,
         }
 
     elif method == "tools/list":
-        return {
-            "tools": TOOLS
-        }
+        return {"tools": TOOLS}
 
     elif method == "tools/call":
         tool_name = params.get("name")
@@ -278,10 +264,7 @@ async def handle_mcp_request(
         return await execute_tool(tool_name, arguments, project_id, db)
 
     else:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unknown method: {method}"
-        )
+        raise HTTPException(status_code=400, detail=f"Unknown method: {method}")
 
 
 @router.post("/{project_id}")
@@ -297,11 +280,7 @@ async def mcp_endpoint(request: Request, project_id: UUID, db: AsyncSession = De
         response_data = await handle_mcp_request(request_data, project_id, db)
 
         # Format response in JSON-RPC 2.0 format
-        result = {
-            "jsonrpc": "2.0",
-            "id": request_data.get("id"),
-            "result": response_data
-        }
+        result = {"jsonrpc": "2.0", "id": request_data.get("id"), "result": response_data}
 
         # Check if streaming response is needed
         accept_header = request.headers.get("accept", "")
@@ -314,10 +293,7 @@ async def mcp_endpoint(request: Request, project_id: UUID, db: AsyncSession = De
             return StreamingResponse(
                 event_generator(),
                 media_type="text/event-stream",
-                headers={
-                    "Cache-Control": "no-cache",
-                    "Connection": "keep-alive"
-                }
+                headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
             )
         else:
             # Regular JSON response
@@ -330,8 +306,5 @@ async def mcp_endpoint(request: Request, project_id: UUID, db: AsyncSession = De
         return {
             "jsonrpc": "2.0",
             "id": request_data.get("id") if "request_data" in locals() else None,
-            "error": {
-                "code": -32603,
-                "message": str(e)
-            }
+            "error": {"code": -32603, "message": str(e)},
         }

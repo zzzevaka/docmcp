@@ -5,6 +5,7 @@ Revises: b2c3d4e5f6a7
 Create Date: 2025-11-24 17:19:09.893664
 
 """
+
 import sqlalchemy as sa
 
 from alembic import op
@@ -31,10 +32,13 @@ def upgrade() -> None:
 
         # Add visibility column with default TEAM
         batch_op.add_column(
-            sa.Column("visibility",
-                      sa.Enum("PRIVATE", "TEAM", "PUBLIC", name="templatevisibility"),
-                      nullable=False,
-                      server_default="TEAM"))
+            sa.Column(
+                "visibility",
+                sa.Enum("PRIVATE", "TEAM", "PUBLIC", name="templatevisibility"),
+                nullable=False,
+                server_default="TEAM",
+            )
+        )
         batch_op.create_index(batch_op.f("ix_templates_visibility"), ["visibility"], unique=False)
 
 
@@ -49,4 +53,3 @@ def downgrade() -> None:
         batch_op.drop_index(batch_op.f("ix_templates_user_id"))
         batch_op.drop_constraint("fk_templates_user_id", type_="foreignkey")
         batch_op.drop_column("user_id")
-

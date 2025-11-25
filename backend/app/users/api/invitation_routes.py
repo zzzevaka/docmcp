@@ -5,13 +5,12 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.users.api.auth_routes import get_current_user
-from app.users.models import InvitationStatus, TeamInvitation, User
+from app.users.api.user_routes import get_current_user_dependency
+from app.users.models import InvitationStatus, TeamInvitation, TeamMember, TeamRole, User
 from app.users.repositories import (
     TeamInvitationFilter,
     TeamInvitationRepository,
     TeamRepository,
-    UserRepository,
 )
 
 router = APIRouter(prefix="/api/v1", tags=["invitations"])
@@ -22,6 +21,7 @@ class InvitationCreate(BaseModel):
     """Schema for creating a team invitation."""
 
     invitee_email: EmailStr
+    role: str = "member"  # Default role is member
 
 
 class InvitationResponse(BaseModel):
@@ -50,14 +50,14 @@ class InvitationResponse(BaseModel):
 async def create_invitation(
     team_id: UUID,
     invitation_data: InvitationCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user_dependency),
     db: AsyncSession = Depends(get_db),
 ) -> InvitationResponse:
     """Create a team invitation."""
     team_repo = TeamRepository(db)
     invitation_repo = TeamInvitationRepository(db)
 
-    # Check if team exists and user is a member
+    # Check if team exists and user is an administrator
     team = await team_repo.get(team_id)
     if not team:
         raise HTTPException(
@@ -65,10 +65,16 @@ async def create_invitation(
             detail="Team not found",
         )
 
-    if current_user.id not in [member.id for member in team.members]:
+    if not team.is_admin(current_user.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not a member of this team",
+            detail="Only administrators can invite users to the team",
+        )
+
+    if current_user.email == invitation_data.invitee_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You can not invite yourself",
         )
 
     # Check if invitation already exists
@@ -85,12 +91,22 @@ async def create_invitation(
             detail="Invitation already exists for this email",
         )
 
+    # Validate role
+    try:
+        role = TeamRole(invitation_data.role)
+    except ValueError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid role. Must be one of: {', '.join([r.value for r in TeamRole])}",
+        ) from err
+
     # Create invitation
     invitation = TeamInvitation(
         team_id=team_id,
         inviter_id=current_user.id,
         invitee_email=invitation_data.invitee_email,
         status=InvitationStatus.PENDING,
+        role=role,
     )
     invitation = await invitation_repo.create(invitation)
     await db.commit()
@@ -113,14 +129,14 @@ async def create_invitation(
 @router.get("/teams/{team_id}/invitations", response_model=list[InvitationResponse])
 async def list_team_invitations(
     team_id: UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user_dependency),
     db: AsyncSession = Depends(get_db),
 ) -> list[InvitationResponse]:
     """List all invitations for a team."""
     team_repo = TeamRepository(db)
     invitation_repo = TeamInvitationRepository(db)
 
-    # Check if team exists and user is a member
+    # Check if team exists and user is an administrator
     team = await team_repo.get(team_id)
     if not team:
         raise HTTPException(
@@ -128,15 +144,13 @@ async def list_team_invitations(
             detail="Team not found",
         )
 
-    if current_user.id not in [member.id for member in team.members]:
+    if not team.is_admin(current_user.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not a member of this team",
+            detail="Only administrators can view team invitations",
         )
 
-    invitations = await invitation_repo.find_by_filter(
-        TeamInvitationFilter(team_id=team_id)
-    )
+    invitations = await invitation_repo.find_by_filter(TeamInvitationFilter(team_id=team_id))
 
     return [
         InvitationResponse(
@@ -157,7 +171,7 @@ async def list_team_invitations(
 # Get pending invitations for current user
 @router.get("/invitations/me", response_model=list[InvitationResponse])
 async def get_my_invitations(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user_dependency),
     db: AsyncSession = Depends(get_db),
 ) -> list[InvitationResponse]:
     """Get pending invitations for current user."""
@@ -190,13 +204,12 @@ async def get_my_invitations(
 @router.post("/invitations/{invitation_id}/accept", response_model=InvitationResponse)
 async def accept_invitation(
     invitation_id: UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user_dependency),
     db: AsyncSession = Depends(get_db),
 ) -> InvitationResponse:
     """Accept a team invitation."""
     invitation_repo = TeamInvitationRepository(db)
     team_repo = TeamRepository(db)
-    user_repo = UserRepository(db)
 
     invitation = await invitation_repo.get(invitation_id)
     if not invitation:
@@ -225,11 +238,14 @@ async def accept_invitation(
             detail="Team not found",
         )
 
-    # Refresh user with teams relationship
-    user = await user_repo.get(current_user.id)
-    if user and team:
-        user.teams.append(team)
-        await db.flush()
+    # Add user to team with the specified role
+    team_member = TeamMember(
+        user_id=current_user.id,
+        team_id=invitation.team_id,
+        role=invitation.role,
+    )
+    db.add(team_member)
+    await db.flush()
 
     # Update invitation status
     invitation.status = InvitationStatus.ACCEPTED
@@ -254,7 +270,7 @@ async def accept_invitation(
 @router.post("/invitations/{invitation_id}/reject", response_model=InvitationResponse)
 async def reject_invitation(
     invitation_id: UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user_dependency),
     db: AsyncSession = Depends(get_db),
 ) -> InvitationResponse:
     """Reject a team invitation."""

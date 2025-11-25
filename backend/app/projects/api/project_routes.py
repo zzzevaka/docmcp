@@ -31,6 +31,7 @@ async def list_projects(
 
     for team_id in user_team_ids:
         from app.projects.repositories import ProjectFilter
+
         projects = await project_repo.find_by_filter(ProjectFilter(team_id=team_id))
         all_projects.extend(projects)
 

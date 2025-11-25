@@ -117,9 +117,7 @@ async def create_document(
 
     # Store content as JSON string
     content_str = (
-        json.dumps(payload.content)
-        if isinstance(payload.content, dict)
-        else payload.content
+        json.dumps(payload.content) if isinstance(payload.content, dict) else payload.content
     )
 
     # Create document
@@ -178,9 +176,7 @@ async def update_document(
 
     if "content" in update_data:
         content_str = (
-            json.dumps(payload.content)
-            if isinstance(payload.content, dict)
-            else payload.content
+            json.dumps(payload.content) if isinstance(payload.content, dict) else payload.content
         )
         document.content = content_str
 
@@ -285,7 +281,11 @@ async def _create_document_from_template(
     return document
 
 
-@router.post("/{project_id}/documents/from-template/{template_id}", response_model=DocumentSchema, status_code=201)
+@router.post(
+    "/{project_id}/documents/from-template/{template_id}",
+    response_model=DocumentSchema,
+    status_code=201,
+)
 async def create_document_from_template(
     project_id: UUID,
     template_id: UUID,

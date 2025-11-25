@@ -28,6 +28,7 @@ function TeamDetail() {
   const navigate = useNavigate()
   const [team, setTeam] = useState(null)
   const [members, setMembers] = useState([])
+  const [currentUser, setCurrentUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
@@ -35,15 +36,18 @@ function TeamDetail() {
   const [memberToRemove, setMemberToRemove] = useState(null)
   const [isRemoving, setIsRemoving] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState('member')
   const [editedTeamName, setEditedTeamName] = useState('')
 
   const fetchTeamData = async () => {
     try {
-      const teamRes = await axios.get(`/api/v1/teams/${teamId}`, {
-        withCredentials: true,
-      })
+      const [teamRes, userRes] = await Promise.all([
+        axios.get(`/api/v1/teams/${teamId}`, { withCredentials: true }),
+        axios.get('/api/v1/auth/me', { withCredentials: true })
+      ])
       setTeam(teamRes.data)
       setMembers(teamRes.data.members || [])
+      setCurrentUser(userRes.data)
     } catch (error) {
       console.error('Failed to fetch team data:', error)
       if (error.response?.status === 404) {
@@ -66,10 +70,11 @@ function TeamDetail() {
     try {
       await axios.post(
         `/api/v1/teams/${teamId}/invitations`,
-        { invitee_email: inviteEmail },
+        { invitee_email: inviteEmail, role: inviteRole },
         { withCredentials: true }
       )
       setInviteEmail('')
+      setInviteRole('member')
       setShowInviteModal(false)
       toast.success('Invitation sent successfully!')
     } catch (error) {
@@ -150,6 +155,9 @@ function TeamDetail() {
     )
   }
 
+  const currentUserMember = members.find(m => m.id === currentUser?.id)
+  const isAdmin = currentUserMember?.role === 'administrator'
+
   return (
     <MainLayout activeTab="teams">
       <div className="py-6">
@@ -169,20 +177,22 @@ function TeamDetail() {
                 </BreadcrumbList>
               </Breadcrumb>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={openEditDialog}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-              >
-                Edit Team
-              </button>
-              <button
-                onClick={() => setShowInviteModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Invite Member
-              </button>
-            </div>
+            {isAdmin && (
+              <div className="flex gap-2">
+                <button
+                  onClick={openEditDialog}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                >
+                  Edit Team
+                </button>
+                <button
+                  onClick={() => setShowInviteModal(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Invite Member
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -217,16 +227,22 @@ function TeamDetail() {
                   </div>
                   <div className="flex items-center gap-3">
                     {member.role && (
-                      <span className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-full">
-                        {member.role}
+                      <span className={`px-3 py-1 text-sm rounded-full ${
+                        member.role === 'administrator'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {member.role === 'administrator' ? 'Administrator' : 'Member'}
                       </span>
                     )}
-                    <button
-                      onClick={() => openRemoveMemberModal(member)}
-                      className="px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md"
-                    >
-                      Remove
-                    </button>
+                    {isAdmin && currentUser && member.id !== currentUser.id && (
+                      <button
+                        onClick={() => openRemoveMemberModal(member)}
+                        className="px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
                 </div>
               ))
@@ -253,12 +269,29 @@ function TeamDetail() {
                     autoFocus
                   />
                 </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Role
+                  </label>
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="member">Member</option>
+                    <option value="administrator">Administrator</option>
+                  </select>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Administrators can manage team members and settings
+                  </p>
+                </div>
                 <div className="flex gap-2 justify-end">
                   <button
                     type="button"
                     onClick={() => {
                       setShowInviteModal(false)
                       setInviteEmail('')
+                      setInviteRole('member')
                     }}
                     className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
                   >

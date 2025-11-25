@@ -5,6 +5,7 @@ Revises: f970dc25089c
 Create Date: 2025-11-22 21:00:00.000000
 
 """
+
 import sqlalchemy as sa
 
 from alembic import op
@@ -22,12 +23,10 @@ def upgrade() -> None:
 
     # Add auth_provider column with default value 'google' for existing users
     # Using String instead of Enum for compatibility
-    op.add_column("users", sa.Column(
-        "auth_provider",
-        sa.String(length=20),
-        nullable=False,
-        server_default="google"
-    ))
+    op.add_column(
+        "users",
+        sa.Column("auth_provider", sa.String(length=20), nullable=False, server_default="google"),
+    )
 
 
 def downgrade() -> None:

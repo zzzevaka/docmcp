@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer, selectinload
 
 from app.library.models import Category, Template, TemplateType, TemplateVisibility
-from app.users.models import Team
+from app.users.models import Team, TeamMember
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -29,17 +29,13 @@ class CategoryRepository:
     async def get(self, id_: UUID) -> Category | None:
         """Get category by ID."""
         result = await self.db.execute(
-            select(Category)
-            .where(Category.id == id_)
-            .options(selectinload(Category.templates))
+            select(Category).where(Category.id == id_).options(selectinload(Category.templates))
         )
         return result.scalar_one_or_none()
 
     async def get_by_name(self, name: str) -> Category | None:
         """Get category by name."""
-        result = await self.db.execute(
-            select(Category).where(Category.name == name)
-        )
+        result = await self.db.execute(select(Category).where(Category.name == name))
         return result.scalar_one_or_none()
 
     async def list_all(self) -> Iterable[Category]:
@@ -54,7 +50,9 @@ class CategoryRepository:
         await self.db.refresh(category)
         return category
 
-    async def get_or_create(self, name: str, visibility: TemplateVisibility = TemplateVisibility.PUBLIC) -> Category:
+    async def get_or_create(
+        self, name: str, visibility: TemplateVisibility = TemplateVisibility.PUBLIC
+    ) -> Category:
         """Get category by name or create if doesn't exist."""
         category = await self.get_by_name(name)
         if not category:
@@ -87,7 +85,9 @@ class TemplateRepository:
             select(Template)
             .where(Template.id == id_)
             .options(
-                selectinload(Template.team).selectinload(Team.members),
+                selectinload(Template.team)
+                .selectinload(Team.team_memberships)
+                .selectinload(TeamMember.user),
                 selectinload(Template.category),
                 selectinload(Template.children),
             )
@@ -113,7 +113,9 @@ class TemplateRepository:
     async def find_by_filter(self, filter_: TemplateFilter) -> Iterable[Template]:
         """Find templates by filter."""
         query = select(Template).options(
-            selectinload(Template.team).selectinload(Team.members),
+            selectinload(Template.team)
+            .selectinload(Team.team_memberships)
+            .selectinload(TeamMember.user),
             selectinload(Template.category),
         )
 
@@ -154,7 +156,9 @@ class TemplateRepository:
             query = query.options(defer(Template.content))
 
         query = query.options(
-            selectinload(Template.team).selectinload(Team.members),
+            selectinload(Template.team)
+            .selectinload(Team.team_memberships)
+            .selectinload(TeamMember.user),
             selectinload(Template.category),
             selectinload(Template.children),
         )
@@ -162,7 +166,8 @@ class TemplateRepository:
         # Build visibility filter using OR conditions
         visibility_conditions = [
             Template.visibility == TemplateVisibility.PUBLIC,
-            (Template.visibility == TemplateVisibility.TEAM) & (Template.team_id.in_(user_team_ids)),
+            (Template.visibility == TemplateVisibility.TEAM)
+            & (Template.team_id.in_(user_team_ids)),
             (Template.visibility == TemplateVisibility.PRIVATE) & (Template.user_id == user_id),
         ]
 
@@ -186,7 +191,9 @@ class TemplateRepository:
         """List all templates."""
         result = await self.db.execute(
             select(Template).options(
-                selectinload(Template.team).selectinload(Team.members),
+                selectinload(Template.team)
+                .selectinload(Team.team_memberships)
+                .selectinload(TeamMember.user),
                 selectinload(Template.category),
             )
         )

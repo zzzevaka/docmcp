@@ -22,7 +22,9 @@ router = APIRouter(prefix="/api/v1/library/templates", tags=["library", "templat
 @router.get("/", response_model=list[TemplateListSchema])
 async def list_templates(
     category_name: str | None = Query(None, description="Filter by category name"),
-    only_root: bool = Query(True, description="If true, only return root templates (without parent)"),
+    only_root: bool = Query(
+        True, description="If true, only return root templates (without parent)"
+    ),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user_dependency),
 ) -> list[TemplateListSchema]:
@@ -109,7 +111,9 @@ async def _create_template_from_document(
             pass
 
     # Map document type to template type
-    template_type = TemplateType.MARKDOWN if document.type.value == "markdown" else TemplateType.WHITEBOARD
+    template_type = (
+        TemplateType.MARKDOWN if document.type.value == "markdown" else TemplateType.WHITEBOARD
+    )
 
     # Create template
     template = Template(

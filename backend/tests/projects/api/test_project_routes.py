@@ -1,4 +1,5 @@
 """Test project routes."""
+
 from uuid import uuid4
 
 import pytest
@@ -7,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.projects.models import Project
-from app.users.models import Team, User
+from app.users.models import Team, TeamMember, TeamRole, User
 
 
 @pytest.mark.asyncio
@@ -19,7 +20,10 @@ async def test_list_projects(db_session: AsyncSession, client: AsyncClient):
     team = Team(name="List Projects Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project1 = Project(name="Project 1", team_id=team.id)
@@ -55,7 +59,10 @@ async def test_get_project(db_session: AsyncSession, client: AsyncClient):
     team = Team(name="Get Project Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project = Project(name="Test Project", team_id=team.id)
@@ -101,7 +108,10 @@ async def test_create_project(db_session: AsyncSession, client: AsyncClient):
     team = Team(name="Create Project Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.commit()
 
     payload = {
@@ -154,7 +164,10 @@ async def test_update_project(db_session: AsyncSession, client: AsyncClient):
     team = Team(name="Update Project Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project = Project(name="Original Name", team_id=team.id)
@@ -205,7 +218,10 @@ async def test_delete_project(db_session: AsyncSession, client: AsyncClient):
     team = Team(name="Delete Project Team")
     db_session.add(team)
     await db_session.flush()
-    user.teams = [team]
+
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     project = Project(name="To Delete", team_id=team.id)
