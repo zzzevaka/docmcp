@@ -15,7 +15,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -166,13 +165,13 @@ function TeamDetail() {
           <div className="flex justify-between items-center">
             <div>
               <Breadcrumb className="mb-4">
-                <BreadcrumbList>
+                <BreadcrumbList className="text-2xl">
                   <BreadcrumbItem>
                     <BreadcrumbLink href="/teams">Teams</BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator />
                   <BreadcrumbItem>
-                    <BreadcrumbPage>{team.name}</BreadcrumbPage>
+                    <BreadcrumbPage className="font-bold">{team.name}</BreadcrumbPage>
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
@@ -314,9 +313,6 @@ function TeamDetail() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Edit Team</DialogTitle>
-              <DialogDescription>
-                Update the team name and settings.
-              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleEditTeam}>
               <div className="mb-4">
@@ -335,12 +331,17 @@ function TeamDetail() {
               <DialogFooter>
                 <Button
                   type="button"
-                  variant="outline"
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
                   onClick={() => setShowEditDialog(false)}
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Save Changes</Button>
+                <Button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Save Changes
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
