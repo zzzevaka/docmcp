@@ -22,27 +22,31 @@ def upgrade() -> None:
     if op.get_bind().dialect.name == "postgresql":
         op.execute("ALTER TYPE templatevisibility ADD VALUE IF NOT EXISTS 'PRIVATE'")
 
-    # Add user_id column to templates
-    op.add_column("templates", sa.Column("user_id", sa.UUID(), nullable=True))
-    op.create_foreign_key("fk_templates_user_id", "templates", "users", ["user_id"], ["id"])
-    op.create_index(op.f("ix_templates_user_id"), "templates", ["user_id"], unique=False)
+    # Use batch mode for SQLite to handle constraints
+    with op.batch_alter_table("templates", schema=None) as batch_op:
+        # Add user_id column
+        batch_op.add_column(sa.Column("user_id", sa.UUID(), nullable=True))
+        batch_op.create_foreign_key("fk_templates_user_id", "users", ["user_id"], ["id"])
+        batch_op.create_index(batch_op.f("ix_templates_user_id"), ["user_id"], unique=False)
 
-    # Add visibility column to templates with default TEAM
-    op.add_column("templates",
-        sa.Column("visibility",
-                  sa.Enum("PRIVATE", "TEAM", "PUBLIC", name="templatevisibility"),
-                  nullable=False,
-                  server_default="TEAM"))
-    op.create_index(op.f("ix_templates_visibility"), "templates", ["visibility"], unique=False)
+        # Add visibility column with default TEAM
+        batch_op.add_column(
+            sa.Column("visibility",
+                      sa.Enum("PRIVATE", "TEAM", "PUBLIC", name="templatevisibility"),
+                      nullable=False,
+                      server_default="TEAM"))
+        batch_op.create_index(batch_op.f("ix_templates_visibility"), ["visibility"], unique=False)
 
 
 def downgrade() -> None:
-    # Drop indexes and columns
-    op.drop_index(op.f("ix_templates_visibility"), table_name="templates")
-    op.drop_column("templates", "visibility")
-    op.drop_index(op.f("ix_templates_user_id"), table_name="templates")
-    op.drop_constraint("fk_templates_user_id", "templates", type_="foreignkey")
-    op.drop_column("templates", "user_id")
+    # Use batch mode for SQLite to handle constraints
+    with op.batch_alter_table("templates", schema=None) as batch_op:
+        # Drop visibility column and index
+        batch_op.drop_index(batch_op.f("ix_templates_visibility"))
+        batch_op.drop_column("visibility")
 
-    # Note: Cannot remove PRIVATE from enum in downgrade as PostgreSQL doesn't support it
-    # This would require recreating the enum type entirely
+        # Drop user_id column, index, and foreign key
+        batch_op.drop_index(batch_op.f("ix_templates_user_id"))
+        batch_op.drop_constraint("fk_templates_user_id", type_="foreignkey")
+        batch_op.drop_column("user_id")
+

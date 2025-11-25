@@ -17,22 +17,26 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Add parent_id column to templates
-    op.add_column("templates", sa.Column("parent_id", sa.UUID(), nullable=True))
-    op.create_foreign_key("fk_templates_parent_id", "templates", "templates", ["parent_id"], ["id"])
-    op.create_index(op.f("ix_templates_parent_id"), "templates", ["parent_id"], unique=False)
+    # Use batch mode for SQLite to handle constraints
+    with op.batch_alter_table("templates", schema=None) as batch_op:
+        # Add parent_id column (self-referential foreign key)
+        batch_op.add_column(sa.Column("parent_id", sa.UUID(), nullable=True))
+        batch_op.create_foreign_key("fk_templates_parent_id", "templates", ["parent_id"], ["id"])
+        batch_op.create_index(batch_op.f("ix_templates_parent_id"), ["parent_id"], unique=False)
 
-    # Add order column to templates
-    op.add_column("templates", sa.Column("order", sa.Integer(), server_default="0", nullable=False))
-    op.create_index(op.f("ix_templates_order"), "templates", ["order"], unique=False)
+        # Add order column
+        batch_op.add_column(sa.Column("order", sa.Integer(), server_default="0", nullable=False))
+        batch_op.create_index(batch_op.f("ix_templates_order"), ["order"], unique=False)
 
 
 def downgrade() -> None:
-    # Drop order column and index
-    op.drop_index(op.f("ix_templates_order"), table_name="templates")
-    op.drop_column("templates", "order")
+    # Use batch mode for SQLite to handle constraints
+    with op.batch_alter_table("templates", schema=None) as batch_op:
+        # Drop order column and index
+        batch_op.drop_index(batch_op.f("ix_templates_order"))
+        batch_op.drop_column("order")
 
-    # Drop parent_id column, foreign key, and index
-    op.drop_index(op.f("ix_templates_parent_id"), table_name="templates")
-    op.drop_constraint("fk_templates_parent_id", "templates", type_="foreignkey")
-    op.drop_column("templates", "parent_id")
+        # Drop parent_id column, foreign key, and index
+        batch_op.drop_index(batch_op.f("ix_templates_parent_id"))
+        batch_op.drop_constraint("fk_templates_parent_id", type_="foreignkey")
+        batch_op.drop_column("parent_id")
