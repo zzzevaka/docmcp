@@ -122,13 +122,13 @@ export default function Library() {
           {/* Header with breadcrumbs and search */}
           <div className="py-6 pb-12 flex items-center justify-between gap-4">
             <Breadcrumb>
-              <BreadcrumbList>
+              <BreadcrumbList className="text-2xl">
                 <BreadcrumbItem>
                   <BreadcrumbLink href="/library/categories">Library</BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>{selectedCategory.name}</BreadcrumbPage>
+                  <BreadcrumbPage className="font-bold">{selectedCategory.name}</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -145,7 +145,7 @@ export default function Library() {
           <div className="flex-1 overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center h-64">
-                <div className="text-gray-500">Loading templates...</div>
+                <div className="text-muted-foreground">Loading templates...</div>
               </div>
             ) : (
               <>
@@ -159,7 +159,7 @@ export default function Library() {
                   ))}
                 </div>
                 {filteredTemplates.length === 0 && (
-                  <div className="text-center text-gray-500 py-12">
+                  <div className="text-center text-muted-foreground py-12">
                     No templates found
                   </div>
                 )}
@@ -177,7 +177,13 @@ export default function Library() {
       <div className="h-full flex flex-col">
         {/* Header with title and search */}
         <div className="py-6 pb-12 flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">Library</h1>
+          <Breadcrumb>
+            <BreadcrumbList className="text-2xl">
+              <BreadcrumbItem>
+                <BreadcrumbPage className="font-bold">Library</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
           <div className="w-80">
             <SearchBar
               value={searchQuery}
@@ -191,7 +197,7 @@ export default function Library() {
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="text-gray-500">Loading templates...</div>
+              <div className="text-muted-foreground">Loading templates...</div>
             </div>
           ) : (
             <div className="space-y-8">
@@ -205,7 +211,7 @@ export default function Library() {
                 return (
                   <div key={category.id}>
                     <h2
-                      className="text-lg font-semibold mb-4 cursor-pointer hover:text-blue-600 transition-colors"
+                      className="text-lg font-semibold mb-4 cursor-pointer hover:text-primary transition-colors"
                       onClick={() => handleCategoryClick(category)}
                     >
                       {category.name}
@@ -224,7 +230,7 @@ export default function Library() {
                 );
               })}
               {filteredTemplates.length === 0 && (
-                <div className="text-center text-gray-500 py-12">
+                <div className="text-center text-muted-foreground py-12">
                   {searchQuery ? 'No templates found matching your search' : 'No templates available'}
                 </div>
               )}

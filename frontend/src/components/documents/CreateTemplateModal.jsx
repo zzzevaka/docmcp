@@ -45,39 +45,39 @@ export default function CreateTemplateModal({ document, teamName, onClose, onSuc
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/80 flex items-center justify-center z-50">
+      <div className="bg-background border border-border rounded-lg p-6 w-full max-w-md shadow-lg">
         <div className="flex items-start gap-3 mb-4">
-          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-            <BookTemplate className="w-5 h-5 text-blue-600" />
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+            <BookTemplate className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Create Template</h2>
-            <p className="mt-1 text-sm text-gray-600">
+            <h2 className="text-xl font-bold text-foreground">Create Template</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
               Create a template from "{document.name}" that others can use
             </p>
           </div>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Template Name
             </label>
             <input
               type="text"
               value={templateName}
               onChange={(e) => setTemplateName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Enter template name"
               autoFocus
             />
           </div>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Category
             </label>
             {loadingCategories ? (
-              <div className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-500">
+              <div className="w-full px-3 py-2 bg-background border border-input rounded-md text-muted-foreground">
                 Loading categories...
               </div>
             ) : (
@@ -93,7 +93,7 @@ export default function CreateTemplateModal({ document, teamName, onClose, onSuc
             )}
           </div>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Visibility
             </label>
             <div className="flex gap-4">
@@ -104,9 +104,9 @@ export default function CreateTemplateModal({ document, teamName, onClose, onSuc
                   value="private"
                   checked={visibility === 'private'}
                   onChange={(e) => setVisibility(e.target.value)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  className="w-4 h-4 text-primary border-input focus:ring-ring"
                 />
-                <span className="ml-2 text-sm text-gray-700">Only me</span>
+                <span className="ml-2 text-sm text-foreground">Only me</span>
               </label>
               <label className="flex items-center cursor-pointer">
                 <input
@@ -115,9 +115,9 @@ export default function CreateTemplateModal({ document, teamName, onClose, onSuc
                   value="team"
                   checked={visibility === 'team'}
                   onChange={(e) => setVisibility(e.target.value)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  className="w-4 h-4 text-primary border-input focus:ring-ring"
                 />
-                <span className="ml-2 text-sm text-gray-700">
+                <span className="ml-2 text-sm text-foreground">
                   {teamName || 'Team'}
                 </span>
               </label>
@@ -128,9 +128,9 @@ export default function CreateTemplateModal({ document, teamName, onClose, onSuc
                   value="public"
                   checked={visibility === 'public'}
                   onChange={(e) => setVisibility(e.target.value)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  className="w-4 h-4 text-primary border-input focus:ring-ring"
                 />
-                <span className="ml-2 text-sm text-gray-700">Public</span>
+                <span className="ml-2 text-sm text-foreground">Public</span>
               </label>
             </div>
           </div>
@@ -140,9 +140,9 @@ export default function CreateTemplateModal({ document, teamName, onClose, onSuc
                 type="checkbox"
                 checked={includeChildren}
                 onChange={(e) => setIncludeChildren(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-primary border-input rounded focus:ring-ring"
               />
-              <span className="ml-2 text-sm text-gray-700">
+              <span className="ml-2 text-sm text-foreground">
                 Include child documents
               </span>
             </label>
@@ -151,14 +151,14 @@ export default function CreateTemplateModal({ document, teamName, onClose, onSuc
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              className="px-4 py-2 text-foreground bg-muted rounded-md hover:bg-accent"
               disabled={isCreating}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90 disabled:opacity-50"
               disabled={isCreating || !templateName.trim() || !categoryName.trim()}
             >
               {isCreating ? 'Creating...' : 'Create Template'}

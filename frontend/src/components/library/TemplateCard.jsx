@@ -11,15 +11,15 @@ export default function TemplateCard({ template, onClick }) {
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 cursor-pointer"
+      className="bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow p-6 cursor-pointer"
     >
       <div className="flex items-start justify-between mb-2">
-        <h3 className="text-lg font-semibold text-gray-900 flex-1 pr-2">
+        <h3 className="text-lg font-semibold text-card-foreground flex-1 pr-2">
           {template.name}
         </h3>
-        <Icon className="w-5 h-5 text-gray-400 flex-shrink-0" />
+        <Icon className="w-5 h-5 text-muted-foreground flex-shrink-0" />
       </div>
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-muted-foreground">
         Created {new Date(template.created_at).toLocaleDateString()}
       </p>
     </div>

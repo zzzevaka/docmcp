@@ -39,7 +39,7 @@ async def google_login(request: Request):
 @router.get("/google/callback")
 async def google_callback(
     request: Request,
-    payload: GoogleAuthCallbackSchema = Depends(),  # берём из query, а не из body
+    payload: GoogleAuthCallbackSchema = Depends(),
     db: AsyncSession = Depends(get_db),
 ):
     """Handle Google OAuth callback."""

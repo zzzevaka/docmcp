@@ -133,8 +133,6 @@ export default function TemplateDetail() {
     }
   };
 
-  // Мемоизируем initialData чтобы не создавать новый объект на каждом рендере
-  // ВАЖНО: useMemo (хук) должен быть вызван ДО любых условных return'ов (правило хуков)
   const excalidrawInitialData = useMemo(() => {
     if (!template?.content?.raw) {
       return { elements: [], appState: {}, files: {} };
@@ -178,7 +176,7 @@ export default function TemplateDetail() {
           onAddToProject={() => setShowAddToProjectModal(true)}
           onShowActions={() => setShowActionsModal(true)}
         />
-        <div className="h-screen w-full pl-4 relative">
+        <div className="h-screen w-full relative">
           <div className="h-full">
             {template.type === 'markdown' ? (
               <MarkdownEditor

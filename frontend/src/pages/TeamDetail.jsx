@@ -15,7 +15,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -137,8 +136,8 @@ function TeamDetail() {
       <MainLayout activeTab="teams">
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-gray-600">Loading team...</p>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <p className="mt-4 text-muted-foreground">Loading team...</p>
           </div>
         </div>
       </MainLayout>
@@ -149,7 +148,7 @@ function TeamDetail() {
     return (
       <MainLayout activeTab="teams">
         <div className="text-center py-12">
-          <p className="text-gray-600">Team not found</p>
+          <p className="text-muted-foreground">Team not found</p>
         </div>
       </MainLayout>
     )
@@ -166,13 +165,13 @@ function TeamDetail() {
           <div className="flex justify-between items-center">
             <div>
               <Breadcrumb className="mb-4">
-                <BreadcrumbList>
+                <BreadcrumbList className="text-2xl">
                   <BreadcrumbItem>
                     <BreadcrumbLink href="/teams">Teams</BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator />
                   <BreadcrumbItem>
-                    <BreadcrumbPage>{team.name}</BreadcrumbPage>
+                    <BreadcrumbPage className="font-bold">{team.name}</BreadcrumbPage>
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
@@ -181,13 +180,13 @@ function TeamDetail() {
               <div className="flex gap-2">
                 <button
                   onClick={openEditDialog}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                  className="px-4 py-2 bg-muted text-foreground rounded-md hover:bg-accent"
                 >
                   Edit Team
                 </button>
                 <button
                   onClick={() => setShowInviteModal(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
                 >
                   Invite Member
                 </button>
@@ -197,40 +196,40 @@ function TeamDetail() {
         </div>
 
         {/* Members List */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">
+        <div className="bg-card border border-border rounded-lg shadow-sm">
+          <div className="px-6 py-4 border-b border-border">
+            <h2 className="text-xl font-semibold text-card-foreground">
               Members ({members.length})
             </h2>
           </div>
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-border">
             {members.length === 0 ? (
-              <div className="px-6 py-8 text-center text-gray-600">
+              <div className="px-6 py-8 text-center text-muted-foreground">
                 No members yet. Invite someone to join this team!
               </div>
             ) : (
               members.map((member) => (
                 <div
                   key={member.id}
-                  className="px-6 py-4 flex justify-between items-center hover:bg-gray-50"
+                  className="px-6 py-4 flex justify-between items-center hover:bg-accent/50"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
+                    <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
                       {member.username?.charAt(0).toUpperCase() || 'U'}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">
+                      <p className="font-medium text-card-foreground">
                         {member.username}
                       </p>
-                      <p className="text-sm text-gray-600">{member.email}</p>
+                      <p className="text-sm text-muted-foreground">{member.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     {member.role && (
                       <span className={`px-3 py-1 text-sm rounded-full ${
                         member.role === 'administrator'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-gray-100 text-gray-700'
+                          ? 'bg-primary/10 text-primary'
+                          : 'bg-muted text-muted-foreground'
                       }`}>
                         {member.role === 'administrator' ? 'Administrator' : 'Member'}
                       </span>
@@ -238,7 +237,7 @@ function TeamDetail() {
                     {isAdmin && currentUser && member.id !== currentUser.id && (
                       <button
                         onClick={() => openRemoveMemberModal(member)}
-                        className="px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md"
+                        className="px-3 py-1 text-sm text-destructive hover:bg-destructive/10 rounded-md"
                       >
                         Remove
                       </button>
@@ -252,36 +251,36 @@ function TeamDetail() {
 
         {/* Invite User Modal */}
         {showInviteModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h2 className="text-2xl font-bold mb-4">Invite Team Member</h2>
+          <div className="fixed inset-0 bg-black/50 dark:bg-black/80 flex items-center justify-center z-50">
+            <div className="bg-background border border-border rounded-lg p-6 w-full max-w-md shadow-lg">
+              <h2 className="text-2xl font-bold mb-4 text-foreground">Invite Team Member</h2>
               <form onSubmit={handleInviteUser}>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Email Address
                   </label>
                   <input
                     type="email"
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                     placeholder="Enter email address"
                     autoFocus
                   />
                 </div>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Role
                   </label>
                   <select
                     value={inviteRole}
                     onChange={(e) => setInviteRole(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <option value="member">Member</option>
                     <option value="administrator">Administrator</option>
                   </select>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Administrators can manage team members and settings
                   </p>
                 </div>
@@ -293,13 +292,13 @@ function TeamDetail() {
                       setInviteEmail('')
                       setInviteRole('member')
                     }}
-                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                    className="px-4 py-2 text-foreground bg-muted rounded-md hover:bg-accent"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
                   >
                     Send Invitation
                   </button>
@@ -314,20 +313,17 @@ function TeamDetail() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Edit Team</DialogTitle>
-              <DialogDescription>
-                Update the team name and settings.
-              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleEditTeam}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Team Name
                 </label>
                 <input
                   type="text"
                   value={editedTeamName}
                   onChange={(e) => setEditedTeamName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder="Enter team name"
                   autoFocus
                 />
@@ -340,7 +336,11 @@ function TeamDetail() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Save Changes</Button>
+                <Button
+                  type="submit"
+                >
+                  Save Changes
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -348,15 +348,15 @@ function TeamDetail() {
 
         {/* Remove Member Confirmation Modal */}
         {showRemoveMemberModal && memberToRemove && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="fixed inset-0 bg-black/50 dark:bg-black/80 flex items-center justify-center z-50">
+            <div className="bg-background border border-border rounded-lg p-6 w-full max-w-md shadow-lg">
               <div className="flex items-start gap-3 mb-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5 text-red-600" />
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Remove Member</h2>
-                  <p className="mt-1 text-sm text-gray-600">
+                  <h2 className="text-xl font-bold text-foreground">Remove Member</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Are you sure you want to remove {memberToRemove.username} from this team?
                     They will lose access to all team resources.
                   </p>
@@ -369,7 +369,7 @@ function TeamDetail() {
                     setShowRemoveMemberModal(false)
                     setMemberToRemove(null)
                   }}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                  className="px-4 py-2 text-foreground bg-muted rounded-md hover:bg-accent"
                   disabled={isRemoving}
                 >
                   Cancel
@@ -377,7 +377,7 @@ function TeamDetail() {
                 <button
                   type="button"
                   onClick={handleRemoveMember}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 disabled:opacity-50"
                   disabled={isRemoving}
                 >
                   {isRemoving ? 'Removing...' : 'Remove'}

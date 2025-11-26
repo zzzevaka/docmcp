@@ -101,7 +101,6 @@ export default function DocumentEditor({ document }) {
     };
   }, [saveStatus, performSave]);
 
-  // Мемоизируем initialData чтобы не создавать новую ссылку на каждом рендере
   const excalidrawInitialData = useMemo(() => {
     return content || document.content.raw;
   }, [content, document.content.raw]);

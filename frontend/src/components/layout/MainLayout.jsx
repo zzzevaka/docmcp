@@ -1,18 +1,21 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTheme } from 'next-themes'
+import { Sun, Moon, Monitor } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
 function MainLayout({ children, activeTab = 'projects' }) {
   const { user, logout } = useAuth()
+  const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   const getTabClassName = (tab) => {
     const baseClass = "inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2"
     if (activeTab === tab) {
-      return `${baseClass} text-blue-600 border-blue-600`
+      return `${baseClass} text-primary border-primary`
     }
-    return `${baseClass} text-gray-500 hover:text-gray-900 border-transparent hover:border-gray-300`
+    return `${baseClass} text-muted-foreground hover:text-foreground border-transparent hover:border-border`
   }
 
   const handleLogout = async () => {
@@ -21,9 +24,9 @@ function MainLayout({ children, activeTab = 'projects' }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Top Navigation */}
-      <nav className="bg-white shadow-sm">
+      <nav className="bg-card border-b border-border shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             {/* Left side - Logo and main nav */}
@@ -32,7 +35,7 @@ function MainLayout({ children, activeTab = 'projects' }) {
               <div className="flex-shrink-0 flex items-center">
                 <Link
                   to="/"
-                  className="text-xl font-bold text-blue-600 hover:text-blue-700"
+                  className="text-xl font-bold text-primary hover:text-primary/80"
                 >
                   DocMCP
                 </Link>
@@ -66,27 +69,70 @@ function MainLayout({ children, activeTab = 'projects' }) {
               <div className="relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 p-2 rounded-full hover:bg-gray-100"
+                  className="flex items-center gap-2 p-2 rounded-full hover:bg-accent"
                 >
-                  <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
+                  <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-medium">
                     {user?.username?.charAt(0).toUpperCase() || 'U'}
                   </div>
                 </button>
 
                 {/* User dropdown menu */}
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
-                    <div className="px-4 py-2 border-b border-gray-200">
-                      <p className="text-sm font-medium text-gray-900">
+                  <div className="absolute right-0 mt-2 w-56 bg-popover rounded-md shadow-lg py-1 z-10 border border-border">
+                    <div className="px-4 py-2 border-b border-border">
+                      <p className="text-sm font-medium text-popover-foreground">
                         {user?.username}
                       </p>
-                      <p className="text-sm text-gray-500 truncate">
+                      <p className="text-sm text-muted-foreground truncate">
                         {user?.email}
                       </p>
                     </div>
+
+                    {/* Theme selection */}
+                    <div className="px-4 py-2 border-b border-border">
+                      <p className="text-xs font-medium text-muted-foreground mb-2">
+                        Theme
+                      </p>
+                      <div className="space-y-1">
+                        <button
+                          onClick={() => setTheme('light')}
+                          className={`flex items-center gap-2 w-full text-left px-2 py-1.5 text-sm rounded transition-colors ${
+                            theme === 'light'
+                              ? 'bg-primary/10 text-primary'
+                              : 'text-popover-foreground hover:bg-accent'
+                          }`}
+                        >
+                          <Sun className="h-4 w-4" />
+                          <span>Light</span>
+                        </button>
+                        <button
+                          onClick={() => setTheme('dark')}
+                          className={`flex items-center gap-2 w-full text-left px-2 py-1.5 text-sm rounded transition-colors ${
+                            theme === 'dark'
+                              ? 'bg-primary/10 text-primary'
+                              : 'text-popover-foreground hover:bg-accent'
+                          }`}
+                        >
+                          <Moon className="h-4 w-4" />
+                          <span>Dark</span>
+                        </button>
+                        <button
+                          onClick={() => setTheme('system')}
+                          className={`flex items-center gap-2 w-full text-left px-2 py-1.5 text-sm rounded transition-colors ${
+                            theme === 'system'
+                              ? 'bg-primary/10 text-primary'
+                              : 'text-popover-foreground hover:bg-accent'
+                          }`}
+                        >
+                          <Monitor className="h-4 w-4" />
+                          <span>System</span>
+                        </button>
+                      </div>
+                    </div>
+
                     <button
                       onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block w-full text-left px-4 py-2 text-sm text-popover-foreground hover:bg-accent"
                     >
                       Logout
                     </button>
