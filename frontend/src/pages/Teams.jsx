@@ -157,7 +157,7 @@ function Teams() {
           </Breadcrumb>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
           >
             Create Team
           </button>
@@ -168,7 +168,7 @@ function Teams() {
             <p className="text-muted-foreground mb-4">No teams yet</p>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
             >
               Create Your First Team
             </button>
