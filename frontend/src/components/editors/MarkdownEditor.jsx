@@ -37,7 +37,7 @@ function MilkdownEditor({ markdown, onChange, readOnly }) {
 
   return (
     <div
-      className={`w-full h-full ${
+      className={`w-full h-full bg-white dark:bg-background ${
         (resolvedTheme === 'dark')
           ? 'dark milkdown-theme-dark'
           : 'milkdown-theme-light'
