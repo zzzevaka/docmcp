@@ -144,9 +144,7 @@ export default function Library() {
           {/* Templates grid */}
           <div className="flex-1 overflow-y-auto">
             {loading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="text-muted-foreground">Loading templates...</div>
-              </div>
+              null
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -196,9 +194,7 @@ export default function Library() {
         {/* Templates by category */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-muted-foreground">Loading templates...</div>
-            </div>
+            null
           ) : (
             <div className="space-y-8">
               {categories.map(category => {
