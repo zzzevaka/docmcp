@@ -123,16 +123,25 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
           icon: doc.type === 'markdown' ? FileText : Image,
           draggable: true,
           actions: (
-            <button
+            <div
               onClick={(e) => {
                 e.stopPropagation();
                 setActionsDocument(doc);
               }}
-              className="p-1 hover:bg-gray-200 rounded transition-all"
+              className="p-1 hover:bg-gray-200 rounded transition-all cursor-pointer"
               title="Document actions"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setActionsDocument(doc);
+                }
+              }}
             >
               <MoreHorizontal className="w-3 h-3 text-gray-600" />
-            </button>
+            </div>
           ),
         }
 
