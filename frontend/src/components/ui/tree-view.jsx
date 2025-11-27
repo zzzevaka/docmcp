@@ -228,6 +228,13 @@ const TreeNode = ({
     const isSelected = selectedItemId === item.id
     const isOpen = value.includes(item.id)
 
+    // Auto-expand when this node is in expandedItemIds (e.g., when a nested child is selected)
+    React.useEffect(() => {
+        if (expandedItemIds.includes(item.id) && !value.includes(item.id)) {
+            setValue([item.id])
+        }
+    }, [expandedItemIds, item.id, value])
+
     const onDragStart = (e) => {
         if (!item.draggable) {
             e.preventDefault()

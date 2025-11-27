@@ -51,10 +51,15 @@ function ProjectDetail() {
           return;
         }
       }
-      // If no documentId and documents exist, redirect to first document
+      // If no documentId and documents exist, redirect to first root document by order
       if (!documentId && documents.length > 0) {
-        navigate(`/projects/${projectId}/documents/${documents[0].id}`, { replace: true });
-        return;
+        const rootDocuments = documents
+          .filter((doc) => doc.parent_id === null)
+          .sort((a, b) => a.order - b.order);
+        if (rootDocuments.length > 0) {
+          navigate(`/projects/${projectId}/documents/${rootDocuments[0].id}`, { replace: true });
+          return;
+        }
       }
       setActiveDocument(null);
     }
