@@ -3,11 +3,25 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import MainLayout from '@/components/layout/MainLayout'
 import ProjectDetailSidebar from "@/components/projects/detail/ProjectDetailSideBar";
 import DocumentEditor from "@/components/documents/DocumentEditor";
 
+// Mobile sidebar trigger component
+function MobileSidebarTrigger() {
+  const { toggleSidebar, isMobile } = useSidebar();
+
+  if (!isMobile) return null;
+
+  return (
+    <div
+      onClick={toggleSidebar}
+      className="md:hidden fixed left-0 top-0 bottom-0 w-2 bg-gradient-to-r from-primary/50 to-transparent hover:from-primary/50 hover:w-2 transition-all cursor-pointer z-50"
+      title="Open menu"
+    />
+  );
+}
 
 function ProjectDetail() {
   const { projectId, documentId } = useParams();
@@ -129,6 +143,7 @@ function ProjectDetail() {
         <div
           className="h-screen w-full relative"
         >
+          <MobileSidebarTrigger />
           {
             activeDocument !== null
               ? <DocumentEditor document={ activeDocument } key={activeDocument.id} />

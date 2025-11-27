@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import TemplateDetailSidebar from '@/components/library/TemplateDetailSidebar';
 import MarkdownEditor from '@/components/editors/MarkdownEditor';
 import ExcalidrawEditor from '@/components/editors/ExcalidrawEditor';
@@ -20,6 +20,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+// Mobile sidebar trigger component
+function MobileSidebarTrigger() {
+  const { toggleSidebar, isMobile } = useSidebar();
+
+  if (!isMobile) return null;
+
+  return (
+    <div
+      onClick={toggleSidebar}
+      className="md:hidden fixed left-0 top-0 bottom-0 w-2 bg-gradient-to-r from-primary/50 to-transparent hover:from-primary/50 hover:w-2 transition-all cursor-pointer z-50"
+      title="Open menu"
+    />
+  );
+}
 
 export default function TemplateDetail() {
   const { templateId } = useParams();
@@ -170,6 +185,7 @@ export default function TemplateDetail() {
           onShowActions={() => setShowActionsModal(true)}
         />
         <div className="h-screen w-full relative">
+          <MobileSidebarTrigger />
           <div className="h-full">
             {template.type === 'markdown' ? (
               <MarkdownEditor
