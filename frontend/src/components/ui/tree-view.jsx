@@ -8,7 +8,7 @@ const treeVariants = cva(
     'group/tree-node hover:before:opacity-100 before:absolute before:rounded-lg before:left-0 px-2 before:w-full before:opacity-0 before:bg-accent/70 before:h-[2rem] before:-z-10'
 )
 
-const selectedTreeVariants = cva('before:opacity-100 before:bg-accent/70 text-accent-foreground')
+const selectedTreeVariants = cva('before:opacity-100 before:bg-primary/20 text-primary font-medium')
 
 const dragOverVariants = cva('before:opacity-100 before:bg-primary/20 text-primary-foreground')
 
@@ -30,6 +30,11 @@ const TreeView = React.forwardRef((
     const [selectedItemId, setSelectedItemId] = React.useState(initialSelectedItemId)
 
     const [draggedItem, setDraggedItem] = React.useState(null)
+
+    // Update selected item when initialSelectedItemId changes
+    React.useEffect(() => {
+        setSelectedItemId(initialSelectedItemId)
+    }, [initialSelectedItemId])
 
     const handleSelectChange = React.useCallback((item) => {
         setSelectedItemId(item?.id)
