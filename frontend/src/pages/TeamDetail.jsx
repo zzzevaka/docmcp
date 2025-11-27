@@ -177,7 +177,7 @@ function TeamDetail() {
                 </button>
                 <button
                   onClick={() => setShowInviteModal(true)}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary90"
                 >
                   Invite Member
                 </button>
@@ -289,7 +289,7 @@ function TeamDetail() {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                   >
                     Send Invitation
                   </button>

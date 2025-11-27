@@ -126,7 +126,7 @@ function Teams() {
                     </button>
                     <button
                       onClick={() => handleAcceptInvitation(invitation.id)}
-                      className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                     >
                       Accept
                     </button>
@@ -215,7 +215,7 @@ function Teams() {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                   >
                     Create
                   </button>

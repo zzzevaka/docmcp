@@ -158,7 +158,7 @@ export default function CreateTemplateModal({ document, teamName, onClose, onSuc
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90 disabled:opacity-50"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
               disabled={isCreating || !templateName.trim() || !categoryName.trim()}
             >
               {isCreating ? 'Creating...' : 'Create Template'}

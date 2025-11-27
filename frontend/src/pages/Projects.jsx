@@ -98,7 +98,7 @@ function Projects() {
             </p>
             <button
               onClick={() => navigate('/teams')}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
             >
               Go to Teams
             </button>
@@ -108,7 +108,7 @@ function Projects() {
             <p className="text-muted-foreground mb-4">No projects yet</p>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
             >
               Create Your First Project
             </button>
@@ -180,7 +180,7 @@ function Projects() {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                   >
                     Create
                   </button>

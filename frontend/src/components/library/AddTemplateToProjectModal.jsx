@@ -114,7 +114,7 @@ export default function AddTemplateToProjectModal({ template, onClose }) {
           <button
             type="button"
             onClick={handleAdd}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90 disabled:opacity-50"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
             disabled={adding || loading || projects.length === 0}
           >
             {adding ? 'Adding...' : 'Add to Project'}
