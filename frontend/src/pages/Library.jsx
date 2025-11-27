@@ -121,7 +121,7 @@ export default function Library() {
         <div className="h-full flex flex-col">
           {/* Header with breadcrumbs and search */}
           <div className="py-6 pb-12 flex items-center justify-between gap-4">
-            <Breadcrumb>
+            <Breadcrumb className="mr-6">
               <BreadcrumbList className="text-2xl">
                 <BreadcrumbItem>
                   <BreadcrumbLink href="/library/categories">Library</BreadcrumbLink>
@@ -175,7 +175,7 @@ export default function Library() {
       <div className="h-full flex flex-col">
         {/* Header with title and search */}
         <div className="py-6 pb-12 flex justify-between items-center">
-          <Breadcrumb>
+          <Breadcrumb className="mr-6">
             <BreadcrumbList className="text-2xl">
               <BreadcrumbItem>
                 <BreadcrumbPage className="font-bold">Library</BreadcrumbPage>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTheme } from 'next-themes'
-import { Sun, Moon, Monitor } from 'lucide-react'
+import { Sun, Moon, Monitor, Menu, X } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
 function MainLayout({ children, activeTab = 'projects' }) {
@@ -9,6 +9,7 @@ function MainLayout({ children, activeTab = 'projects' }) {
   const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
 
   const getTabClassName = (tab) => {
     const baseClass = "inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2"
@@ -31,6 +32,15 @@ function MainLayout({ children, activeTab = 'projects' }) {
           <div className="flex justify-between h-16">
             {/* Left side - Logo and main nav */}
             <div className="flex">
+              <div className="sm:hidden inline-flex py-2 mr-2">
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="items-center justify-center px-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent"
+              >
+                <Menu className="h-6 w-6" />
+              </button>
+              </div>
+
               {/* Logo */}
               <div className="flex-shrink-0 flex items-center">
                 <Link
@@ -143,6 +153,45 @@ function MainLayout({ children, activeTab = 'projects' }) {
           </div>
         </div>
       </nav>
+
+      {/* Mobile menu */}
+      {showMobileMenu && (
+        <div className="sm:hidden absolute left-0 right-0 mt-2 mx-4 bg-popover rounded-md shadow-lg py-1 z-10 border border-border">
+          <Link
+            to="/projects"
+            onClick={() => setShowMobileMenu(false)}
+            className={`block px-4 py-2 text-sm ${
+              activeTab === 'projects'
+                ? 'bg-primary/10 text-primary'
+                : 'text-popover-foreground hover:bg-accent'
+            }`}
+          >
+            Projects
+          </Link>
+          <Link
+            to="/library/categories"
+            onClick={() => setShowMobileMenu(false)}
+            className={`block px-4 py-2 text-sm ${
+              activeTab === 'library'
+                ? 'bg-primary/10 text-primary'
+                : 'text-popover-foreground hover:bg-accent'
+            }`}
+          >
+            Library
+          </Link>
+          <Link
+            to="/teams"
+            onClick={() => setShowMobileMenu(false)}
+            className={`block px-4 py-2 text-sm ${
+              activeTab === 'teams'
+                ? 'bg-primary/10 text-primary'
+                : 'text-popover-foreground hover:bg-accent'
+            }`}
+          >
+            Teams
+          </Link>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">

@@ -139,7 +139,7 @@ function Teams() {
 
         {/* Teams Section */}
         <div className="flex justify-between items-center mb-6 pb-12">
-          <Breadcrumb>
+          <Breadcrumb className="mr-6">
             <BreadcrumbList className="text-2xl">
               <BreadcrumbItem>
                 <BreadcrumbPage className="font-bold">Teams</BreadcrumbPage>
