@@ -51,9 +51,14 @@ function ProjectDetail() {
           return;
         }
       }
+      // If no documentId and documents exist, redirect to first document
+      if (!documentId && documents.length > 0) {
+        navigate(`/projects/${projectId}/documents/${documents[0].id}`, { replace: true });
+        return;
+      }
       setActiveDocument(null);
     }
-  }, [documentId, loading]);
+  }, [documentId, loading, documents, navigate, projectId]);
 
   const handleCreateDocument = async (e) => {
     e.preventDefault();
