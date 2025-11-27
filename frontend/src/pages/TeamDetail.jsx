@@ -132,16 +132,7 @@ function TeamDetail() {
   }
 
   if (loading) {
-    return (
-      <MainLayout activeTab="teams">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            <p className="mt-4 text-muted-foreground">Loading team...</p>
-          </div>
-        </div>
-      </MainLayout>
-    )
+    return null;
   }
 
   if (!team) {
@@ -186,7 +177,7 @@ function TeamDetail() {
                 </button>
                 <button
                   onClick={() => setShowInviteModal(true)}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary90"
                 >
                   Invite Member
                 </button>
@@ -298,7 +289,7 @@ function TeamDetail() {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                   >
                     Send Invitation
                   </button>

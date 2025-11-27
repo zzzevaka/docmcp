@@ -119,7 +119,7 @@ export default function MCPInstructionsModal({ project, onClose }) {
         <div className="p-6 pt-4 border-t border-border flex-shrink-0">
           <button
             onClick={onClose}
-            className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
+            className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
           >
             Close
           </button>

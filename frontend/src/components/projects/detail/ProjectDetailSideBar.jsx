@@ -123,16 +123,25 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
           icon: doc.type === 'markdown' ? FileText : Image,
           draggable: true,
           actions: (
-            <button
+            <div
               onClick={(e) => {
                 e.stopPropagation();
                 setActionsDocument(doc);
               }}
-              className="p-1 hover:bg-gray-200 rounded transition-all opacity-40 hover:opacity-100"
+              className="p-1 hover:bg-gray-200 rounded transition-all cursor-pointer"
               title="Document actions"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setActionsDocument(doc);
+                }
+              }}
             >
-              <MoreHorizontal className="w-3.5 h-3.5 text-gray-600" />
-            </button>
+              <MoreHorizontal className="w-3 h-3 text-gray-600" />
+            </div>
           ),
         }
 
@@ -259,16 +268,19 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
           </div>
         ) : (
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => navigate('/')}
-                className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
-                title="Back to home"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <span className="font-semibold">{ project.name }</span>
-            </div>
+            <button
+              onClick={() => navigate('/')}
+              className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+              title="Back to home"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <span
+              className="font-semibold truncate"
+              title={ project.name }
+            >
+              { project.name }
+            </span>
             <button
               onClick={() => setShowProjectActions(true)}
               className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"

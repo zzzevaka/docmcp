@@ -91,16 +91,7 @@ function Teams() {
   }
 
   if (loading) {
-    return (
-      <MainLayout activeTab="teams">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            <p className="mt-4 text-muted-foreground">Loading teams...</p>
-          </div>
-        </div>
-      </MainLayout>
-    )
+    return null;
   }
 
   return (
@@ -135,7 +126,7 @@ function Teams() {
                     </button>
                     <button
                       onClick={() => handleAcceptInvitation(invitation.id)}
-                      className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                     >
                       Accept
                     </button>
@@ -148,7 +139,7 @@ function Teams() {
 
         {/* Teams Section */}
         <div className="flex justify-between items-center mb-6 pb-12">
-          <Breadcrumb>
+          <Breadcrumb className="mr-6">
             <BreadcrumbList className="text-2xl">
               <BreadcrumbItem>
                 <BreadcrumbPage className="font-bold">Teams</BreadcrumbPage>
@@ -224,7 +215,7 @@ function Teams() {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                   >
                     Create
                   </button>

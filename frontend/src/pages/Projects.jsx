@@ -68,23 +68,14 @@ function Projects() {
   }
 
   if (loading) {
-    return (
-      <MainLayout>
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            <p className="mt-4 text-muted-foreground">Loading projects...</p>
-          </div>
-        </div>
-      </MainLayout>
-    )
+    return null;
   }
 
   return (
     <MainLayout>
       <div className="py-6">
         <div className="flex justify-between items-center mb-6 pb-12">
-          <Breadcrumb>
+          <Breadcrumb className="mr-6">
             <BreadcrumbList className="text-2xl">
               <BreadcrumbItem>
                 <BreadcrumbPage className="font-bold">Projects</BreadcrumbPage>
@@ -107,7 +98,7 @@ function Projects() {
             </p>
             <button
               onClick={() => navigate('/teams')}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
             >
               Go to Teams
             </button>
@@ -117,7 +108,7 @@ function Projects() {
             <p className="text-muted-foreground mb-4">No projects yet</p>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
             >
               Create Your First Project
             </button>
@@ -189,7 +180,7 @@ function Projects() {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                   >
                     Create
                   </button>

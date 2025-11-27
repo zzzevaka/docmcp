@@ -3,11 +3,25 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import MainLayout from '@/components/layout/MainLayout'
 import ProjectDetailSidebar from "@/components/projects/detail/ProjectDetailSideBar";
 import DocumentEditor from "@/components/documents/DocumentEditor";
 
+// Mobile sidebar trigger component
+function MobileSidebarTrigger() {
+  const { toggleSidebar, isMobile } = useSidebar();
+
+  if (!isMobile) return null;
+
+  return (
+    <div
+      onClick={toggleSidebar}
+      className="md:hidden fixed left-0 top-0 bottom-0 w-2 bg-gradient-to-r from-primary/50 to-transparent hover:from-primary/50 hover:w-2 transition-all cursor-pointer z-50"
+      title="Open menu"
+    />
+  );
+}
 
 function ProjectDetail() {
   const { projectId, documentId } = useParams();
@@ -51,9 +65,19 @@ function ProjectDetail() {
           return;
         }
       }
+      // If no documentId and documents exist, redirect to first root document by order
+      if (!documentId && documents.length > 0) {
+        const rootDocuments = documents
+          .filter((doc) => doc.parent_id === null)
+          .sort((a, b) => a.order - b.order);
+        if (rootDocuments.length > 0) {
+          navigate(`/projects/${projectId}/documents/${rootDocuments[0].id}`, { replace: true });
+          return;
+        }
+      }
       setActiveDocument(null);
     }
-  }, [documentId, loading]);
+  }, [documentId, loading, documents, navigate, projectId]);
 
   const handleCreateDocument = async (e) => {
     e.preventDefault();
@@ -102,16 +126,7 @@ function ProjectDetail() {
   };
 
   if (loading) {
-    return (
-      <MainLayout>
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-gray-600">Loading project...</p>
-          </div>
-        </div>
-      </MainLayout>
-    )
+    return null;
   }
 
   return (
@@ -128,6 +143,7 @@ function ProjectDetail() {
         <div
           className="h-screen w-full relative"
         >
+          <MobileSidebarTrigger />
           {
             activeDocument !== null
               ? <DocumentEditor document={ activeDocument } key={activeDocument.id} />
@@ -182,7 +198,7 @@ function ProjectDetail() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-white/90"
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                 >
                   Create
                 </button>

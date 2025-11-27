@@ -5,10 +5,10 @@ import { cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const treeVariants = cva(
-    'group hover:before:opacity-100 before:absolute before:rounded-lg before:left-0 px-2 before:w-full before:opacity-0 before:bg-accent/70 before:h-[2rem] before:-z-10'
+    'group/tree-node hover:before:opacity-100 before:absolute before:rounded-lg before:left-0 px-2 before:w-full before:opacity-0 before:bg-accent/70 before:h-[2rem] before:-z-10'
 )
 
-const selectedTreeVariants = cva('before:opacity-100 before:bg-accent/70 text-accent-foreground')
+const selectedTreeVariants = cva('before:opacity-100 before:bg-primary/20 text-primary font-medium')
 
 const dragOverVariants = cva('before:opacity-100 before:bg-primary/20 text-primary-foreground')
 
@@ -30,6 +30,11 @@ const TreeView = React.forwardRef((
     const [selectedItemId, setSelectedItemId] = React.useState(initialSelectedItemId)
 
     const [draggedItem, setDraggedItem] = React.useState(null)
+
+    // Update selected item when initialSelectedItemId changes
+    React.useEffect(() => {
+        setSelectedItemId(initialSelectedItemId)
+    }, [initialSelectedItemId])
 
     const handleSelectChange = React.useCallback((item) => {
         setSelectedItemId(item?.id)
@@ -80,7 +85,7 @@ const TreeView = React.forwardRef((
     }, [data, expandAll, initialSelectedItemId])
 
     return (
-        <div className={cn('overflow-hidden relative p-2', className)}>
+        <div className={cn('overflow-hidden relative', className)}>
             <TreeItem
                 data={data}
                 ref={ref}
@@ -223,6 +228,13 @@ const TreeNode = ({
     const isSelected = selectedItemId === item.id
     const isOpen = value.includes(item.id)
 
+    // Auto-expand when this node is in expandedItemIds (e.g., when a nested child is selected)
+    React.useEffect(() => {
+        if (expandedItemIds.includes(item.id) && !value.includes(item.id)) {
+            setValue([item.id])
+        }
+    }, [expandedItemIds, item.id, value])
+
     const onDragStart = (e) => {
         if (!item.draggable) {
             e.preventDefault()
@@ -309,7 +321,10 @@ const TreeNode = ({
                                     isSelected={isSelected}
                                     isOpen={isOpen}
                                     default={defaultNodeIcon} />
-                                <span className="text-sm truncate">{item.name}</span>
+                                <span
+                                  className="text-sm truncate"
+                                  title={item.name}
+                                >{item.name}</span>
                             </div>
                             <TreeActions isSelected={isSelected}>
                                 {item.actions}
@@ -510,7 +525,7 @@ const TreeActions = ({
     isSelected
 }) => {
     return (
-        <div className="absolute right-3 flex items-center gap-0.5">
+        <div className="items-center hidden group-hover/tree-node:flex">
             {children}
         </div>
     );
