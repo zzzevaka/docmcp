@@ -28,12 +28,26 @@ export default function MCPInstructionsModal({ project, onClose }) {
           content: JSON.stringify({
             "mcpServers": {
               "docs": {
-                "url": `"${mcpUrl}"`
+                "url": mcpUrl
               }
             }
           }, null, 2),
           type: 'json',
           note: 'Open Settings -> Cursor Settings → Tools & MCP → New MCP Server'
+        };
+      case 'antigravity':
+        return {
+          title: 'Cursor',
+          description: 'To connect this project\'s documentation to Google Antigravity, add the following to your MCP settings:',
+          content: JSON.stringify({
+            "mcpServers": {
+              "docs": {
+                "serverUrl": mcpUrl
+              }
+            }
+          }, null, 2),
+          type: 'json',
+          note: '... -> MCP Servers → Manage MCP Servers → View raw config'
         };
       default:
         return null;
@@ -69,6 +83,7 @@ export default function MCPInstructionsModal({ project, onClose }) {
               className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="claudeCode">Claude Code</option>
+              <option value="antigravity">Google Antigravity</option>
               <option value="cursor">Cursor</option>
             </select>
           </div>
