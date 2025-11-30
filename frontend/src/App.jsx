@@ -10,6 +10,9 @@ import Projects from './pages/Projects'
 import ProjectDetail from './pages/ProjectDetail'
 import Library from './pages/Library'
 import TemplateDetail from './pages/TemplateDetail'
+import TermsOfService from './pages/TermsOfService'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import CookieBanner from './components/common/CookieBanner'
 import { Toaster } from '@/components/ui/sonner'
 
 function App() {
@@ -18,9 +21,12 @@ function App() {
       <Router>
         <AuthProvider>
           <Toaster />
+          <CookieBanner />
           <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route
             path="/"
             element={<Navigate to="/projects" replace />}

@@ -288,7 +288,24 @@ function Login() {
         </div>
 
         <p className="text-center text-sm text-muted-foreground">
-          By signing in, you agree to our Terms of Service and Privacy Policy
+          By signing in, you agree to our{' '}
+          <a
+            href="/terms-of-service"
+            className="text-primary hover:text-primary/80 underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Terms of Service
+          </a>
+          {' '}and{' '}
+          <a
+            href="/privacy-policy"
+            className="text-primary hover:text-primary/80 underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Privacy Policy
+          </a>
         </p>
       </div>
     </div>
