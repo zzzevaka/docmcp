@@ -98,39 +98,39 @@ function Login() {
   if (!authConfig) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-4xl font-bold text-foreground mb-2">
             Welcome to DocMCP
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-muted-foreground">
             Documentation as MCP Service
           </p>
         </div>
 
-        <div className="bg-white py-8 px-6 shadow rounded-lg">
+        <div className="bg-card py-8 px-6 shadow rounded-lg border border-border">
           {error && (
-            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/50 text-destructive rounded">
               Authentication failed. Please try again.
             </div>
           )}
 
           {!authConfig.local_auth_enabled && !authConfig.google_oauth_enabled && (
-            <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded">
+            <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/50 text-yellow-600 dark:text-yellow-400 rounded">
               Authentication is not configured. Please contact the administrator.
             </div>
           )}
 
           {/* Tabs */}
           {authConfig.local_auth_enabled && (
-            <div className="flex border-b mb-6">
+            <div className="flex border-b border-border mb-6">
               <button
                 onClick={() => setActiveTab('login')}
                 className={`flex-1 py-2 px-4 text-center font-medium ${
                   activeTab === 'login'
-                    ? 'border-b-2 border-blue-500 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 Login
@@ -139,8 +139,8 @@ function Login() {
                 onClick={() => setActiveTab('register')}
                 className={`flex-1 py-2 px-4 text-center font-medium ${
                   activeTab === 'register'
-                    ? 'border-b-2 border-blue-500 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 Register
@@ -152,7 +152,7 @@ function Login() {
           {activeTab === 'login' && authConfig.local_auth_enabled && (
             <form onSubmit={handleLocalLogin} className="space-y-4 mb-6">
               <div>
-                <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="login-email" className="block text-sm font-medium text-card-foreground mb-1">
                   Email
                 </label>
                 <input
@@ -161,12 +161,12 @@ function Login() {
                   required
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="your@email.com"
                 />
               </div>
               <div>
-                <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="login-password" className="block text-sm font-medium text-card-foreground mb-1">
                   Password
                 </label>
                 <input
@@ -175,14 +175,14 @@ function Login() {
                   required
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="••••••••"
                 />
               </div>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                className="w-full py-2 px-4 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
               >
                 {loading ? 'Logging in...' : 'Login'}
               </button>
@@ -193,7 +193,7 @@ function Login() {
           {activeTab === 'register' && authConfig.local_auth_enabled && (
             <form onSubmit={handleRegister} className="space-y-4 mb-6">
               <div>
-                <label htmlFor="register-email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="register-email" className="block text-sm font-medium text-card-foreground mb-1">
                   Email
                 </label>
                 <input
@@ -202,12 +202,12 @@ function Login() {
                   required
                   value={registerEmail}
                   onChange={(e) => setRegisterEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="your@email.com"
                 />
               </div>
               <div>
-                <label htmlFor="register-password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="register-password" className="block text-sm font-medium text-card-foreground mb-1">
                   Password
                 </label>
                 <input
@@ -216,13 +216,13 @@ function Login() {
                   required
                   value={registerPassword}
                   onChange={(e) => setRegisterPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="••••••••"
                   minLength={6}
                 />
               </div>
               <div>
-                <label htmlFor="register-confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="register-confirm-password" className="block text-sm font-medium text-card-foreground mb-1">
                   Confirm Password
                 </label>
                 <input
@@ -231,7 +231,7 @@ function Login() {
                   required
                   value={registerConfirmPassword}
                   onChange={(e) => setRegisterConfirmPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="••••••••"
                   minLength={6}
                 />
@@ -239,7 +239,7 @@ function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                className="w-full py-2 px-4 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
               >
                 {loading ? 'Registering...' : 'Register'}
               </button>
@@ -250,10 +250,10 @@ function Login() {
           {authConfig.local_auth_enabled && authConfig.google_oauth_enabled && (
             <div className="relative mb-6">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
+                <div className="w-full border-t border-border"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                <span className="px-2 bg-card text-muted-foreground">Or continue with</span>
               </div>
             </div>
           )}
@@ -262,7 +262,7 @@ function Login() {
           {authConfig.google_oauth_enabled && (
             <button
               onClick={() => {window.location.href = "/api/v1/auth/google/login"}}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-input rounded-md shadow-sm bg-background text-sm font-medium text-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -287,7 +287,7 @@ function Login() {
           )}
         </div>
 
-        <p className="text-center text-sm text-gray-600">
+        <p className="text-center text-sm text-muted-foreground">
           By signing in, you agree to our Terms of Service and Privacy Policy
         </p>
       </div>
