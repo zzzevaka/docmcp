@@ -131,15 +131,13 @@ function TeamDetail() {
     setShowEditDialog(true)
   }
 
-  if (loading) {
-    return null;
-  }
-
   if (!team) {
     return (
       <MainLayout activeTab="teams">
         <div className="text-center py-12">
-          <p className="text-muted-foreground">Team not found</p>
+          {
+            !loading &&  <p className="text-muted-foreground">Team not found</p>
+          }
         </div>
       </MainLayout>
     )
@@ -158,7 +156,7 @@ function TeamDetail() {
               <Breadcrumb className="mb-4">
                 <BreadcrumbList className="text-2xl">
                   <BreadcrumbItem>
-                    <BreadcrumbLink href="/teams">Teams</BreadcrumbLink>
+                    <BreadcrumbLink onClick={() => navigate('/teams')} className="cursor-pointer">Teams</BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator />
                   <BreadcrumbItem>

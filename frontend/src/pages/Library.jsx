@@ -124,7 +124,7 @@ export default function Library() {
             <Breadcrumb className="mr-6">
               <BreadcrumbList className="text-2xl">
                 <BreadcrumbItem>
-                  <BreadcrumbLink href="/library/categories">Library</BreadcrumbLink>
+                  <BreadcrumbLink onClick={() => navigate('/library/categories')} className="cursor-pointer">Library</BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>

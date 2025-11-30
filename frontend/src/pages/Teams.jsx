@@ -98,9 +98,38 @@ function Teams() {
     }
   }
 
-  if (loading) {
-    return null;
-  }
+  const content = (
+    loading
+      ? null
+      : teams.length === 0 ? (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground mb-4">No teams yet</p>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+        >
+          Create Your First Team
+        </button>
+      </div>
+    ) : (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {teams.map((team) => (
+          <div
+            key={team.id}
+            onClick={() => navigate(`/teams/${team.id}`)}
+            className="bg-card border border-border p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+          >
+            <h3 className="text-lg font-semibold text-card-foreground mb-2">
+              {team.name}
+            </h3>
+            <p className="text-sm text-muted-foreground mb-2">
+              Created {new Date(team.created_at).toLocaleDateString()}
+            </p>
+          </div>
+        ))}
+      </div>
+    )
+  );
 
   return (
     <MainLayout activeTab="teams">
@@ -162,34 +191,7 @@ function Teams() {
           </button>
         </div>
 
-        {teams.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">No teams yet</p>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-            >
-              Create Your First Team
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {teams.map((team) => (
-              <div
-                key={team.id}
-                onClick={() => navigate(`/teams/${team.id}`)}
-                className="bg-card border border-border p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-              >
-                <h3 className="text-lg font-semibold text-card-foreground mb-2">
-                  {team.name}
-                </h3>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Created {new Date(team.created_at).toLocaleDateString()}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
+        {content}
 
         {/* Create Team Modal */}
         <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
