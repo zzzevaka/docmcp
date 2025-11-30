@@ -7,6 +7,14 @@ import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import MainLayout from '@/components/layout/MainLayout'
 import ProjectDetailSidebar from "@/components/projects/detail/ProjectDetailSideBar";
 import DocumentEditor from "@/components/documents/DocumentEditor";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 // Mobile sidebar trigger component
 function MobileSidebarTrigger() {
@@ -153,60 +161,57 @@ function ProjectDetail() {
       </SidebarProvider>
 
       {/* Create Document Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/80 flex items-center justify-center z-50">
-          <div className="bg-background border border-border rounded-lg p-6 w-full max-w-md shadow-lg">
-            <h2 className="text-2xl font-bold mb-4 text-foreground">Create New Document</h2>
-            <form onSubmit={handleCreateDocument}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Document Name
-                </label>
-                <input
-                  type="text"
-                  value={newDocumentName}
-                  onChange={(e) => setNewDocumentName(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="Enter document name"
-                  autoFocus
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Document Type
-                </label>
-                <select
-                  value={newDocumentType}
-                  onChange={(e) => setNewDocumentType(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="markdown">Markdown</option>
-                  <option value="whiteboard">Whiteboard</option>
-                </select>
-              </div>
-              <div className="flex gap-2 justify-end">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setNewDocumentName('');
-                    setNewDocumentType('markdown');
-                  }}
-                  className="px-4 py-2 text-foreground bg-muted rounded-md hover:bg-accent"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-                >
-                  Create
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Create New Document</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateDocument}>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Document Name
+              </label>
+              <input
+                type="text"
+                value={newDocumentName}
+                onChange={(e) => setNewDocumentName(e.target.value)}
+                className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder="Enter document name"
+                autoFocus
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Document Type
+              </label>
+              <select
+                value={newDocumentType}
+                onChange={(e) => setNewDocumentType(e.target.value)}
+                className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="markdown">Markdown</option>
+                <option value="whiteboard">Whiteboard</option>
+              </select>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setNewDocumentName('');
+                  setNewDocumentType('markdown');
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">
+                Create
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

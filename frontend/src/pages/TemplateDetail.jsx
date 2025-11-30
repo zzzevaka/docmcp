@@ -207,20 +207,18 @@ export default function TemplateDetail() {
         </div>
       </SidebarProvider>
 
-      {showAddToProjectModal && (
-        <AddTemplateToProjectModal
-          template={template}
-          onClose={() => setShowAddToProjectModal(false)}
-        />
-      )}
+      <AddTemplateToProjectModal
+        template={template}
+        isOpen={showAddToProjectModal}
+        onClose={() => setShowAddToProjectModal(false)}
+      />
 
-      {showActionsModal && (
-        <TemplateActionsModal
-          template={template}
-          onClose={() => setShowActionsModal(false)}
-          onDelete={() => setShowDeleteDialog(true)}
-        />
-      )}
+      <TemplateActionsModal
+        template={template}
+        isOpen={showActionsModal}
+        onClose={() => setShowActionsModal(false)}
+        onDelete={() => setShowDeleteDialog(true)}
+      />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>

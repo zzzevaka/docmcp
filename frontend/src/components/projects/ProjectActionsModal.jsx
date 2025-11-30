@@ -1,10 +1,20 @@
 import { Pencil, Trash2, Radio } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
-export default function ProjectActionsModal({ project, onClose, onEdit, onDelete, onConnectMCP }) {
+export default function ProjectActionsModal({ project, isOpen, onClose, onEdit, onDelete, onConnectMCP }) {
   return (
-    <div className="fixed inset-0 bg-black/50 dark:bg-black/80 flex items-center justify-center z-50">
-      <div className="bg-background border border-border rounded-lg p-6 w-full max-w-sm shadow-lg">
-        <h2 className="text-xl font-bold mb-4 text-foreground">Project Actions</h2>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[375px]">
+        <DialogHeader>
+          <DialogTitle>Project Actions</DialogTitle>
+        </DialogHeader>
         <div className="space-y-2">
           <button
             onClick={() => {
@@ -46,15 +56,16 @@ export default function ProjectActionsModal({ project, onClose, onEdit, onDelete
             </div>
           </button>
         </div>
-        <div className="mt-4 pt-4 border-t border-border">
-          <button
+        <DialogFooter className="mt-4 pt-4 border-t border-border">
+          <Button
             onClick={onClose}
-            className="w-full px-4 py-2 text-foreground bg-muted rounded-md hover:bg-accent"
+            variant="outline"
+            className="w-full"
           >
             Cancel
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

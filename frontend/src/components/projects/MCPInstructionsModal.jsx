@@ -1,7 +1,15 @@
 import { Copy, Check } from 'lucide-react';
 import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
-export default function MCPInstructionsModal({ project, onClose }) {
+export default function MCPInstructionsModal({ project, isOpen, onClose }) {
   const [copied, setCopied] = useState(false);
   const [selectedSystem, setSelectedSystem] = useState('claudeCode');
 
@@ -63,14 +71,12 @@ export default function MCPInstructionsModal({ project, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 dark:bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-background border border-border rounded-lg w-full max-w-2xl max-h-[80vh] flex flex-col shadow-lg">
-        {/* Header - fixed */}
-        <div className="p-6 pb-4 border-b border-border flex-shrink-0">
-          <h2 className="text-xl font-bold mb-4 text-foreground">Connect MCP</h2>
-
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
+        <DialogHeader className="pb-4 border-b border-border flex-shrink-0">
+          <DialogTitle>Connect MCP</DialogTitle>
           {/* System selector */}
-          <div>
+          <div className="mt-4">
             <label className="block text-sm font-medium text-foreground mb-2">
               Select your AI coding assistant:
             </label>
@@ -87,10 +93,10 @@ export default function MCPInstructionsModal({ project, onClose }) {
               <option value="cursor">Cursor</option>
             </select>
           </div>
-        </div>
+        </DialogHeader>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto">
           <div className="space-y-4 text-foreground">
             <p className="text-sm">
               {instructions.description}
@@ -130,16 +136,12 @@ export default function MCPInstructionsModal({ project, onClose }) {
           </div>
         </div>
 
-        {/* Footer - fixed */}
-        <div className="p-6 pt-4 border-t border-border flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          >
+        <DialogFooter className="pt-4 border-t border-border flex-shrink-0">
+          <Button onClick={onClose} className="w-full">
             Close
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

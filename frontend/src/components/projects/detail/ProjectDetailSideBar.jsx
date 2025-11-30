@@ -341,6 +341,7 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
     {actionsDocument && (
       <DocumentActionsModal
         document={actionsDocument}
+        isOpen={true}
         onClose={() => setActionsDocument(null)}
         onEdit={() => setEditingDocument(actionsDocument)}
         onDelete={() => setDeletingDocument(actionsDocument)}
@@ -352,6 +353,7 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
     {editingDocument && (
       <EditDocumentModal
         document={editingDocument}
+        isOpen={true}
         onClose={() => setEditingDocument(null)}
         onSave={(newName) => handleEditDocument(editingDocument.id, newName)}
       />
@@ -361,6 +363,7 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
     {deletingDocument && (
       <DeleteDocumentModal
         document={deletingDocument}
+        isOpen={true}
         onClose={() => setDeletingDocument(null)}
         onDelete={() => handleDeleteDocument(deletingDocument.id)}
       />
@@ -371,47 +374,44 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
       <CreateTemplateModal
         document={creatingTemplateDocument}
         teamName={project.team?.name}
+        isOpen={true}
         onClose={() => setCreatingTemplateDocument(null)}
         onSuccess={onCreateTemplate}
       />
     )}
 
     {/* Project Actions Modal */}
-    {showProjectActions && (
-      <ProjectActionsModal
-        project={project}
-        onClose={() => setShowProjectActions(false)}
-        onEdit={() => setEditingProject(true)}
-        onDelete={() => setDeletingProject(true)}
-        onConnectMCP={() => setShowMCPInstructions(true)}
-      />
-    )}
+    <ProjectActionsModal
+      project={project}
+      isOpen={showProjectActions}
+      onClose={() => setShowProjectActions(false)}
+      onEdit={() => setEditingProject(true)}
+      onDelete={() => setDeletingProject(true)}
+      onConnectMCP={() => setShowMCPInstructions(true)}
+    />
 
     {/* Edit Project Modal */}
-    {editingProject && (
-      <EditProjectModal
-        project={project}
-        onClose={() => setEditingProject(false)}
-        onSave={handleEditProject}
-      />
-    )}
+    <EditProjectModal
+      project={project}
+      isOpen={editingProject}
+      onClose={() => setEditingProject(false)}
+      onSave={handleEditProject}
+    />
 
     {/* Delete Project Modal */}
-    {deletingProject && (
-      <DeleteProjectModal
-        project={project}
-        onClose={() => setDeletingProject(false)}
-        onDelete={handleDeleteProject}
-      />
-    )}
+    <DeleteProjectModal
+      project={project}
+      isOpen={deletingProject}
+      onClose={() => setDeletingProject(false)}
+      onDelete={handleDeleteProject}
+    />
 
     {/* MCP Instructions Modal */}
-    {showMCPInstructions && (
-      <MCPInstructionsModal
-        project={project}
-        onClose={() => setShowMCPInstructions(false)}
-      />
-    )}
+    <MCPInstructionsModal
+      project={project}
+      isOpen={showMCPInstructions}
+      onClose={() => setShowMCPInstructions(false)}
+    />
   </>
   )
 }

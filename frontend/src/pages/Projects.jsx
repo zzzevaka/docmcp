@@ -9,6 +9,14 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 function Projects() {
   const navigate = useNavigate()
@@ -133,62 +141,59 @@ function Projects() {
         )}
 
         {/* Create Project Modal */}
-        {showCreateModal && (
-          <div className="fixed inset-0 bg-black/50 dark:bg-black/80 flex items-center justify-center z-50">
-            <div className="bg-background border border-border rounded-lg p-6 w-full max-w-md shadow-lg">
-              <h2 className="text-2xl font-bold mb-4 text-foreground">Create New Project</h2>
-              <form onSubmit={handleCreateProject}>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Project Name
-                  </label>
-                  <input
-                    type="text"
-                    value={newProjectName}
-                    onChange={(e) => setNewProjectName(e.target.value)}
-                    className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Enter project name"
-                    autoFocus
-                  />
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Team
-                  </label>
-                  <select
-                    value={selectedTeamId}
-                    onChange={(e) => setSelectedTeamId(e.target.value)}
-                    className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    {teams.map((team) => (
-                      <option key={team.id} value={team.id}>
-                        {team.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <button
-                    type="button"
-                    className="px-4 py-2 text-foreground bg-muted rounded-md hover:bg-accent"
-                    onClick={() => {
-                      setShowCreateModal(false)
-                      setNewProjectName('')
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-                  >
-                    Create
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Create New Project</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleCreateProject}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Project Name
+                </label>
+                <input
+                  type="text"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="Enter project name"
+                  autoFocus
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Team
+                </label>
+                <select
+                  value={selectedTeamId}
+                  onChange={(e) => setSelectedTeamId(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {teams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowCreateModal(false)
+                    setNewProjectName('')
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  Create
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   )

@@ -3,8 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { FolderPlus } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
-export default function AddTemplateToProjectModal({ template, onClose }) {
+export default function AddTemplateToProjectModal({ template, isOpen, onClose }) {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
@@ -60,19 +68,21 @@ export default function AddTemplateToProjectModal({ template, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 dark:bg-black/80 flex items-center justify-center z-50">
-      <div className="bg-background border border-border rounded-lg p-6 w-full max-w-md shadow-lg">
-        <div className="flex items-start gap-3 mb-4">
-          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
-            <FolderPlus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+              <FolderPlus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <DialogTitle>Add to Project</DialogTitle>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Add "{template.name}" and all its children as documents to a project
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-foreground">Add to Project</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Add "{template.name}" and all its children as documents to a project
-            </p>
-          </div>
-        </div>
+        </DialogHeader>
 
         {loading ? (
           <div className="py-8 text-center text-muted-foreground">
@@ -102,25 +112,24 @@ export default function AddTemplateToProjectModal({ template, onClose }) {
           </div>
         )}
 
-        <div className="flex gap-2 justify-end">
-          <button
+        <DialogFooter>
+          <Button
             type="button"
+            variant="outline"
             onClick={onClose}
-            className="px-4 py-2 text-foreground bg-muted rounded-md hover:bg-accent"
             disabled={adding}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={handleAdd}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
             disabled={adding || loading || projects.length === 0}
           >
             {adding ? 'Adding...' : 'Add to Project'}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

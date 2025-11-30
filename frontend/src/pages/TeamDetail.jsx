@@ -241,63 +241,60 @@ function TeamDetail() {
         </div>
 
         {/* Invite User Modal */}
-        {showInviteModal && (
-          <div className="fixed inset-0 bg-black/50 dark:bg-black/80 flex items-center justify-center z-50">
-            <div className="bg-background border border-border rounded-lg p-6 w-full max-w-md shadow-lg">
-              <h2 className="text-2xl font-bold mb-4 text-foreground">Invite Team Member</h2>
-              <form onSubmit={handleInviteUser}>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Enter email address"
-                    autoFocus
-                  />
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Role
-                  </label>
-                  <select
-                    value={inviteRole}
-                    onChange={(e) => setInviteRole(e.target.value)}
-                    className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="member">Member</option>
-                    <option value="administrator">Administrator</option>
-                  </select>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Administrators can manage team members and settings
-                  </p>
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowInviteModal(false)
-                      setInviteEmail('')
-                      setInviteRole('member')
-                    }}
-                    className="px-4 py-2 text-foreground bg-muted rounded-md hover:bg-accent"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-                  >
-                    Send Invitation
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        <Dialog open={showInviteModal} onOpenChange={setShowInviteModal}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Invite Team Member</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleInviteUser}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="Enter email address"
+                  autoFocus
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Role
+                </label>
+                <select
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="member">Member</option>
+                  <option value="administrator">Administrator</option>
+                </select>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Administrators can manage team members and settings
+                </p>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowInviteModal(false)
+                    setInviteEmail('')
+                    setInviteRole('member')
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  Send Invitation
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         {/* Edit Team Dialog */}
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
@@ -338,45 +335,52 @@ function TeamDetail() {
         </Dialog>
 
         {/* Remove Member Confirmation Modal */}
-        {showRemoveMemberModal && memberToRemove && (
-          <div className="fixed inset-0 bg-black/50 dark:bg-black/80 flex items-center justify-center z-50">
-            <div className="bg-background border border-border rounded-lg p-6 w-full max-w-md shadow-lg">
-              <div className="flex items-start gap-3 mb-4">
+        <Dialog open={showRemoveMemberModal && !!memberToRemove} onOpenChange={(open) => {
+          if (!open) {
+            setShowRemoveMemberModal(false);
+            setMemberToRemove(null);
+          }
+        }}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
                   <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-foreground">Remove Member</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Are you sure you want to remove {memberToRemove.username} from this team?
-                    They will lose access to all team resources.
-                  </p>
+                  <DialogTitle>Remove Member</DialogTitle>
+                  {memberToRemove && (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Are you sure you want to remove {memberToRemove.username} from this team?
+                      They will lose access to all team resources.
+                    </p>
+                  )}
                 </div>
               </div>
-              <div className="flex gap-2 justify-end">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowRemoveMemberModal(false)
-                    setMemberToRemove(null)
-                  }}
-                  className="px-4 py-2 text-foreground bg-muted rounded-md hover:bg-accent"
-                  disabled={isRemoving}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleRemoveMember}
-                  className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 disabled:opacity-50"
-                  disabled={isRemoving}
-                >
-                  {isRemoving ? 'Removing...' : 'Remove'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowRemoveMemberModal(false)
+                  setMemberToRemove(null)
+                }}
+                disabled={isRemoving}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleRemoveMember}
+                disabled={isRemoving}
+              >
+                {isRemoving ? 'Removing...' : 'Remove'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   )

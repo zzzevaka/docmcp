@@ -3,13 +3,16 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useTheme } from 'next-themes'
 import { Sun, Moon, Monitor, Menu, X } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 function MainLayout({ children, activeTab = 'projects' }) {
   const { user, logout } = useAuth()
   const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
-  const [showUserMenu, setShowUserMenu] = useState(false)
-  const [showMobileMenu, setShowMobileMenu] = useState(false)
 
   const getTabClassName = (tab) => {
     const baseClass = "inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2"
@@ -33,12 +36,45 @@ function MainLayout({ children, activeTab = 'projects' }) {
             {/* Left side - Logo and main nav */}
             <div className="flex">
               <div className="sm:hidden inline-flex py-2 mr-2">
-              <button
-                onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="items-center justify-center px-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent"
-              >
-                <Menu className="h-6 w-6" />
-              </button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="items-center justify-center px-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent">
+                      <Menu className="h-6 w-6" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-48 p-1">
+                    <Link
+                      to="/projects"
+                      className={`block px-4 py-2 text-sm rounded ${
+                        activeTab === 'projects'
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-popover-foreground hover:bg-accent'
+                      }`}
+                    >
+                      Projects
+                    </Link>
+                    <Link
+                      to="/library/categories"
+                      className={`block px-4 py-2 text-sm rounded ${
+                        activeTab === 'library'
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-popover-foreground hover:bg-accent'
+                      }`}
+                    >
+                      Library
+                    </Link>
+                    <Link
+                      to="/teams"
+                      className={`block px-4 py-2 text-sm rounded ${
+                        activeTab === 'teams'
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-popover-foreground hover:bg-accent'
+                      }`}
+                    >
+                      Teams
+                    </Link>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* Logo */}
@@ -76,122 +112,78 @@ function MainLayout({ children, activeTab = 'projects' }) {
 
             {/* Right side - User menu */}
             <div className="flex items-center">
-              <div className="relative">
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 p-2 rounded-full hover:bg-accent"
-                >
-                  <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-medium">
-                    {user?.username?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                </button>
-
-                {/* User dropdown menu */}
-                {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-popover rounded-md shadow-lg py-1 z-10 border border-border">
-                    <div className="px-4 py-2 border-b border-border">
-                      <p className="text-sm font-medium text-popover-foreground">
-                        {user?.username}
-                      </p>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {user?.email}
-                      </p>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="flex items-center gap-2 p-2 rounded-full hover:bg-accent">
+                    <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-medium">
+                      {user?.username?.charAt(0).toUpperCase() || 'U'}
                     </div>
-
-                    {/* Theme selection */}
-                    <div className="px-4 py-2 border-b border-border">
-                      <p className="text-xs font-medium text-muted-foreground mb-2">
-                        Theme
-                      </p>
-                      <div className="space-y-1">
-                        <button
-                          onClick={() => setTheme('light')}
-                          className={`flex items-center gap-2 w-full text-left px-2 py-1.5 text-sm rounded transition-colors ${
-                            theme === 'light'
-                              ? 'bg-primary/10 text-primary'
-                              : 'text-popover-foreground hover:bg-accent'
-                          }`}
-                        >
-                          <Sun className="h-4 w-4" />
-                          <span>Light</span>
-                        </button>
-                        <button
-                          onClick={() => setTheme('dark')}
-                          className={`flex items-center gap-2 w-full text-left px-2 py-1.5 text-sm rounded transition-colors ${
-                            theme === 'dark'
-                              ? 'bg-primary/10 text-primary'
-                              : 'text-popover-foreground hover:bg-accent'
-                          }`}
-                        >
-                          <Moon className="h-4 w-4" />
-                          <span>Dark</span>
-                        </button>
-                        <button
-                          onClick={() => setTheme('system')}
-                          className={`flex items-center gap-2 w-full text-left px-2 py-1.5 text-sm rounded transition-colors ${
-                            theme === 'system'
-                              ? 'bg-primary/10 text-primary'
-                              : 'text-popover-foreground hover:bg-accent'
-                          }`}
-                        >
-                          <Monitor className="h-4 w-4" />
-                          <span>System</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-popover-foreground hover:bg-accent"
-                    >
-                      Logout
-                    </button>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-56 p-0">
+                  <div className="px-4 py-2 border-b border-border">
+                    <p className="text-sm font-medium text-popover-foreground">
+                      {user?.username}
+                    </p>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {user?.email}
+                    </p>
                   </div>
-                )}
-              </div>
+
+                  {/* Theme selection */}
+                  <div className="px-4 py-2 border-b border-border">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">
+                      Theme
+                    </p>
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => setTheme('light')}
+                        className={`flex items-center gap-2 w-full text-left px-2 py-1.5 text-sm rounded transition-colors ${
+                          theme === 'light'
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-popover-foreground hover:bg-accent'
+                        }`}
+                      >
+                        <Sun className="h-4 w-4" />
+                        <span>Light</span>
+                      </button>
+                      <button
+                        onClick={() => setTheme('dark')}
+                        className={`flex items-center gap-2 w-full text-left px-2 py-1.5 text-sm rounded transition-colors ${
+                          theme === 'dark'
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-popover-foreground hover:bg-accent'
+                        }`}
+                      >
+                        <Moon className="h-4 w-4" />
+                        <span>Dark</span>
+                      </button>
+                      <button
+                        onClick={() => setTheme('system')}
+                        className={`flex items-center gap-2 w-full text-left px-2 py-1.5 text-sm rounded transition-colors ${
+                          theme === 'system'
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-popover-foreground hover:bg-accent'
+                        }`}
+                      >
+                        <Monitor className="h-4 w-4" />
+                        <span>System</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleLogout}
+                    className="block w-full text-left px-4 py-2 text-sm text-popover-foreground hover:bg-accent rounded-b-md"
+                  >
+                    Logout
+                  </button>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         </div>
       </nav>
-
-      {/* Mobile menu */}
-      {showMobileMenu && (
-        <div className="sm:hidden absolute left-0 right-0 mt-2 mx-4 bg-popover rounded-md shadow-lg py-1 z-10 border border-border">
-          <Link
-            to="/projects"
-            onClick={() => setShowMobileMenu(false)}
-            className={`block px-4 py-2 text-sm ${
-              activeTab === 'projects'
-                ? 'bg-primary/10 text-primary'
-                : 'text-popover-foreground hover:bg-accent'
-            }`}
-          >
-            Projects
-          </Link>
-          <Link
-            to="/library/categories"
-            onClick={() => setShowMobileMenu(false)}
-            className={`block px-4 py-2 text-sm ${
-              activeTab === 'library'
-                ? 'bg-primary/10 text-primary'
-                : 'text-popover-foreground hover:bg-accent'
-            }`}
-          >
-            Library
-          </Link>
-          <Link
-            to="/teams"
-            onClick={() => setShowMobileMenu(false)}
-            className={`block px-4 py-2 text-sm ${
-              activeTab === 'teams'
-                ? 'bg-primary/10 text-primary'
-                : 'text-popover-foreground hover:bg-accent'
-            }`}
-          >
-            Teams
-          </Link>
-        </div>
-      )}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
