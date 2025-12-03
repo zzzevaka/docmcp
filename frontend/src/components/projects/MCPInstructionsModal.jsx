@@ -131,6 +131,8 @@ export default function MCPInstructionsModal({ project, isOpen, onClose }) {
                 <li><code className="text-xs bg-muted px-1 rounded">list_documents</code> - List all documents with their hierarchy</li>
                 <li><code className="text-xs bg-muted px-1 rounded">search_documents</code> - Search documents by name or content</li>
                 <li><code className="text-xs bg-muted px-1 rounded">get_document</code> - Get the full content of a specific document</li>
+                <li><code className="text-xs bg-muted px-1 rounded">create_document</code> - Create a new document</li>
+                <li><code className="text-xs bg-muted px-1 rounded">edit_document</code> - Edit an existing document</li>
               </ul>
             </div>
           </div>

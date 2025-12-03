@@ -1,4 +1,4 @@
-import { Pencil, Trash2, BookTemplate } from 'lucide-react';
+import { Pencil, Trash2, BookTemplate, Bot } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -7,8 +7,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 
-export default function DocumentActionsModal({ document, isOpen, onClose, onEdit, onDelete, onCreateTemplate }) {
+export default function DocumentActionsModal({ document, isOpen, onClose, onEdit, onDelete, onCreateTemplate, onToggleEditableByAgent }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[375px]">
@@ -16,6 +17,22 @@ export default function DocumentActionsModal({ document, isOpen, onClose, onEdit
           <DialogTitle>Document Actions</DialogTitle>
         </DialogHeader>
         <div className="space-y-2">
+          <div className="w-full px-4 py-3 rounded-md flex items-center gap-3">
+            <Bot className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <div className="flex-1">
+              <div className="font-medium text-foreground">AI Editable</div>
+              <div className="text-sm text-muted-foreground">Allow AI agents to edit this document</div>
+            </div>
+            <Switch
+              checked={document.editable_by_agent}
+              onCheckedChange={(checked) => {
+                if (onToggleEditableByAgent) {
+                  onToggleEditableByAgent(document.id, checked);
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
           <button
             onClick={() => {
               onClose();

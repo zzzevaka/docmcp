@@ -194,6 +194,9 @@ async def update_document(
     if "order" in update_data:
         document.order = payload.order
 
+    if "editable_by_agent" in update_data:
+        document.editable_by_agent = payload.editable_by_agent
+
     document = await document_repo.update(document)
     await db.commit()
     await db.refresh(document)

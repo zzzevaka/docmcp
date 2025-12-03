@@ -55,6 +55,30 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
     }
   };
 
+  const handleToggleEditableByAgent = async (documentId, editableByAgent) => {
+    try {
+      await axios.put(
+        `/api/v1/projects/${project.id}/documents/${documentId}`,
+        { editable_by_agent: editableByAgent },
+        { withCredentials: true }
+      );
+
+      // Update the actionsDocument state immediately to reflect the change in the modal
+      if (actionsDocument && actionsDocument.id === documentId) {
+        setActionsDocument({ ...actionsDocument, editable_by_agent: editableByAgent });
+      }
+
+      if (onDocumentsChange) {
+        await onDocumentsChange();
+      }
+      toast.success(editableByAgent ? 'Document is now editable by AI' : 'Document is no longer editable by AI');
+    } catch (error) {
+      console.error('Failed to update document:', error);
+      toast.error(`Failed to update document: ${error.response?.data?.detail || error.message}`);
+      throw error;
+    }
+  };
+
   const handleDeleteDocument = async (documentId) => {
     try {
       await axios.delete(
@@ -346,6 +370,7 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
         onEdit={() => setEditingDocument(actionsDocument)}
         onDelete={() => setDeletingDocument(actionsDocument)}
         onCreateTemplate={() => setCreatingTemplateDocument(actionsDocument)}
+        onToggleEditableByAgent={handleToggleEditableByAgent}
       />
     )}
 
