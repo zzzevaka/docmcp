@@ -3,7 +3,7 @@ from typing import List, Optional
 from uuid import UUID as UUID_TYPE
 
 from sqlalchemy import UUID as SQLUUID
-from sqlalchemy import Enum, ForeignKey, String, Text
+from sqlalchemy import Boolean, Enum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -47,6 +47,7 @@ class Document(Base):
         SQLUUID, ForeignKey("documents.id"), nullable=True, index=True
     )
     order: Mapped[int] = mapped_column(default=0, server_default="0", index=True)
+    editable_by_agent: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
     # Relationships
     project: Mapped["Project"] = relationship(back_populates="documents", lazy="selectin")

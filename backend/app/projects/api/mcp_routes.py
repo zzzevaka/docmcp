@@ -10,7 +10,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.projects.models import Document
+from app.projects.models import Document, DocumentType
 from app.projects.repositories import DocumentRepository, ProjectRepository
 
 router = APIRouter(prefix="/api/mcp", tags=["mcp"])
@@ -23,7 +23,10 @@ SERVER_INFO = {"name": "docs-mcp-server", "version": "1.0.0"}
 TOOLS = [
     {
         "name": "list_documents",
-        "description": "Returns list of all project documents with their hierarchical structure (id, name, descendants)",
+        "description": (
+            "Returns list of all project documents with their hierarchical structure "
+            "(id, name, editable_by_agent, descendants)"
+        ),
         "inputSchema": {
             "type": "object",
             "properties": {},
@@ -32,7 +35,10 @@ TOOLS = [
     },
     {
         "name": "search_documents",
-        "description": "Search for documents by name or content. Returns matching documents with their IDs, names, and types.",
+        "description": (
+            "Search for documents by name or content. "
+            "Returns matching documents with their IDs, names, and types."
+        ),
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -58,6 +64,54 @@ TOOLS = [
             "required": ["id"],
         },
     },
+    {
+        "name": "edit_document",
+        "description": (
+            "Edit an existing document's content. "
+            "Only documents with editable_by_agent=true can be edited."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "document_id": {
+                    "type": "string",
+                    "description": "ID of the document to edit",
+                },
+                "content": {
+                    "type": "string",
+                    "description": "New content for the document (will be stored based on document type)",
+                },
+            },
+            "required": ["document_id", "content"],
+        },
+    },
+    {
+        "name": "create_document",
+        "description": "Create a new document in the project",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "description": "Title/name of the document",
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Document type (markdown or whiteboard)",
+                    "enum": ["markdown", "whiteboard"],
+                },
+                "content": {
+                    "type": "string",
+                    "description": (
+                        "Content of the document. "
+                        "Content of markdown documents should be plain markdown. "
+                        "Content of whiteboards should be JSON in Excalidraw format."
+                    ),
+                },
+            },
+            "required": ["title", "type", "content"],
+        },
+    },
 ]
 
 
@@ -68,6 +122,7 @@ def build_document_tree(document: Document, all_docs: list[Document]) -> dict[st
     result = {
         "id": str(document.id),
         "name": document.name,
+        "editable_by_agent": document.editable_by_agent,
     }
 
     if children:
@@ -169,12 +224,10 @@ async def get_document_tool(project_id: UUID, document_id: str, db: AsyncSession
     except ValueError as e:
         raise ValueError("Invalid document ID format") from e
 
-    # Get document
     document = await document_repo.get(doc_uuid)
     if not document or document.project_id != project_id:
         raise ValueError("Document not found")
 
-    # Parse content
     try:
         if isinstance(document.content, str):
             content = json.loads(document.content)
@@ -183,7 +236,6 @@ async def get_document_tool(project_id: UUID, document_id: str, db: AsyncSession
     except json.JSONDecodeError:
         content = document.content
 
-    # Build content response
     content_blocks = [
         {
             "type": "text",
@@ -194,7 +246,14 @@ async def get_document_tool(project_id: UUID, document_id: str, db: AsyncSession
     # Add document type-specific content
     if document.type.value == "markdown":
         # For markdown documents, add the markdown text
-        if isinstance(content, dict) and "text" in content:
+        if isinstance(content, dict) and "markdown" in content:
+            content_blocks.append(
+                {
+                    "type": "text",
+                    "text": content["markdown"],
+                }
+            )
+        elif isinstance(content, dict) and "text" in content:
             content_blocks.append(
                 {
                     "type": "text",
@@ -213,8 +272,16 @@ async def get_document_tool(project_id: UUID, document_id: str, db: AsyncSession
         if isinstance(content, dict) and "image" in content:
             content_image = content["image"].split(",")[-1]
             content_blocks.append({"type": "image", "data": content_image, "mimeType": "image/png"})
+        # Add raw content as text
+        if isinstance(content, dict) and "raw" in content:
+            content_blocks.append(
+                {
+                    "type": "text",
+                    "text": json.dumps(content["raw"], indent=2),
+                }
+            )
         else:
-            # Fallback to JSON if image not available
+            # Fallback: show full content if no 'raw' field
             content_blocks.append(
                 {
                     "type": "text",
@@ -223,6 +290,121 @@ async def get_document_tool(project_id: UUID, document_id: str, db: AsyncSession
             )
 
     return {"content": content_blocks}
+
+
+async def edit_document_tool(
+    project_id: UUID, document_id: str, content: str, db: AsyncSession
+) -> dict[str, Any]:
+    """Edit an existing document's content."""
+    project_repo = ProjectRepository(db)
+    document_repo = DocumentRepository(db)
+
+    # Check if project exists
+    project = await project_repo.get(project_id)
+    if not project:
+        raise ValueError("Project not found")
+
+    # Parse document ID
+    try:
+        doc_uuid = UUID(document_id)
+    except ValueError as e:
+        raise ValueError("Invalid document ID format") from e
+
+    # Get document
+    document = await document_repo.get(doc_uuid)
+    if not document or document.project_id != project_id:
+        raise ValueError("Document not found")
+
+    # Check if document is editable by agent
+    if not document.editable_by_agent:
+        raise ValueError("This document is not editable by agents. Set editable_by_agent=true first.")
+
+    if document.type == DocumentType.MARKDOWN:
+        new_content = {"markdown": content}
+    elif document.type == DocumentType.WHITEBOARD:
+        try:
+            new_content = {"raw": json.loads(content)}
+        except json.JSONDecodeError as e:
+            raise ValueError("Whiteboard content must be valid JSON") from e
+    else:
+        # Default: store as-is
+        new_content = {"text": content}
+
+    document.content = json.dumps(new_content)
+    await db.commit()
+    await db.refresh(document)
+
+    return {
+        "content": [
+            {
+                "type": "text",
+                "text": json.dumps(
+                    {
+                        "success": True,
+                        "document_id": str(document.id),
+                        "message": "Document updated successfully",
+                    },
+                    indent=2,
+                ),
+            }
+        ]
+    }
+
+
+async def create_document_tool(
+    project_id: UUID, title: str, doc_type: str, content: str, db: AsyncSession
+) -> dict[str, Any]:
+    """Create a new document in the project."""
+    project_repo = ProjectRepository(db)
+
+    project = await project_repo.get(project_id)
+    if not project:
+        raise ValueError("Project not found")
+
+    try:
+        document_type = DocumentType(doc_type)
+    except ValueError as e:
+        raise ValueError("Invalid document type. Must be 'markdown' or 'whiteboard'") from e
+
+    if document_type == DocumentType.MARKDOWN:
+        doc_content = {"markdown": content}
+    elif document_type == DocumentType.WHITEBOARD:
+        try:
+            doc_content = {
+                "raw": json.loads(content),
+            }
+        except json.JSONDecodeError as e:
+            raise ValueError("Whiteboard content must be valid JSON") from e
+    else:
+        doc_content = {"text": content}
+
+    new_document = Document(
+        name=title,
+        project_id=project_id,
+        type=document_type,
+        content=json.dumps(doc_content),
+        editable_by_agent=True,
+    )
+
+    db.add(new_document)
+    await db.commit()
+    await db.refresh(new_document)
+
+    return {
+        "content": [
+            {
+                "type": "text",
+                "text": json.dumps(
+                    {
+                        "success": True,
+                        "document_id": str(new_document.id),
+                        "message": "Document created successfully",
+                    },
+                    indent=2,
+                ),
+            }
+        ]
+    }
 
 
 async def execute_tool(
@@ -237,6 +419,15 @@ async def execute_tool(
     elif tool_name == "get_document":
         document_id = arguments.get("id", "")
         return await get_document_tool(project_id, document_id, db)
+    elif tool_name == "edit_document":
+        document_id = arguments.get("document_id", "")
+        content = arguments.get("content", "")
+        return await edit_document_tool(project_id, document_id, content, db)
+    elif tool_name == "create_document":
+        title = arguments.get("title", "")
+        doc_type = arguments.get("type", "")
+        content = arguments.get("content", "")
+        return await create_document_tool(project_id, title, doc_type, content, db)
     else:
         raise ValueError(f"Unknown tool: {tool_name}")
 

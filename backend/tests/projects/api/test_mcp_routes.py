@@ -1,10 +1,11 @@
 """Tests for MCP routes."""
 
 import json
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -144,12 +145,14 @@ async def test_tools_list(client_with_db: AsyncClient, test_project: dict) -> No
     assert data["id"] == 2
     assert "result" in data
     assert "tools" in data["result"]
-    assert len(data["result"]["tools"]) == 3
+    assert len(data["result"]["tools"]) == 5
 
     tool_names = [tool["name"] for tool in data["result"]["tools"]]
     assert "list_documents" in tool_names
     assert "search_documents" in tool_names
     assert "get_document" in tool_names
+    assert "edit_document" in tool_names
+    assert "create_document" in tool_names
 
 
 @pytest.mark.asyncio
@@ -183,6 +186,7 @@ async def test_list_documents_tool(client_with_db: AsyncClient, test_project: di
     # Check first root document
     doc1 = next(d for d in text_data["documents"] if d["name"] == "Getting Started")
     assert "id" in doc1
+    assert "editable_by_agent" in doc1
     assert "descendants" in doc1
     assert len(doc1["descendants"]) == 2
 
@@ -507,3 +511,166 @@ async def test_sse_support(client_with_db: AsyncClient, test_project: dict) -> N
     content = response.text
     assert content.startswith("data: ")
     assert content.endswith("\n\n")
+
+
+@pytest.mark.asyncio
+async def test_edit_document_tool(
+    client_with_db: AsyncClient, test_project: dict, db_session: AsyncSession
+) -> None:
+    """Test edit_document tool with editable document."""
+    project = test_project["project"]
+    doc = test_project["root_doc1"]
+
+    # First, enable editable_by_agent
+    doc.editable_by_agent = True
+    await db_session.commit()
+    await db_session.refresh(doc)
+
+    new_content = "# Updated Content\n\nThis is the updated content."
+    request_data = {
+        "jsonrpc": "2.0",
+        "id": 16,
+        "method": "tools/call",
+        "params": {
+            "name": "edit_document",
+            "arguments": {"document_id": str(doc.id), "content": new_content},
+        },
+    }
+
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["jsonrpc"] == "2.0"
+    assert "result" in data
+    text_data = json.loads(data["result"]["content"][0]["text"])
+    assert text_data["success"] is True
+    assert text_data["document_id"] == str(doc.id)
+
+    # Verify the document was actually updated
+    await db_session.refresh(doc)
+    content = json.loads(doc.content)
+    assert content["markdown"] == new_content
+
+
+@pytest.mark.asyncio
+async def test_edit_document_not_editable(client_with_db: AsyncClient, test_project: dict) -> None:
+    """Test edit_document tool fails when document is not editable by agent."""
+    project = test_project["project"]
+    doc = test_project["root_doc1"]
+
+    # Document has editable_by_agent=False by default
+    new_content = "# Updated Content"
+    request_data = {
+        "jsonrpc": "2.0",
+        "id": 17,
+        "method": "tools/call",
+        "params": {
+            "name": "edit_document",
+            "arguments": {"document_id": str(doc.id), "content": new_content},
+        },
+    }
+
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Should return error
+    assert "error" in data
+    assert "not editable by agents" in data["error"]["message"]
+
+
+@pytest.mark.asyncio
+async def test_create_document_tool(
+    client_with_db: AsyncClient, test_project: dict, db_session: AsyncSession
+) -> None:
+    """Test create_document tool."""
+    project = test_project["project"]
+
+    request_data = {
+        "jsonrpc": "2.0",
+        "id": 18,
+        "method": "tools/call",
+        "params": {
+            "name": "create_document",
+            "arguments": {
+                "title": "New AI Document",
+                "type": "markdown",
+                "content": "# AI Generated\n\nThis document was created by an AI agent.",
+            },
+        },
+    }
+
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["jsonrpc"] == "2.0"
+    assert "result" in data
+    text_data = json.loads(data["result"]["content"][0]["text"])
+    assert text_data["success"] is True
+    assert "document_id" in text_data
+
+    # Verify the document was created
+    doc_id = UUID(text_data["document_id"])
+    result = await db_session.execute(select(Document).where(Document.id == doc_id))
+    new_doc = result.scalar_one_or_none()
+    assert new_doc is not None
+    assert new_doc.name == "New AI Document"
+    assert new_doc.type == DocumentType.MARKDOWN
+    assert new_doc.editable_by_agent is True  # Should be True by default for AI-created docs
+    content = json.loads(new_doc.content)
+    assert "AI Generated" in content["markdown"]
+
+
+@pytest.mark.asyncio
+async def test_create_document_invalid_type(client_with_db: AsyncClient, test_project: dict) -> None:
+    """Test create_document tool with invalid document type."""
+    project = test_project["project"]
+
+    request_data = {
+        "jsonrpc": "2.0",
+        "id": 19,
+        "method": "tools/call",
+        "params": {
+            "name": "create_document",
+            "arguments": {"title": "Invalid Doc", "type": "invalid_type", "content": "Content"},
+        },
+    }
+
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Should return error
+    assert "error" in data
+    assert "Invalid document type" in data["error"]["message"]
+
+
+@pytest.mark.asyncio
+async def test_edit_document_invalid_id(client_with_db: AsyncClient, test_project: dict) -> None:
+    """Test edit_document with invalid document ID format."""
+    project = test_project["project"]
+
+    request_data = {
+        "jsonrpc": "2.0",
+        "id": 20,
+        "method": "tools/call",
+        "params": {
+            "name": "edit_document",
+            "arguments": {"document_id": "not-a-uuid", "content": "New content"},
+        },
+    }
+
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Should return error
+    assert "error" in data
+    assert "Invalid document ID format" in data["error"]["message"]

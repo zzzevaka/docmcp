@@ -41,6 +41,7 @@ class DocumentSchema(BaseModel):
     content: dict | str  # JSON content or string
     parent_id: UUID | None
     order: int
+    editable_by_agent: bool
     created_at: datetime
     updated_at: datetime
 
@@ -63,3 +64,4 @@ class DocumentUpdateSchema(BaseModel):
     content: dict | str | None = None
     parent_id: UUID | None = None
     order: int | None = None
+    editable_by_agent: bool | None = None
