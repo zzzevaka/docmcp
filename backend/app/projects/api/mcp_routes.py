@@ -324,8 +324,8 @@ async def edit_document_tool(
     elif document.type == DocumentType.WHITEBOARD:
         try:
             new_content = {"raw": json.loads(content)}
-        except json.JSONDecodeError:
-            raise ValueError("Whiteboard content must be valid JSON")
+        except json.JSONDecodeError as e:
+            raise ValueError("Whiteboard content must be valid JSON") from e
     else:
         # Default: store as-is
         new_content = {"text": content}
@@ -356,7 +356,6 @@ async def create_document_tool(
 ) -> dict[str, Any]:
     """Create a new document in the project."""
     project_repo = ProjectRepository(db)
-    document_repo = DocumentRepository(db)
 
     project = await project_repo.get(project_id)
     if not project:
@@ -365,7 +364,7 @@ async def create_document_tool(
     try:
         document_type = DocumentType(doc_type)
     except ValueError as e:
-        raise ValueError(f"Invalid document type. Must be 'markdown' or 'whiteboard'") from e
+        raise ValueError("Invalid document type. Must be 'markdown' or 'whiteboard'") from e
 
     if document_type == DocumentType.MARKDOWN:
         doc_content = {"markdown": content}
@@ -374,8 +373,8 @@ async def create_document_tool(
             doc_content = {
                 "raw": json.loads(content),
             }
-        except json.JSONDecodeError:
-            raise ValueError("Whiteboard content must be valid JSON")
+        except json.JSONDecodeError as e:
+            raise ValueError("Whiteboard content must be valid JSON") from e
     else:
         doc_content = {"text": content}
 
