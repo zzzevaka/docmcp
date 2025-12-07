@@ -1,7 +1,10 @@
+from datetime import datetime, timezone
+
 import pytest
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.users.models import Session, Team, TeamMember, TeamRole, User
+from app.users.models import ApiToken, Session, Team, TeamMember, TeamRole, User
 
 
 @pytest.mark.asyncio
@@ -195,3 +198,111 @@ async def test_team_multiple_members_with_roles(db_session: AsyncSession) -> Non
     assert team.is_admin(user1.id) is True
     assert team.is_admin(user2.id) is False
     assert team.is_admin(user3.id) is False
+
+
+@pytest.mark.asyncio
+async def test_create_api_token(db_session: AsyncSession) -> None:
+    """Test API token creation."""
+    user = User(username="testuser", email="test@example.com")
+    db_session.add(user)
+    await db_session.flush()
+
+    api_token = ApiToken(name="My Token", user_id=user.id, token="test_token_123")
+    db_session.add(api_token)
+    await db_session.commit()
+    await db_session.refresh(api_token)
+
+    assert api_token.id is not None
+    assert api_token.name == "My Token"
+    assert api_token.user_id == user.id
+    assert api_token.token == "test_token_123"
+    assert api_token.deleted_at is None
+    assert api_token.created_at is not None
+    assert api_token.updated_at is not None
+
+
+@pytest.mark.asyncio
+async def test_api_token_user_relationship(db_session: AsyncSession) -> None:
+    """Test relationship between API token and user."""
+    user = User(username="testuser", email="test@example.com")
+    db_session.add(user)
+    await db_session.flush()
+
+    api_token = ApiToken(name="My Token", user_id=user.id, token="test_token_123")
+    db_session.add(api_token)
+    await db_session.commit()
+    await db_session.refresh(api_token)
+    await db_session.refresh(user)
+
+    # Test token -> user relationship
+    assert api_token.user.username == "testuser"
+    assert api_token.user.email == "test@example.com"
+
+    # Test user -> tokens relationship
+    assert len(user.api_tokens) == 1
+    assert user.api_tokens[0].name == "My Token"
+    assert user.api_tokens[0].token == "test_token_123"
+
+
+@pytest.mark.asyncio
+async def test_api_token_soft_delete(db_session: AsyncSession) -> None:
+    """Test soft deleting an API token."""
+    user = User(username="testuser", email="test@example.com")
+    db_session.add(user)
+    await db_session.flush()
+
+    api_token = ApiToken(name="My Token", user_id=user.id, token="test_token_123")
+    db_session.add(api_token)
+    await db_session.commit()
+    await db_session.refresh(api_token)
+
+    # Soft delete by setting deleted_at
+    api_token.deleted_at = datetime.now(timezone.utc)
+    await db_session.commit()
+    await db_session.refresh(api_token)
+
+    assert api_token.deleted_at is not None
+    assert isinstance(api_token.deleted_at, datetime)
+
+
+@pytest.mark.asyncio
+async def test_api_token_unique_constraint(db_session: AsyncSession) -> None:
+    """Test that token value must be unique."""
+    user = User(username="testuser", email="test@example.com")
+    db_session.add(user)
+    await db_session.flush()
+
+    api_token1 = ApiToken(name="Token 1", user_id=user.id, token="same_token")
+    db_session.add(api_token1)
+    await db_session.commit()
+
+    # Try to create another token with the same token value
+    api_token2 = ApiToken(name="Token 2", user_id=user.id, token="same_token")
+    db_session.add(api_token2)
+
+    with pytest.raises(IntegrityError):
+        await db_session.commit()
+
+
+@pytest.mark.asyncio
+async def test_user_multiple_api_tokens(db_session: AsyncSession) -> None:
+    """Test that a user can have multiple API tokens."""
+    user = User(username="testuser", email="test@example.com")
+    db_session.add(user)
+    await db_session.flush()
+
+    token1 = ApiToken(name="Token 1", user_id=user.id, token="token_1")
+    token2 = ApiToken(name="Token 2", user_id=user.id, token="token_2")
+    token3 = ApiToken(name="Token 3", user_id=user.id, token="token_3")
+
+    db_session.add(token1)
+    db_session.add(token2)
+    db_session.add(token3)
+    await db_session.commit()
+    await db_session.refresh(user)
+
+    assert len(user.api_tokens) == 3
+    token_names = [t.name for t in user.api_tokens]
+    assert "Token 1" in token_names
+    assert "Token 2" in token_names
+    assert "Token 3" in token_names

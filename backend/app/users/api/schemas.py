@@ -87,3 +87,20 @@ class LocalLoginSchema(BaseModel):
 
     email: EmailStr
     password: str
+
+
+class ApiTokenCreateSchema(BaseModel):
+    """Schema for creating an API token."""
+
+    name: str
+
+
+class ApiTokenSchema(BaseModel):
+    """Schema for API token response."""
+
+    id: UUID
+    name: str
+    token: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

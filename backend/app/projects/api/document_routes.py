@@ -186,7 +186,6 @@ async def update_document(
             parent = await document_repo.get(payload.parent_id)
             if not parent or parent.project_id != project_id:
                 raise HTTPException(status_code=400, detail="Invalid parent document")
-            # Prevent circular references
             if payload.parent_id == document_id:
                 raise HTTPException(status_code=400, detail="Document cannot be its own parent")
         document.parent_id = payload.parent_id

@@ -1,8 +1,9 @@
 import enum
+from datetime import datetime
 from typing import List
 
 from sqlalchemy import UUID as SQLUUID
-from sqlalchemy import Enum, ForeignKey, String
+from sqlalchemy import DateTime, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -72,6 +73,10 @@ class User(Base):
 
     # Relationships
     team_memberships: Mapped[List["TeamMember"]] = relationship(
+        back_populates="user",
+        lazy="selectin",
+    )
+    api_tokens: Mapped[List["ApiToken"]] = relationship(
         back_populates="user",
         lazy="selectin",
     )
@@ -172,3 +177,20 @@ class TeamInvitation(Base):
 
     def __repr__(self) -> str:
         return f"<TeamInvitation(id={self.id}, team_id={self.team_id}, invitee_email={self.invitee_email}, status={self.status}, role={self.role})>"
+
+
+class ApiToken(Base):
+    """API token model for MCP authentication."""
+
+    __tablename__ = "api_tokens"
+
+    name: Mapped[str] = mapped_column(String(256), nullable=False)
+    user_id: Mapped[SQLUUID] = mapped_column(SQLUUID, ForeignKey("users.id"), index=True)
+    token: Mapped[str] = mapped_column(String(256), unique=True, index=True, nullable=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Relationship
+    user: Mapped["User"] = relationship(back_populates="api_tokens", lazy="selectin")
+
+    def __repr__(self) -> str:
+        return f"<ApiToken(id={self.id}, name={self.name}, user_id={self.user_id}, deleted_at={self.deleted_at})>"
