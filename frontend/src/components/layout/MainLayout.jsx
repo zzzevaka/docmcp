@@ -46,7 +46,7 @@ function MainLayout({ children, activeTab }) {
             {/* Left side - Logo and main nav */}
             <div className="flex">
               <div className="sm:hidden inline-flex py-2 mr-2">
-                <Popover>
+                <Popover modal={true}>
                   <PopoverTrigger asChild>
                     <button className="items-center justify-center px-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent">
                       <Menu className="h-6 w-6" />
@@ -122,7 +122,7 @@ function MainLayout({ children, activeTab }) {
 
             {/* Right side - User menu */}
             <div className="flex items-center">
-              <Popover>
+              <Popover modal={true}>
                 <PopoverTrigger asChild>
                   <button className="flex items-center gap-2 p-2 rounded-full hover:bg-accent">
                     <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-medium">
