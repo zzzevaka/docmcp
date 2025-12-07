@@ -17,7 +17,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useTeams, usePendingInvitations } from '../recoil/hooks'
+import { useTeams, usePendingInvitations } from '@/store'
 
 function Teams() {
   const navigate = useNavigate()

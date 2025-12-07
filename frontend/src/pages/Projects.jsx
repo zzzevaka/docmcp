@@ -17,7 +17,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useProjects, useTeams } from '../recoil/hooks'
+import { useProjects, useTeams } from '@/store'
 
 function Projects() {
   const navigate = useNavigate()
@@ -158,7 +158,7 @@ function Projects() {
                   onChange={(e) => setSelectedTeamId(e.target.value)}
                   className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  {teams.map((team) => (
+                  {teams && teams.map((team) => (
                     <option key={team.id} value={team.id}>
                       {team.name}
                     </option>

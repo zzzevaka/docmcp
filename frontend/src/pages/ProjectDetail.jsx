@@ -15,7 +15,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useProjectDetail } from '../recoil/hooks';
+import { useProjectDetail } from '@/store';
 
 // Mobile sidebar trigger component
 function MobileSidebarTrigger() {

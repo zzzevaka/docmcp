@@ -14,7 +14,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { useCategories, useTemplates } from '../recoil/hooks';
+import { useCategories, useTemplates } from '@/store';
 
 export default function Library() {
   const navigate = useNavigate();
