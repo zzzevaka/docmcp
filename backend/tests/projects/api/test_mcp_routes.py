@@ -593,6 +593,7 @@ async def test_edit_document_tool(
 ) -> None:
     """Test edit_document tool with editable document."""
     project = test_project["project"]
+    token = test_project["api_token"].token
     doc = test_project["root_doc1"]
 
     # First, enable editable_by_agent
@@ -611,7 +612,7 @@ async def test_edit_document_tool(
         },
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
@@ -632,6 +633,7 @@ async def test_edit_document_tool(
 async def test_edit_document_not_editable(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test edit_document tool fails when document is not editable by agent."""
     project = test_project["project"]
+    token = test_project["api_token"].token
     doc = test_project["root_doc1"]
 
     # Document has editable_by_agent=False by default
@@ -646,7 +648,7 @@ async def test_edit_document_not_editable(client_with_db: AsyncClient, test_proj
         },
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
@@ -662,6 +664,7 @@ async def test_create_document_tool(
 ) -> None:
     """Test create_document tool."""
     project = test_project["project"]
+    token = test_project["api_token"].token
 
     request_data = {
         "jsonrpc": "2.0",
@@ -677,7 +680,7 @@ async def test_create_document_tool(
         },
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
@@ -704,6 +707,7 @@ async def test_create_document_tool(
 async def test_create_document_invalid_type(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test create_document tool with invalid document type."""
     project = test_project["project"]
+    token = test_project["api_token"].token
 
     request_data = {
         "jsonrpc": "2.0",
@@ -715,7 +719,7 @@ async def test_create_document_invalid_type(client_with_db: AsyncClient, test_pr
         },
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
@@ -729,6 +733,7 @@ async def test_create_document_invalid_type(client_with_db: AsyncClient, test_pr
 async def test_edit_document_invalid_id(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test edit_document with invalid document ID format."""
     project = test_project["project"]
+    token = test_project["api_token"].token
 
     request_data = {
         "jsonrpc": "2.0",
@@ -740,7 +745,7 @@ async def test_edit_document_invalid_id(client_with_db: AsyncClient, test_projec
         },
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
