@@ -15,6 +15,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useProjectDetail } from '../recoil/hooks';
 
 // Mobile sidebar trigger component
 function MobileSidebarTrigger() {
@@ -34,38 +35,22 @@ function MobileSidebarTrigger() {
 function ProjectDetail() {
   const { projectId, documentId } = useParams();
   const navigate = useNavigate();
-  const [project, setProject] = useState(null);
-  const [documents, setDocuments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { project, documents, loading, fetchProjectData, refreshProjectData } = useProjectDetail(projectId);
   const [activeDocument, setActiveDocument] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newDocumentName, setNewDocumentName] = useState('');
   const [newDocumentType, setNewDocumentType] = useState('markdown');
 
-  const fetchProjectData = async () => {
-    try {
-      const [projectRes, docsRes] = await Promise.all([
-        axios.get(`/api/v1/projects/${projectId}`, { withCredentials: true }),
-        axios.get(`/api/v1/projects/${projectId}/documents/`, { withCredentials: true }),
-      ])
-      setProject(projectRes.data)
-      setDocuments(docsRes.data)
-    } catch (error) {
-      console.error('Failed to fetch project data:', error)
+  useEffect(() => {
+    fetchProjectData().catch((error) => {
       if (error.response?.status === 404) {
         navigate('/projects')
       }
-    } finally {
-      setLoading(false)
-    }
-  }
+    })
+  }, [projectId, fetchProjectData, navigate]);
 
   useEffect(() => {
-    fetchProjectData()
-  }, [projectId]);
-
-  useEffect(() => {
-    if (!loading) {
+    if (!loading && documents) {
       if (documentId) {
         const doc = documents.filter((doc) => doc.id === documentId);
         if (doc.length) {
@@ -104,7 +89,7 @@ function ProjectDetail() {
 
       setNewDocumentName('');
       setShowCreateModal(false);
-      await fetchProjectData();
+      await refreshProjectData();
       navigate(`/projects/${projectId}/documents/${response.data.id}`);
     } catch (error) {
       console.error('Failed to create document:', error);
@@ -145,7 +130,7 @@ function ProjectDetail() {
           documents={documents}
           activeDocumentId={activeDocument?.id}
           onCreateDocument={() => setShowCreateModal(true)}
-          onDocumentsChange={fetchProjectData}
+          onDocumentsChange={refreshProjectData}
           onCreateTemplate={handleCreateTemplate}
         />
         <div

@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from 'next-themes'
+import { RecoilRoot } from 'recoil'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 import Login from './pages/Login'
@@ -18,12 +19,13 @@ import { Toaster } from '@/components/ui/sonner'
 
 function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <Router>
-        <AuthProvider>
-          <Toaster />
-          <CookieBanner />
-          <Routes>
+    <RecoilRoot>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <Router>
+          <AuthProvider>
+            <Toaster />
+            <CookieBanner />
+            <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
@@ -108,10 +110,11 @@ function App() {
               </ProtectedRoute>
             }
           />
-        </Routes>
-      </AuthProvider>
-    </Router>
-    </ThemeProvider>
+          </Routes>
+        </AuthProvider>
+      </Router>
+      </ThemeProvider>
+    </RecoilRoot>
   )
 }
 

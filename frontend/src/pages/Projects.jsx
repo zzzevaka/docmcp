@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'sonner'
@@ -17,41 +17,28 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useProjects, useTeams } from '../recoil/hooks'
 
 function Projects() {
   const navigate = useNavigate()
-  const [projects, setProjects] = useState([])
-  const [teams, setTeams] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { projects, loading: projectsLoading, fetchProjects, refreshProjects } = useProjects()
+  const { teams, loading: teamsLoading, fetchTeams } = useTeams()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
   const [selectedTeamId, setSelectedTeamId] = useState('')
-  const dataFetched = useRef(false)
 
-  const fetchData = async () => {
-    try {
-      const [projectsRes, teamsRes] = await Promise.all([
-        axios.get('/api/v1/projects/', { withCredentials: true }),
-        axios.get('/api/v1/teams/', { withCredentials: true }),
-      ])
-      setProjects(projectsRes.data)
-      setTeams(teamsRes.data)
-      if (teamsRes.data.length > 0) {
-        setSelectedTeamId(teamsRes.data[0].id)
-      }
-    } catch (error) {
-      console.error('Failed to fetch data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const loading = projectsLoading || teamsLoading
 
   useEffect(() => {
-    // Prevent double fetch in React StrictMode
-    if (dataFetched.current) return
-    dataFetched.current = true
-    fetchData()
-  }, [])
+    fetchProjects()
+    fetchTeams()
+  }, [fetchProjects, fetchTeams])
+
+  useEffect(() => {
+    if (teams && teams.length > 0 && !selectedTeamId) {
+      setSelectedTeamId(teams[0].id)
+    }
+  }, [teams, selectedTeamId])
 
   const handleCreateProject = async (e) => {
     e.preventDefault()
@@ -68,7 +55,7 @@ function Projects() {
       )
       setNewProjectName('')
       setShowCreateModal(false)
-      fetchData()
+      refreshProjects()
     } catch (error) {
       console.error('Failed to create project:', error)
       toast.error('Failed to create project')
@@ -76,7 +63,7 @@ function Projects() {
   }
 
   const content = (
-    loading
+    loading || !teams || !projects
       ? null
       : teams.length === 0 ? (
       <div className="text-center py-12 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
@@ -134,7 +121,7 @@ function Projects() {
           <button
             onClick={() => setShowCreateModal(true)}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-            disabled={teams.length === 0}
+            disabled={!teams || teams.length === 0}
           >
             Create Project
           </button>
