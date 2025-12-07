@@ -137,6 +137,8 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
   };
 
   const buildTreeData = (docs, parentId = null) => {
+    if (!docs) return [];
+
     return docs
       .filter((doc) => doc.parent_id === parentId)
       .sort((a, b) => a.order - b.order)
@@ -186,6 +188,8 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
   }
 
   const handleDocumentDrag = async (draggedItem, targetItem, dropZone = 'on') => {
+    if (!documents) return;
+
     try {
       // Find the dragged and target documents
       const draggedDoc = documents.find(d => d.id === draggedItem.id);
@@ -275,6 +279,8 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
       toast.error(`Failed to reorder document: ${error.response?.data?.detail || error.message}`);
     }
   }
+
+  if (!project) return null;
 
   return (
     <>

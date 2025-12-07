@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'sonner'
@@ -17,37 +17,21 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useTeams, usePendingInvitations } from '@/store'
 
 function Teams() {
   const navigate = useNavigate()
-  const [teams, setTeams] = useState([])
-  const [pendingInvitations, setPendingInvitations] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { teams, loading: teamsLoading, fetchTeams, refreshTeams } = useTeams()
+  const { invitations: pendingInvitations, loading: invitationsLoading, fetchInvitations, refreshInvitations } = usePendingInvitations()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newTeamName, setNewTeamName] = useState('')
-  const dataFetched = useRef(false)
 
-  const fetchData = async () => {
-    try {
-      const [teamsRes, invitationsRes] = await Promise.all([
-        axios.get('/api/v1/teams/', { withCredentials: true }),
-        axios.get('/api/v1/invitations/me', { withCredentials: true }),
-      ])
-      setTeams(teamsRes.data)
-      setPendingInvitations(invitationsRes.data)
-    } catch (error) {
-      console.error('Failed to fetch data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const loading = teamsLoading || invitationsLoading
 
   useEffect(() => {
-    // Prevent double fetch in React StrictMode
-    if (dataFetched.current) return
-    dataFetched.current = true
-    fetchData()
-  }, [])
+    fetchTeams()
+    fetchInvitations()
+  }, [fetchTeams, fetchInvitations])
 
   const handleCreateTeam = async (e) => {
     e.preventDefault()
@@ -61,7 +45,7 @@ function Teams() {
       )
       setNewTeamName('')
       setShowCreateModal(false)
-      fetchData()
+      refreshTeams()
     } catch (error) {
       console.error('Failed to create team:', error)
       toast.error('Failed to create team')
@@ -75,7 +59,8 @@ function Teams() {
         {},
         { withCredentials: true }
       )
-      fetchData()
+      refreshTeams()
+      refreshInvitations()
       toast.success('Invitation accepted!')
     } catch (error) {
       console.error('Failed to accept invitation:', error)
@@ -90,7 +75,7 @@ function Teams() {
         {},
         { withCredentials: true }
       )
-      fetchData()
+      refreshInvitations()
       toast.info('Invitation rejected')
     } catch (error) {
       console.error('Failed to reject invitation:', error)
@@ -99,7 +84,7 @@ function Teams() {
   }
 
   const content = (
-    loading
+    loading || !teams
       ? null
       : teams.length === 0 ? (
       <div className="text-center py-12">
@@ -135,7 +120,7 @@ function Teams() {
     <MainLayout activeTab="teams">
       <div className="py-6">
         {/* Pending Invitations Section */}
-        {pendingInvitations.length > 0 && (
+        {pendingInvitations && pendingInvitations.length > 0 && (
           <div className="mb-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
             <h2 className="text-xl font-semibold text-foreground mb-4">
               Pending Invitations

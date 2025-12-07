@@ -14,27 +14,25 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import { useCategories, useTemplates } from '@/store';
 
 export default function Library() {
   const navigate = useNavigate();
   const { categoryId } = useParams();
-  const [categories, setCategories] = useState([]);
-  const [templates, setTemplates] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { categories, loading: categoriesLoading, fetchCategories } = useCategories();
+  const { templates, loading: templatesLoading, fetchTemplates } = useTemplates();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const initialFetchDone = useRef(false);
-  const categoriesFetched = useRef(false);
+
+  const loading = templatesLoading;
 
   useEffect(() => {
-    // Prevent double fetch in React StrictMode
-    if (categoriesFetched.current) return;
-    categoriesFetched.current = true;
     fetchCategories();
-  }, []);
+  }, [fetchCategories]);
 
   useEffect(() => {
-    if (categoryId) {
+    if (categoryId && categories) {
       const selected = categories.find(c => c.id === categoryId);
       setSelectedCategory(selected);
     } else {
@@ -44,7 +42,7 @@ export default function Library() {
 
   useEffect(() => {
     // Wait for categories to load before fetching templates
-    if (categories.length === 0) {
+    if (!categories || categories.length === 0) {
       return;
     }
 
@@ -53,41 +51,15 @@ export default function Library() {
       return;
     }
 
-    fetchTemplates();
+    const params = {};
+    if (selectedCategory) {
+      params.category_name = selectedCategory.name;
+    }
+
+    fetchTemplates(params);
     initialFetchDone.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categories.length, selectedCategory, searchQuery]);
-
-  const fetchCategories = async () => {
-    try {
-      const response = await axios.get('/api/v1/library/categories/', {
-        withCredentials: true,
-      });
-      setCategories(response.data);
-    } catch (error) {
-      console.error('Failed to fetch categories:', error);
-    }
-  };
-
-  const fetchTemplates = async () => {
-    try {
-      setLoading(true);
-      const params = {};
-      if (selectedCategory) {
-        params.category_name = selectedCategory.name;
-      }
-
-      const response = await axios.get('/api/v1/library/templates/', {
-        params,
-        withCredentials: true,
-      });
-      setTemplates(response.data);
-    } catch (error) {
-      console.error('Failed to fetch templates:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [categories, selectedCategory, searchQuery]);
 
   const handleCategoryClick = (category) => {
     if (selectedCategory?.id === category.id) {
@@ -102,17 +74,17 @@ export default function Library() {
   };
 
   // Group templates by category for display
-  const templatesByCategory = categories.reduce((acc, category) => {
+  const templatesByCategory = categories && templates ? categories.reduce((acc, category) => {
     acc[category.id] = templates.filter(t => t.category_id === category.id);
     return acc;
-  }, {});
+  }, {}) : {};
 
   // Filter templates by search query
-  const filteredTemplates = searchQuery
+  const filteredTemplates = templates && searchQuery
     ? templates.filter(t =>
         t.name.toLowerCase().includes(searchQuery.toLowerCase())
       )
-    : templates;
+    : (templates || []);
 
   if (selectedCategory) {
     // Focused category view - /library/categories/<uuid>/
@@ -197,7 +169,7 @@ export default function Library() {
             null
           ) : (
             <div className="space-y-8">
-              {categories.map(category => {
+              {categories && categories.map(category => {
                 const categoryTemplates = searchQuery
                   ? filteredTemplates.filter(t => t.category_id === category.id)
                   : templatesByCategory[category.id] || [];

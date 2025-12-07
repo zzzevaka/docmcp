@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useTheme } from 'next-themes'
 import { Sun, Moon, Monitor, Menu, X } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
@@ -9,14 +9,24 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-function MainLayout({ children, activeTab = 'projects' }) {
+function MainLayout({ children, activeTab }) {
   const { user, logout } = useAuth()
   const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // Auto-detect active tab from URL if not explicitly provided
+  const currentTab = activeTab || (() => {
+    const path = location.pathname
+    if (path.startsWith('/library')) return 'library'
+    if (path.startsWith('/teams')) return 'teams'
+    if (path.startsWith('/projects')) return 'projects'
+    return null // No tab active (e.g., settings pages)
+  })()
 
   const getTabClassName = (tab) => {
     const baseClass = "inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2"
-    if (activeTab === tab) {
+    if (currentTab === tab) {
       return `${baseClass} text-primary border-primary`
     }
     return `${baseClass} text-muted-foreground hover:text-foreground border-transparent hover:border-border`
@@ -36,7 +46,7 @@ function MainLayout({ children, activeTab = 'projects' }) {
             {/* Left side - Logo and main nav */}
             <div className="flex">
               <div className="sm:hidden inline-flex py-2 mr-2">
-                <Popover>
+                <Popover modal={true}>
                   <PopoverTrigger asChild>
                     <button className="items-center justify-center px-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent">
                       <Menu className="h-6 w-6" />
@@ -46,7 +56,7 @@ function MainLayout({ children, activeTab = 'projects' }) {
                     <Link
                       to="/projects"
                       className={`block px-4 py-2 text-sm rounded ${
-                        activeTab === 'projects'
+                        currentTab === 'projects'
                           ? 'bg-primary/10 text-primary'
                           : 'text-popover-foreground hover:bg-accent'
                       }`}
@@ -56,7 +66,7 @@ function MainLayout({ children, activeTab = 'projects' }) {
                     <Link
                       to="/library/categories"
                       className={`block px-4 py-2 text-sm rounded ${
-                        activeTab === 'library'
+                        currentTab === 'library'
                           ? 'bg-primary/10 text-primary'
                           : 'text-popover-foreground hover:bg-accent'
                       }`}
@@ -66,7 +76,7 @@ function MainLayout({ children, activeTab = 'projects' }) {
                     <Link
                       to="/teams"
                       className={`block px-4 py-2 text-sm rounded ${
-                        activeTab === 'teams'
+                        currentTab === 'teams'
                           ? 'bg-primary/10 text-primary'
                           : 'text-popover-foreground hover:bg-accent'
                       }`}
@@ -112,7 +122,7 @@ function MainLayout({ children, activeTab = 'projects' }) {
 
             {/* Right side - User menu */}
             <div className="flex items-center">
-              <Popover>
+              <Popover modal={true}>
                 <PopoverTrigger asChild>
                   <button className="flex items-center gap-2 p-2 rounded-full hover:bg-accent">
                     <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-medium">
