@@ -7,8 +7,18 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.library.api import category_routes, template_routes
-from app.projects.api import document_routes, mcp_routes, project_routes
-from app.users.api import auth_routes, invitation_routes, team_routes, user_routes
+from app.projects.api import (
+    document_routes,
+    mcp_routes,
+    project_routes,
+)
+from app.users.api import (
+    api_token_routes,
+    auth_routes,
+    invitation_routes,
+    team_routes,
+    user_routes,
+)
 
 
 class CachedStaticFiles(StaticFiles):
@@ -48,6 +58,7 @@ app.include_router(auth_routes.router)
 app.include_router(user_routes.router)
 app.include_router(team_routes.router)
 app.include_router(invitation_routes.router)
+app.include_router(api_token_routes.router)
 app.include_router(project_routes.router)
 app.include_router(document_routes.router)
 app.include_router(mcp_routes.router)

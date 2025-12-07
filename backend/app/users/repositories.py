@@ -6,7 +6,15 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.users.models import InvitationStatus, Session, Team, TeamInvitation, TeamMember, User
+from app.users.models import (
+    ApiToken,
+    InvitationStatus,
+    Session,
+    Team,
+    TeamInvitation,
+    TeamMember,
+    User,
+)
 
 ModelT = TypeVar("ModelT")
 
@@ -33,6 +41,15 @@ class TeamInvitationFilter:
     team_id: UUID | None = None
     invitee_email: str | None = None
     status: InvitationStatus | None = None
+
+
+@dataclass(frozen=True, kw_only=True)
+class ApiTokenFilter:
+    """Filter for API token queries."""
+
+    user_id: UUID | None = None
+    token: str | None = None
+    include_deleted: bool = False
 
 
 class UserRepository:
@@ -230,3 +247,72 @@ class TeamInvitationRepository:
         invitation = await self.get(invitation_id)
         if invitation:
             await self.db.delete(invitation)
+
+
+class ApiTokenRepository:
+    """Repository for ApiToken model."""
+
+    def __init__(self, db_session: AsyncSession) -> None:
+        self.db = db_session
+
+    async def get(self, id_: UUID) -> ApiToken | None:
+        """Get API token by ID."""
+        result = await self.db.execute(
+            select(ApiToken).where(ApiToken.id == id_).options(selectinload(ApiToken.user))
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_token(self, token: str) -> ApiToken | None:
+        """Get API token by token string (for authentication)."""
+        result = await self.db.execute(
+            select(ApiToken)
+            .where(ApiToken.token == token)
+            .options(
+                selectinload(ApiToken.user)
+                .selectinload(User.team_memberships)
+                .selectinload(TeamMember.team)
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def find_by_filter(self, filter_: ApiTokenFilter) -> Iterable[ApiToken]:
+        """Find API tokens by filter."""
+        query = select(ApiToken).options(selectinload(ApiToken.user))
+
+        if filter_.user_id:
+            query = query.where(ApiToken.user_id == filter_.user_id)
+        if filter_.token:
+            query = query.where(ApiToken.token == filter_.token)
+        if not filter_.include_deleted:
+            query = query.where(ApiToken.deleted_at.is_(None))
+
+        result = await self.db.execute(query)
+        return result.scalars().all()
+
+    async def list_user_tokens(self, user_id: UUID) -> Iterable[ApiToken]:
+        """List active API tokens for a user."""
+        return await self.find_by_filter(ApiTokenFilter(user_id=user_id, include_deleted=False))
+
+    async def create(self, token: ApiToken) -> ApiToken:
+        """Create a new API token."""
+        self.db.add(token)
+        await self.db.flush()
+        await self.db.refresh(token)
+        return token
+
+    async def soft_delete(self, token_id: UUID) -> ApiToken | None:
+        """Soft delete an API token by setting deleted_at."""
+        from datetime import datetime, timezone
+
+        token = await self.get(token_id)
+        if token:
+            token.deleted_at = datetime.now(timezone.utc)
+            await self.db.flush()
+            await self.db.refresh(token)
+        return token
+
+    async def delete(self, token_id: UUID) -> None:
+        """Hard delete an API token (for testing purposes)."""
+        token = await self.get(token_id)
+        if token:
+            await self.db.delete(token)

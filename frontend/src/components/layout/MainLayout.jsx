@@ -172,6 +172,13 @@ function MainLayout({ children, activeTab = 'projects' }) {
                     </div>
                   </div>
 
+                  <Link
+                    to="/settings/profile"
+                    className="block w-full text-left px-4 py-2 text-sm text-popover-foreground hover:bg-accent border-b border-border"
+                  >
+                    Profile Settings
+                  </Link>
+
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-4 py-2 text-sm text-popover-foreground hover:bg-accent rounded-b-md"

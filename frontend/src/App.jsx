@@ -12,6 +12,7 @@ import Library from './pages/Library'
 import TemplateDetail from './pages/TemplateDetail'
 import TermsOfService from './pages/TermsOfService'
 import PrivacyPolicy from './pages/PrivacyPolicy'
+import ProfileSettings from './pages/ProfileSettings'
 import CookieBanner from './components/common/CookieBanner'
 import { Toaster } from '@/components/ui/sonner'
 
@@ -96,6 +97,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <TemplateDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings/profile"
+            element={
+              <ProtectedRoute>
+                <ProfileSettings />
               </ProtectedRoute>
             }
           />

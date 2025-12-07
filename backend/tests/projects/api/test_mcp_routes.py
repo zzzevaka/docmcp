@@ -11,7 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.main import app
 from app.projects.models import Document, DocumentType, Project
-from app.users.models import Team, User
+from app.users.models import ApiToken, Team, TeamMember, TeamRole, User
+
+
+def get_auth_headers(token: str) -> dict[str, str]:
+    """Helper to get authentication headers."""
+    return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.fixture
@@ -31,12 +36,17 @@ async def client_with_db(db_session: AsyncSession):
 
 @pytest.fixture
 async def test_project(db_session: AsyncSession):
-    """Create a test project with documents."""
+    """Create a test project with documents and API token."""
     # Create user and team
     user = User(username="testuser", email="test@example.com")
+    db_session.add(user)
     team = Team(name="Test Team")
-    team.members.append(user)
     db_session.add(team)
+    await db_session.flush()
+
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
     await db_session.flush()
 
     # Create project
@@ -95,15 +105,28 @@ async def test_project(db_session: AsyncSession):
     db_session.add(root_doc2)
     await db_session.flush()
 
+    # Create API token for authentication
+    api_token = ApiToken(
+        name="Test Token",
+        user_id=user.id,
+        token="test_token_123456"
+    )
+    db_session.add(api_token)
+
     await db_session.commit()
     await db_session.refresh(project)
     await db_session.refresh(root_doc1)
     await db_session.refresh(child_doc1)
     await db_session.refresh(child_doc2)
     await db_session.refresh(root_doc2)
+    await db_session.refresh(user)
+    await db_session.refresh(api_token)
 
     return {
         "project": project,
+        "user": user,
+        "team": team,
+        "api_token": api_token,
         "root_doc1": root_doc1,
         "child_doc1": child_doc1,
         "child_doc2": child_doc2,
@@ -115,9 +138,14 @@ async def test_project(db_session: AsyncSession):
 async def test_initialize(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test MCP initialize method."""
     project = test_project["project"]
+    token = test_project["api_token"].token
     request_data = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(
+        f"/api/mcp/{project.id}",
+        json=request_data,
+        headers=get_auth_headers(token)
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -134,9 +162,10 @@ async def test_initialize(client_with_db: AsyncClient, test_project: dict) -> No
 async def test_tools_list(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test MCP tools/list method."""
     project = test_project["project"]
+    token = test_project["api_token"].token
     request_data = {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
@@ -159,6 +188,7 @@ async def test_tools_list(client_with_db: AsyncClient, test_project: dict) -> No
 async def test_list_documents_tool(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test list_documents tool."""
     project = test_project["project"]
+    token = test_project["api_token"].token
     request_data = {
         "jsonrpc": "2.0",
         "id": 3,
@@ -166,7 +196,7 @@ async def test_list_documents_tool(client_with_db: AsyncClient, test_project: di
         "params": {"name": "list_documents", "arguments": {}},
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
@@ -195,6 +225,7 @@ async def test_list_documents_tool(client_with_db: AsyncClient, test_project: di
 async def test_search_documents_tool(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test search_documents tool."""
     project = test_project["project"]
+    token = test_project["api_token"].token
     request_data = {
         "jsonrpc": "2.0",
         "id": 4,
@@ -202,7 +233,7 @@ async def test_search_documents_tool(client_with_db: AsyncClient, test_project: 
         "params": {"name": "search_documents", "arguments": {"query": "installation"}},
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
@@ -223,6 +254,7 @@ async def test_search_documents_tool(client_with_db: AsyncClient, test_project: 
 async def test_get_document_tool(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test get_document tool."""
     project = test_project["project"]
+    token = test_project["api_token"].token
     doc = test_project["root_doc1"]
 
     request_data = {
@@ -232,7 +264,7 @@ async def test_get_document_tool(client_with_db: AsyncClient, test_project: dict
         "params": {"name": "get_document", "arguments": {"id": str(doc.id)}},
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
@@ -252,6 +284,7 @@ async def test_get_document_tool(client_with_db: AsyncClient, test_project: dict
 async def test_get_document_whiteboard(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test get_document with whiteboard document returns base64 image."""
     project = test_project["project"]
+    token = test_project["api_token"].token
     doc = test_project["root_doc2"]
 
     request_data = {
@@ -261,7 +294,7 @@ async def test_get_document_whiteboard(client_with_db: AsyncClient, test_project
         "params": {"name": "get_document", "arguments": {"id": str(doc.id)}},
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
@@ -283,9 +316,10 @@ async def test_get_document_whiteboard(client_with_db: AsyncClient, test_project
 async def test_unknown_method(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test unknown method returns error."""
     project = test_project["project"]
+    token = test_project["api_token"].token
     request_data = {"jsonrpc": "2.0", "id": 7, "method": "unknown_method", "params": {}}
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     # Unknown method should return HTTP 400 or JSON-RPC error
     if response.status_code == 200:
@@ -299,8 +333,13 @@ async def test_unknown_method(client_with_db: AsyncClient, test_project: dict) -
 async def test_invalid_json(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test invalid JSON returns error."""
     project = test_project["project"]
+    token = test_project["api_token"].token
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", content=b"invalid json")
+    response = await client_with_db.post(
+        f"/api/mcp/{project.id}",
+        content=b"invalid json",
+        headers=get_auth_headers(token)
+    )
 
     assert response.status_code == 400
 
@@ -308,8 +347,10 @@ async def test_invalid_json(client_with_db: AsyncClient, test_project: dict) -> 
 @pytest.mark.asyncio
 async def test_nonexistent_project(
     client_with_db: AsyncClient,
+    test_project: dict,
 ) -> None:
     """Test with nonexistent project."""
+    token = test_project["api_token"].token
     fake_uuid = uuid4()
     request_data = {
         "jsonrpc": "2.0",
@@ -318,26 +359,33 @@ async def test_nonexistent_project(
         "params": {"name": "list_documents", "arguments": {}},
     }
 
-    response = await client_with_db.post(f"/api/mcp/{fake_uuid}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{fake_uuid}", json=request_data, headers=get_auth_headers(token))
 
-    assert response.status_code == 200
-    data = response.json()
-
-    # Should return error in JSON-RPC format
-    assert "error" in data
-    assert data["error"]["code"] == -32603
+    assert response.status_code == 404  # Should be 404 since project not found
+    assert "Project not found" in response.json()["detail"]
 
 
 @pytest.mark.asyncio
 async def test_empty_project(client_with_db: AsyncClient, db_session: AsyncSession) -> None:
     """Test list_documents with project that has no documents."""
-    # Create empty project
+    # Create user and team
+    user = User(username="emptyuser", email="empty@example.com")
+    db_session.add(user)
     team = Team(name="Empty Team")
     db_session.add(team)
     await db_session.flush()
 
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
+
     project = Project(name="Empty Project", team_id=team.id)
     db_session.add(project)
+    await db_session.flush()
+
+    # Create API token
+    api_token = ApiToken(name="Empty Test Token", user_id=user.id, token="empty_token_123")
+    db_session.add(api_token)
     await db_session.commit()
 
     request_data = {
@@ -347,7 +395,11 @@ async def test_empty_project(client_with_db: AsyncClient, db_session: AsyncSessi
         "params": {"name": "list_documents", "arguments": {}},
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(
+        f"/api/mcp/{project.id}",
+        json=request_data,
+        headers=get_auth_headers("empty_token_123")
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -362,10 +414,16 @@ async def test_whiteboard_without_image(
     client_with_db: AsyncClient, db_session: AsyncSession
 ) -> None:
     """Test get_document with whiteboard document that has no image field."""
-    # Create project with whiteboard document without image
+    # Create user and team
+    user = User(username="wbuser", email="wb@example.com")
+    db_session.add(user)
     team = Team(name="Test Team")
     db_session.add(team)
     await db_session.flush()
+
+    # Add user to team
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
 
     project = Project(name="Test Project", team_id=team.id)
     db_session.add(project)
@@ -380,6 +438,11 @@ async def test_whiteboard_without_image(
         order=0,
     )
     db_session.add(doc)
+    await db_session.flush()
+
+    # Create API token
+    api_token = ApiToken(name="WB Test Token", user_id=user.id, token="wb_token_123")
+    db_session.add(api_token)
     await db_session.commit()
     await db_session.refresh(doc)
 
@@ -390,7 +453,11 @@ async def test_whiteboard_without_image(
         "params": {"name": "get_document", "arguments": {"id": str(doc.id)}},
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(
+        f"/api/mcp/{project.id}",
+        json=request_data,
+        headers=get_auth_headers("wb_token_123")
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -410,6 +477,7 @@ async def test_whiteboard_without_image(
 async def test_unknown_tool(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test calling unknown tool."""
     project = test_project["project"]
+    token = test_project["api_token"].token
     request_data = {
         "jsonrpc": "2.0",
         "id": 11,
@@ -417,7 +485,7 @@ async def test_unknown_tool(client_with_db: AsyncClient, test_project: dict) -> 
         "params": {"name": "unknown_tool", "arguments": {}},
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
@@ -431,6 +499,7 @@ async def test_unknown_tool(client_with_db: AsyncClient, test_project: dict) -> 
 async def test_get_document_invalid_id(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test get_document with invalid document ID format."""
     project = test_project["project"]
+    token = test_project["api_token"].token
     request_data = {
         "jsonrpc": "2.0",
         "id": 12,
@@ -438,7 +507,7 @@ async def test_get_document_invalid_id(client_with_db: AsyncClient, test_project
         "params": {"name": "get_document", "arguments": {"id": "not-a-valid-uuid"}},
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
@@ -452,6 +521,7 @@ async def test_get_document_invalid_id(client_with_db: AsyncClient, test_project
 async def test_get_nonexistent_document(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test get_document with valid UUID but non-existent document."""
     project = test_project["project"]
+    token = test_project["api_token"].token
     fake_doc_id = uuid4()
 
     request_data = {
@@ -461,7 +531,7 @@ async def test_get_nonexistent_document(client_with_db: AsyncClient, test_projec
         "params": {"name": "get_document", "arguments": {"id": str(fake_doc_id)}},
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
@@ -475,6 +545,7 @@ async def test_get_nonexistent_document(client_with_db: AsyncClient, test_projec
 async def test_search_no_results(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test search_documents with query that matches nothing."""
     project = test_project["project"]
+    token = test_project["api_token"].token
     request_data = {
         "jsonrpc": "2.0",
         "id": 14,
@@ -482,7 +553,7 @@ async def test_search_no_results(client_with_db: AsyncClient, test_project: dict
         "params": {"name": "search_documents", "arguments": {"query": "xyzabc123nonexistent"}},
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
@@ -497,11 +568,14 @@ async def test_search_no_results(client_with_db: AsyncClient, test_project: dict
 async def test_sse_support(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test SSE (Server-Sent Events) support."""
     project = test_project["project"]
+    token = test_project["api_token"].token
     request_data = {"jsonrpc": "2.0", "id": 15, "method": "initialize", "params": {}}
 
     # Send request with SSE Accept header
+    headers = get_auth_headers(token)
+    headers["Accept"] = "text/event-stream"
     response = await client_with_db.post(
-        f"/api/mcp/{project.id}", json=request_data, headers={"Accept": "text/event-stream"}
+        f"/api/mcp/{project.id}", json=request_data, headers=headers
     )
 
     assert response.status_code == 200
@@ -519,6 +593,7 @@ async def test_edit_document_tool(
 ) -> None:
     """Test edit_document tool with editable document."""
     project = test_project["project"]
+    token = test_project["api_token"].token
     doc = test_project["root_doc1"]
 
     # First, enable editable_by_agent
@@ -537,7 +612,7 @@ async def test_edit_document_tool(
         },
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
@@ -558,6 +633,7 @@ async def test_edit_document_tool(
 async def test_edit_document_not_editable(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test edit_document tool fails when document is not editable by agent."""
     project = test_project["project"]
+    token = test_project["api_token"].token
     doc = test_project["root_doc1"]
 
     # Document has editable_by_agent=False by default
@@ -572,7 +648,7 @@ async def test_edit_document_not_editable(client_with_db: AsyncClient, test_proj
         },
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
@@ -588,6 +664,7 @@ async def test_create_document_tool(
 ) -> None:
     """Test create_document tool."""
     project = test_project["project"]
+    token = test_project["api_token"].token
 
     request_data = {
         "jsonrpc": "2.0",
@@ -603,7 +680,7 @@ async def test_create_document_tool(
         },
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
@@ -630,6 +707,7 @@ async def test_create_document_tool(
 async def test_create_document_invalid_type(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test create_document tool with invalid document type."""
     project = test_project["project"]
+    token = test_project["api_token"].token
 
     request_data = {
         "jsonrpc": "2.0",
@@ -641,7 +719,7 @@ async def test_create_document_invalid_type(client_with_db: AsyncClient, test_pr
         },
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
@@ -655,6 +733,7 @@ async def test_create_document_invalid_type(client_with_db: AsyncClient, test_pr
 async def test_edit_document_invalid_id(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test edit_document with invalid document ID format."""
     project = test_project["project"]
+    token = test_project["api_token"].token
 
     request_data = {
         "jsonrpc": "2.0",
@@ -666,7 +745,7 @@ async def test_edit_document_invalid_id(client_with_db: AsyncClient, test_projec
         },
     }
 
-    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
 
     assert response.status_code == 200
     data = response.json()
@@ -674,3 +753,131 @@ async def test_edit_document_invalid_id(client_with_db: AsyncClient, test_projec
     # Should return error
     assert "error" in data
     assert "Invalid document ID format" in data["error"]["message"]
+
+
+# ============================================================================
+# Authentication Tests
+# ============================================================================
+
+
+@pytest.mark.asyncio
+async def test_auth_missing_token(client_with_db: AsyncClient, test_project: dict) -> None:
+    """Test that missing authorization header returns 401."""
+    project = test_project["project"]
+    request_data = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}
+
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data)
+
+    assert response.status_code == 401
+    assert "Authorization header required" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_auth_invalid_format(client_with_db: AsyncClient, test_project: dict) -> None:
+    """Test that invalid authorization header format returns 401."""
+    project = test_project["project"]
+    request_data = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}
+
+    # Missing "Bearer" prefix
+    response = await client_with_db.post(
+        f"/api/mcp/{project.id}",
+        json=request_data,
+        headers={"Authorization": "test_token_123456"}
+    )
+
+    assert response.status_code == 401
+    assert "Invalid authorization header format" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_auth_invalid_token(client_with_db: AsyncClient, test_project: dict) -> None:
+    """Test that invalid token returns 401."""
+    project = test_project["project"]
+    request_data = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}
+
+    response = await client_with_db.post(
+        f"/api/mcp/{project.id}",
+        json=request_data,
+        headers=get_auth_headers("invalid_token_does_not_exist")
+    )
+
+    assert response.status_code == 401
+    assert "Invalid token" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_auth_deleted_token(client_with_db: AsyncClient, test_project: dict, db_session: AsyncSession) -> None:
+    """Test that deleted (revoked) token returns 401."""
+    from datetime import datetime, timezone
+
+    project = test_project["project"]
+    user = test_project["user"]
+
+    # Create a new token and immediately soft delete it
+    deleted_token = ApiToken(
+        name="Deleted Token",
+        user_id=user.id,
+        token="deleted_token_123",
+        deleted_at=datetime.now(timezone.utc)
+    )
+    db_session.add(deleted_token)
+    await db_session.commit()
+
+    request_data = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}
+
+    response = await client_with_db.post(
+        f"/api/mcp/{project.id}",
+        json=request_data,
+        headers=get_auth_headers("deleted_token_123")
+    )
+
+    assert response.status_code == 401
+    assert "Token has been revoked" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_auth_no_project_access(client_with_db: AsyncClient, test_project: dict, db_session: AsyncSession) -> None:
+    """Test that user without project access returns 403."""
+    # Create another user with a token but not in the project's team
+    other_user = User(username="otheruser", email="other@example.com")
+    db_session.add(other_user)
+    await db_session.flush()
+
+    other_token = ApiToken(
+        name="Other Token",
+        user_id=other_user.id,
+        token="other_user_token_123"
+    )
+    db_session.add(other_token)
+    await db_session.commit()
+
+    project = test_project["project"]
+    request_data = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}
+
+    response = await client_with_db.post(
+        f"/api/mcp/{project.id}",
+        json=request_data,
+        headers=get_auth_headers("other_user_token_123")
+    )
+
+    assert response.status_code == 403
+    assert "don't have access to this project" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_auth_valid_token_with_access(client_with_db: AsyncClient, test_project: dict) -> None:
+    """Test that valid token with project access succeeds."""
+    project = test_project["project"]
+    token = test_project["api_token"].token
+    request_data = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}
+
+    response = await client_with_db.post(
+        f"/api/mcp/{project.id}",
+        json=request_data,
+        headers=get_auth_headers(token)
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "result" in data
+    assert data["result"]["protocolVersion"] == "2024-11-05"

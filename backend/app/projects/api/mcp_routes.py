@@ -12,6 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.projects.models import Document, DocumentType
 from app.projects.repositories import DocumentRepository, ProjectRepository
+from app.users.api.dependencies import verify_project_access
+from app.users.models import User
 
 router = APIRouter(prefix="/api/mcp", tags=["mcp"])
 
@@ -136,7 +138,7 @@ async def list_documents_tool(project_id: UUID, db: AsyncSession) -> dict[str, A
     project_repo = ProjectRepository(db)
     document_repo = DocumentRepository(db)
 
-    # Check if project exists (no auth required for MCP)
+    # Check if project exists (auth is handled by endpoint dependency)
     project = await project_repo.get(project_id)
     if not project:
         raise ValueError("Project not found")
@@ -459,10 +461,16 @@ async def handle_mcp_request(
 
 
 @router.post("/{project_id}")
-async def mcp_endpoint(request: Request, project_id: UUID, db: AsyncSession = Depends(get_db)):
+async def mcp_endpoint(
+    request: Request,
+    project_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(verify_project_access),
+):
     """
     Main MCP communication endpoint.
     Supports both regular JSON responses and Server-Sent Events (SSE).
+    Requires Bearer token authentication.
     """
     try:
         body = await request.body()
