@@ -71,5 +71,28 @@ export const useTemplates = () => {
     return fetchTemplates(filters, true);
   }, [fetchTemplates]);
 
-  return { templates, loading, fetchTemplates, refreshTemplates };
+  const deleteTemplate = useCallback((templateId) => {
+    setTemplates((prevTemplates) => {
+      if (!prevTemplates) return prevTemplates;
+      return prevTemplates.filter((template) => template.id !== templateId);
+    });
+  }, [setTemplates]);
+
+  const updateTemplate = useCallback((templateId, updatedFields) => {
+    setTemplates((prevTemplates) => {
+      if (!prevTemplates) return prevTemplates;
+      return prevTemplates.map((template) =>
+        template.id === templateId ? { ...template, ...updatedFields } : template
+      );
+    });
+  }, [setTemplates]);
+
+  const addTemplate = useCallback((newTemplate) => {
+    // Instead of adding to existing templates, reset to null to force reload on next visit
+    // This ensures we get the full list from the server with correct filtering
+    setTemplates(null);
+    setCurrentFilters({});
+  }, [setTemplates, setCurrentFilters]);
+
+  return { templates, loading, fetchTemplates, refreshTemplates, deleteTemplate, updateTemplate, addTemplate };
 };

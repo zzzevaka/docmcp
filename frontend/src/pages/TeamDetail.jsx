@@ -4,6 +4,7 @@ import axios from 'axios'
 import { toast } from 'sonner'
 import { AlertTriangle } from 'lucide-react'
 import MainLayout from '../components/layout/MainLayout'
+import { useTeams } from '@/store'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -25,6 +26,7 @@ import { Button } from '@/components/ui/button'
 function TeamDetail() {
   const { teamId } = useParams()
   const navigate = useNavigate()
+  const { updateTeam } = useTeams()
   const [team, setTeam] = useState(null)
   const [members, setMembers] = useState([])
   const [currentUser, setCurrentUser] = useState(null)
@@ -117,6 +119,10 @@ function TeamDetail() {
         { name: editedTeamName },
         { withCredentials: true }
       )
+
+      // Update team in store
+      updateTeam(teamId, { name: editedTeamName })
+
       setShowEditDialog(false)
       fetchTeamData()
       toast.success('Team updated successfully!')

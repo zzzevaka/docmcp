@@ -6,7 +6,7 @@ import MarkdownEditor from '@/components/editors/MarkdownEditor'
 import ExcalidrawEditor, { generateExcalidrawImageBase64 } from '@/components/editors/ExcalidrawEditor'
 
 
-export default function DocumentEditor({ document }) {
+export default function DocumentEditor({ document, onDocumentUpdate }) {
   const [content, setContent] = useState(null);
   const [saveStatus, setSaveStatus] = useState('saved');
   const [changeCounter, setChangeCounter] = useState(document.type == "markdown" ? -1 : -3);
@@ -64,12 +64,17 @@ export default function DocumentEditor({ document }) {
       console.log('Save successful');
       // After successful save:
       setSaveStatus('saved');
+
+      // Update document in store
+      if (onDocumentUpdate) {
+        onDocumentUpdate(document.id, { content: contentToSave });
+      }
     } catch (error) {
       console.error("Error saving document:", error);
       setSaveStatus('unsaved');
       toast.error(`Failed to save document: ${error.response?.data?.detail || error.message}`);
     }
-  }, [document.project_id, document.id, excalidrawRef]);
+  }, [document.project_id, document.id, excalidrawRef, onDocumentUpdate]);
 
   // Auto-save with debounce
   useEffect(() => {
@@ -80,7 +85,7 @@ export default function DocumentEditor({ document }) {
 
       saveTimeoutRef.current = setTimeout(() => {
         performSave();
-      }, 500);
+      }, 200);
     }
 
     return () => {

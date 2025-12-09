@@ -10,6 +10,7 @@ import ExcalidrawEditor from '@/components/editors/ExcalidrawEditor';
 import { useAuth } from '@/contexts/AuthContext';
 import AddTemplateToProjectModal from '@/components/library/AddTemplateToProjectModal';
 import TemplateActionsModal from '@/components/library/TemplateActionsModal';
+import { useTemplates } from '@/store';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +41,7 @@ export default function TemplateDetail() {
   const { templateId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { deleteTemplate } = useTemplates();
   const [template, setTemplate] = useState(null);
   const [allTemplates, setAllTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -140,6 +142,10 @@ export default function TemplateDetail() {
       await axios.delete(`/api/v1/library/templates/${templateId}`, {
         withCredentials: true,
       });
+
+      // Update templates store
+      deleteTemplate(templateId);
+
       toast.success('Template deleted successfully!');
       navigate('/library/categories');
     } catch (error) {
