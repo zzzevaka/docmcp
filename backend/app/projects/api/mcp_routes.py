@@ -85,16 +85,16 @@ def restore_images_to_markdown(markdown: str, images: list[dict[str, str]]) -> s
         if 0 <= image_index < len(images):
             img = images[image_index]
             # Support both new format (caption/title) and legacy format (alt)
-            caption = img.get('caption', img.get('alt', ''))
-            mime_type = img['mime_type']
-            data = img['data']
-            title = img.get('title')
+            caption = img.get("caption", img.get("alt", ""))
+            mime_type = img["mime_type"]
+            data = img["data"]
+            title = img.get("title")
 
             # Build markdown image syntax
             if title:
                 return f'![{caption}](data:image/{mime_type};base64,{data} "{title}")'
             else:
-                return f'![{caption}](data:image/{mime_type};base64,{data})'
+                return f"![{caption}](data:image/{mime_type};base64,{data})"
         # If image not found, keep placeholder
         return match.group(0)
 
