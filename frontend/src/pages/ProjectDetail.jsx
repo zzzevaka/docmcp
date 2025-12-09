@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 
@@ -15,7 +15,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useProjectDetail } from '@/store';
+import { useProjectDetail, useProjects, useTemplates } from '@/store';
 
 // Mobile sidebar trigger component
 function MobileSidebarTrigger() {
@@ -35,7 +35,9 @@ function MobileSidebarTrigger() {
 function ProjectDetail() {
   const { projectId, documentId } = useParams();
   const navigate = useNavigate();
-  const { project, documents, loading, fetchProjectData, refreshProjectData } = useProjectDetail(projectId);
+  const { project, documents, loading, fetchProjectData, refreshProjectData, updateDocument, deleteDocument } = useProjectDetail(projectId);
+  const { deleteProject, updateProject } = useProjects();
+  const { addTemplate } = useTemplates();
   const [activeDocument, setActiveDocument] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newDocumentName, setNewDocumentName] = useState('');
@@ -99,7 +101,7 @@ function ProjectDetail() {
 
   const handleCreateTemplate = async (documentId, templateName, categoryName, visibility, includeChildren = false) => {
     try {
-      await axios.post(
+      const response = await axios.post(
         `/api/v1/library/templates/`,
         {
           document_id: documentId,
@@ -110,7 +112,17 @@ function ProjectDetail() {
         },
         { withCredentials: true }
       );
-      toast.success('Template created successfully!');
+
+      const newTemplate = response.data;
+
+      // Add template to store
+      addTemplate(newTemplate);
+
+      toast.success(
+        <span>
+          Template <Link className="text-primary" to={`/library/templates/${newTemplate.id}`}>{newTemplate.name}</Link> created.
+        </span>
+      );
     } catch (error) {
       console.error('Failed to create template:', error);
       toast.error(`Failed to create template: ${error.response?.data?.detail || error.message}`);
@@ -132,6 +144,10 @@ function ProjectDetail() {
           onCreateDocument={() => setShowCreateModal(true)}
           onDocumentsChange={refreshProjectData}
           onCreateTemplate={handleCreateTemplate}
+          onProjectDelete={deleteProject}
+          onProjectUpdate={updateProject}
+          onDocumentUpdate={updateDocument}
+          onDocumentDelete={deleteDocument}
         />
         <div
           className="h-screen w-full relative"
@@ -139,7 +155,7 @@ function ProjectDetail() {
           <MobileSidebarTrigger />
           {
             activeDocument !== null
-              ? <DocumentEditor document={ activeDocument } key={activeDocument.id} />
+              ? <DocumentEditor document={ activeDocument } key={activeDocument.id} onDocumentUpdate={updateDocument} />
               : <div />
           }
         </div>

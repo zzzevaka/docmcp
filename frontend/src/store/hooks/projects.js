@@ -34,7 +34,23 @@ export const useProjects = () => {
     return fetchProjects(true);
   }, [fetchProjects]);
 
-  return { projects, loading, fetchProjects, refreshProjects };
+  const deleteProject = useCallback((projectId) => {
+    setProjects((prevProjects) => {
+      if (!prevProjects) return prevProjects;
+      return prevProjects.filter((project) => project.id !== projectId);
+    });
+  }, [setProjects]);
+
+  const updateProject = useCallback((projectId, updatedFields) => {
+    setProjects((prevProjects) => {
+      if (!prevProjects) return prevProjects;
+      return prevProjects.map((project) =>
+        project.id === projectId ? { ...project, ...updatedFields } : project
+      );
+    });
+  }, [setProjects]);
+
+  return { projects, loading, fetchProjects, refreshProjects, deleteProject, updateProject };
 };
 
 export const useProjectDetail = (projectId) => {
@@ -66,5 +82,21 @@ export const useProjectDetail = (projectId) => {
     return fetchProjectData(true);
   }, [fetchProjectData]);
 
-  return { project, documents, loading, fetchProjectData, refreshProjectData };
+  const updateDocument = useCallback((documentId, updatedFields) => {
+    setDocuments((prevDocuments) => {
+      if (!prevDocuments) return prevDocuments;
+      return prevDocuments.map((doc) =>
+        doc.id === documentId ? { ...doc, ...updatedFields } : doc
+      );
+    });
+  }, [setDocuments]);
+
+  const deleteDocument = useCallback((documentId) => {
+    setDocuments((prevDocuments) => {
+      if (!prevDocuments) return prevDocuments;
+      return prevDocuments.filter((doc) => doc.id !== documentId);
+    });
+  }, [setDocuments]);
+
+  return { project, documents, loading, fetchProjectData, refreshProjectData, updateDocument, deleteDocument };
 };

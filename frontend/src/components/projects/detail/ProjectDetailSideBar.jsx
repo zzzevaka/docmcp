@@ -24,7 +24,7 @@ import EditProjectModal from '@/components/projects/EditProjectModal'
 import DeleteProjectModal from '@/components/projects/DeleteProjectModal'
 import MCPInstructionsModal from '@/components/projects/MCPInstructionsModal'
 
-export default function ProjectDetailSidebar({ project, documents, activeDocumentId, onCreateDocument, onDocumentsChange, onCreateTemplate }) {
+export default function ProjectDetailSidebar({ project, documents, activeDocumentId, onCreateDocument, onDocumentsChange, onCreateTemplate, onProjectDelete, onProjectUpdate, onDocumentUpdate, onDocumentDelete }) {
   const navigate = useNavigate();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -45,8 +45,9 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
         { withCredentials: true }
       );
 
-      if (onDocumentsChange) {
-        await onDocumentsChange();
+      // Update document in store
+      if (onDocumentUpdate) {
+        onDocumentUpdate(documentId, { name: newName });
       }
     } catch (error) {
       console.error('Failed to update document:', error);
@@ -68,9 +69,11 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
         setActionsDocument({ ...actionsDocument, editable_by_agent: editableByAgent });
       }
 
-      if (onDocumentsChange) {
-        await onDocumentsChange();
+      // Update document in store
+      if (onDocumentUpdate) {
+        onDocumentUpdate(documentId, { editable_by_agent: editableByAgent });
       }
+
       toast.success(editableByAgent ? 'Document is now editable by AI' : 'Document is no longer editable by AI');
     } catch (error) {
       console.error('Failed to update document:', error);
@@ -86,13 +89,14 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
         { withCredentials: true }
       );
 
+      // Update document in store
+      if (onDocumentDelete) {
+        onDocumentDelete(documentId);
+      }
+
       // If deleting the currently active document, redirect to project page
       if (documentId === activeDocumentId) {
         navigate(`/projects/${project.id}`);
-      }
-
-      if (onDocumentsChange) {
-        await onDocumentsChange();
       }
     } catch (error) {
       console.error('Failed to delete document:', error);
@@ -109,6 +113,10 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
         { withCredentials: true }
       );
 
+      // Update project in both stores
+      if (onProjectUpdate) {
+        onProjectUpdate(project.id, { name: newName });
+      }
       if (onDocumentsChange) {
         await onDocumentsChange();
       }
@@ -126,6 +134,11 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
         `/api/v1/projects/${project.id}`,
         { withCredentials: true }
       );
+
+      // Update projects store
+      if (onProjectDelete) {
+        onProjectDelete(project.id);
+      }
 
       toast.success('Project deleted successfully');
       navigate('/');

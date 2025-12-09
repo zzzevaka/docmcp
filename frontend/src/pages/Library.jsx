@@ -25,7 +25,7 @@ export default function Library() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const initialFetchDone = useRef(false);
 
-  const loading = templatesLoading;
+  const loading = categoriesLoading || templatesLoading || categories === null || templates === null;
 
   useEffect(() => {
     fetchCategories();

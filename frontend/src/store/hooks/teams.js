@@ -29,5 +29,21 @@ export const useTeams = () => {
     return fetchTeams(true);
   }, [fetchTeams]);
 
-  return { teams, loading, fetchTeams, refreshTeams };
+  const deleteTeam = useCallback((teamId) => {
+    setTeams((prevTeams) => {
+      if (!prevTeams) return prevTeams;
+      return prevTeams.filter((team) => team.id !== teamId);
+    });
+  }, [setTeams]);
+
+  const updateTeam = useCallback((teamId, updatedFields) => {
+    setTeams((prevTeams) => {
+      if (!prevTeams) return prevTeams;
+      return prevTeams.map((team) =>
+        team.id === teamId ? { ...team, ...updatedFields } : team
+      );
+    });
+  }, [setTeams]);
+
+  return { teams, loading, fetchTeams, refreshTeams, deleteTeam, updateTeam };
 };
