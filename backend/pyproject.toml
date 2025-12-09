@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "docmcp-backend"
 version = "0.1.0"
-description = "DocMCP Backend - Documentation as MCP service"
-authors = ["DocMCP Team"]
+description = "DocuMur Backend - documentation HUB for AI agents"
+authors = ["DocuMur Team"]
 readme = "README.md"
 
 [tool.poetry.dependencies]

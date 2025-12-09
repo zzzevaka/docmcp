@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import { toast } from 'sonner'
+import logo from '../static/logo.svg'
 
 function Login() {
   const navigate = useNavigate()
@@ -101,11 +102,18 @@ function Login() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <img
+              src={logo}
+              alt="DocuMur Logo"
+              className="h-24 w-24 dark:invert"
+            />
+          </div>
           <h1 className="text-4xl font-bold text-foreground mb-2">
-            Welcome to DocMCP
+            Welcome to DocuMur
           </h1>
           <p className="text-lg text-muted-foreground">
-            Documentation as MCP Service
+            Documentation HUB for your AI agents
           </p>
         </div>
 

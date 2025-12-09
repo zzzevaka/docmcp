@@ -1,1 +1,1 @@
-"""DocMCP Backend Application."""
+"""DocuMur Backend Application."""
