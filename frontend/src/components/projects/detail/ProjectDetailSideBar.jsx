@@ -36,6 +36,7 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
   const [editingProject, setEditingProject] = useState(false);
   const [deletingProject, setDeletingProject] = useState(false);
   const [showMCPInstructions, setShowMCPInstructions] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleEditDocument = async (documentId, newName) => {
     try {
@@ -146,6 +147,51 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
       console.error('Failed to delete project:', error);
       toast.error(`Failed to delete project: ${error.response?.data?.detail || error.message}`);
       throw error;
+    }
+  };
+
+  const handleExportProject = async () => {
+    try {
+      setIsExporting(true);
+
+      const response = await axios.get(
+        `/api/v1/projects/${project.id}/export`,
+        {
+          withCredentials: true,
+          responseType: 'blob'
+        }
+      );
+
+      // Create blob URL and initiate download
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+
+      // Get filename from Content-Disposition header or generate
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `${project.name}_export_${Date.now()}.zip`;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+
+      toast.success('Project exported successfully');
+    } catch (error) {
+      console.error('Failed to export project:', error);
+      toast.error(`Failed to export project: ${error.response?.data?.detail || error.message}`);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -432,6 +478,7 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
       onEdit={() => setEditingProject(true)}
       onDelete={() => setDeletingProject(true)}
       onConnectMCP={() => setShowMCPInstructions(true)}
+      onExport={handleExportProject}
     />
 
     {/* Edit Project Modal */}
