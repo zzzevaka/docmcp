@@ -88,11 +88,11 @@ export const useTemplates = () => {
   }, [setTemplates]);
 
   const addTemplate = useCallback((newTemplate) => {
-    setTemplates((prevTemplates) => {
-      if (!prevTemplates) return [newTemplate];
-      return [...prevTemplates, newTemplate];
-    });
-  }, [setTemplates]);
+    // Instead of adding to existing templates, reset to null to force reload on next visit
+    // This ensures we get the full list from the server with correct filtering
+    setTemplates(null);
+    setCurrentFilters({});
+  }, [setTemplates, setCurrentFilters]);
 
   return { templates, loading, fetchTemplates, refreshTemplates, deleteTemplate, updateTemplate, addTemplate };
 };
