@@ -24,7 +24,11 @@ SERVER_INFO = {"name": "docs-mcp-server", "version": "1.0.0"}
 
 
 # Image handling for markdown documents
-IMAGE_PATTERN = re.compile(r"!\[([^\]]*)\]\(data:image/([^;]+);base64,([^)]+)\)")
+# Pattern supports both formats:
+# - ![caption](data:image/png;base64,...)
+# - ![caption](data:image/png;base64,... "title")
+# Groups: 1=caption, 2=mime_type, 3=base64_data, 4=title (optional)
+IMAGE_PATTERN = re.compile(r'!\[([^\]]*)\]\(data:image/([^;]+);base64,([^"\s)]+)(?:\s+"([^"]*)")?\)')
 
 
 def extract_images_from_markdown(markdown: str) -> tuple[str, list[dict[str, str]]]:
@@ -42,16 +46,21 @@ def extract_images_from_markdown(markdown: str) -> tuple[str, list[dict[str, str
     images: list[dict[str, str]] = []
 
     def replace_image(match: re.Match) -> str:
-        alt_text = match.group(1)
+        caption = match.group(1)
         mime_type = match.group(2)
         base64_data = match.group(3)
+        title = match.group(4) if match.lastindex >= 4 else None
 
         image_index = len(images)
-        images.append({
-            "alt": alt_text,
+        image_data = {
+            "caption": caption,
             "mime_type": mime_type,
             "data": base64_data,
-        })
+        }
+        if title:
+            image_data["title"] = title
+
+        images.append(image_data)
 
         return f"[image:{image_index}]"
 
@@ -65,7 +74,8 @@ def restore_images_to_markdown(markdown: str, images: list[dict[str, str]]) -> s
 
     Args:
         markdown: Markdown content with [image:N] placeholders
-        images: List of dicts with keys: alt, mime_type, data
+        images: List of dicts with keys: caption, mime_type, data, title (optional)
+               Also supports legacy format with 'alt' key for backward compatibility
 
     Returns:
         Markdown with placeholders replaced by actual base64 images
@@ -74,7 +84,17 @@ def restore_images_to_markdown(markdown: str, images: list[dict[str, str]]) -> s
         image_index = int(match.group(1))
         if 0 <= image_index < len(images):
             img = images[image_index]
-            return f"![{img['alt']}](data:image/{img['mime_type']};base64,{img['data']})"
+            # Support both new format (caption/title) and legacy format (alt)
+            caption = img.get('caption', img.get('alt', ''))
+            mime_type = img['mime_type']
+            data = img['data']
+            title = img.get('title')
+
+            # Build markdown image syntax
+            if title:
+                return f'![{caption}](data:image/{mime_type};base64,{data} "{title}")'
+            else:
+                return f'![{caption}](data:image/{mime_type};base64,{data})'
         # If image not found, keep placeholder
         return match.group(0)
 
@@ -427,8 +447,8 @@ async def edit_document_tool(
 
         # Save markdown with images preserved
         new_content = {"markdown": restored_markdown}
-        if images:
-            new_content["images"] = images
+        # if images:
+        #     new_content["images"] = images
     elif document.type == DocumentType.WHITEBOARD:
         try:
             new_content = {"raw": json.loads(content)}

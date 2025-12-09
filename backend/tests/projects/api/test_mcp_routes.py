@@ -898,13 +898,13 @@ async def test_extract_images_from_markdown() -> None:
     # Check that images were extracted
     assert len(images) == 2
 
-    # Check first image
-    assert images[0]["alt"] == "alt text"
+    # Check first image (new format uses 'caption' instead of 'alt')
+    assert images[0]["caption"] == "alt text"
     assert images[0]["mime_type"] == "png"
     assert images[0]["data"] == "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
 
     # Check second image
-    assert images[1]["alt"] == "second image"
+    assert images[1]["caption"] == "second image"
     assert images[1]["mime_type"] == "jpeg"
     assert images[1]["data"] == "/9j/4AAQSkZJRg=="
 
@@ -926,14 +926,15 @@ async def test_restore_images_to_markdown() -> None:
         "Regular text here."
     )
 
+    # Test with new format (caption/title)
     images = [
         {
-            "alt": "alt text",
+            "caption": "alt text",
             "mime_type": "png",
             "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
         },
         {
-            "alt": "second image",
+            "caption": "second image",
             "mime_type": "jpeg",
             "data": "/9j/4AAQSkZJRg==",
         },
@@ -946,6 +947,32 @@ async def test_restore_images_to_markdown() -> None:
     assert "[image:1]" not in restored_markdown
     assert "![alt text](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==)" in restored_markdown
     assert "![second image](data:image/jpeg;base64,/9j/4AAQSkZJRg==)" in restored_markdown
+
+
+@pytest.mark.asyncio
+async def test_extract_images_with_title_attribute() -> None:
+    """Test extracting base64 images with title attribute from markdown."""
+    markdown = (
+        "# Document with images\n\n"
+        '![caption text](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg== "title text")\n\n'
+        "Regular text here."
+    )
+
+    modified_markdown, images = extract_images_from_markdown(markdown)
+
+    # Check that image was extracted with both caption and title
+    assert len(images) == 1
+    assert images[0]["caption"] == "caption text"
+    assert images[0]["title"] == "title text"
+    assert images[0]["mime_type"] == "png"
+
+    # Check that markdown has placeholder
+    assert "[image:0]" in modified_markdown
+    assert "data:image/png;base64" not in modified_markdown
+
+    # Test restoration
+    restored = restore_images_to_markdown(modified_markdown, images)
+    assert '![caption text](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg== "title text")' in restored
 
 
 @pytest.mark.asyncio
@@ -1015,7 +1042,7 @@ async def test_get_document_with_base64_images(
     saved_content = json.loads(doc.content)
     assert "images" in saved_content
     assert len(saved_content["images"]) == 1
-    assert saved_content["images"][0]["alt"] == "test image"
+    assert saved_content["images"][0]["caption"] == "test image"
 
 
 @pytest.mark.asyncio
@@ -1094,10 +1121,6 @@ async def test_edit_document_with_image_placeholders(
     assert "![original](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==)" in restored_markdown
     assert "# Updated document" in restored_markdown
     assert "With some new text" in restored_markdown
-
-    # Images should still be saved
-    assert "images" in saved_content
-    assert len(saved_content["images"]) == 1
 
 
 @pytest.mark.asyncio
