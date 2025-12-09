@@ -1,1 +1,1 @@
-"""Tests for DocMCP Backend."""
+"""Tests for DocuMur Backend."""

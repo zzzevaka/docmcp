@@ -21,7 +21,7 @@ function TermsOfService() {
             <section className="mb-8">
               <h2 className="text-xl font-semibold text-foreground mb-4">1. Introduction</h2>
               <p className="text-foreground/90 mb-4">
-                Welcome to DocMCP. This is an open source project provided "as is" without any warranties.
+                Welcome to DocuMur. This is an open source project provided "as is" without any warranties.
                 By using this service, you agree to these terms.
               </p>
             </section>
@@ -29,7 +29,7 @@ function TermsOfService() {
             <section className="mb-8">
               <h2 className="text-xl font-semibold text-foreground mb-4">2. Open Source</h2>
               <p className="text-foreground/90 mb-4">
-                DocMCP is an open source project. The source code is available for review, modification,
+                DocuMur is an open source project. The source code is available for review, modification,
                 and distribution according to the project's license. This is a community-driven project
                 with no commercial intent.
               </p>

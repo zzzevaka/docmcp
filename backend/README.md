@@ -1,6 +1,6 @@
-# DocMCP Backend
+# DocuMur Backend
 
-Backend service for DocMCP - Documentation as MCP.
+Backend service for DocuMur.
 
 ## Tech Stack
 

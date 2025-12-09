@@ -1,8 +1,8 @@
-# DocMCP - Documentation as MCP
+# DocuMur - Documentation HUB for AI agents
 
 ![Project Documentation](docs/screenshots/welcome.png)
 
-DocMCP is a light-weight application that bridges the gap between human documentation and AI assistants. Create, organize, and share your project documentation while making it instantly accessible to LLM agents through MCP (Model Context Protocol).
+DocuMur is a light-weight application that bridges the gap between human documentation and AI assistants. Create, organize, and share your project documentation while making it instantly accessible to LLM agents through MCP (Model Context Protocol).
 
 ## Quick start
 

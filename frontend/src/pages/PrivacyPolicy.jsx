@@ -21,7 +21,7 @@ function PrivacyPolicy() {
             <section className="mb-8">
               <h2 className="text-xl font-semibold text-foreground mb-4">1. Introduction</h2>
               <p className="text-foreground/90 mb-4">
-                DocMCP is an open source project that respects your privacy. This policy explains
+                DocuMur is an open source project that respects your privacy. This policy explains
                 how we handle information when you use our service.
               </p>
             </section>
@@ -29,7 +29,7 @@ function PrivacyPolicy() {
             <section className="mb-8">
               <h2 className="text-xl font-semibold text-foreground mb-4">2. Information We Collect</h2>
               <p className="text-foreground/90 mb-4">
-                When you use DocMCP, we may collect:
+                When you use DocuMur, we may collect:
               </p>
               <ul className="list-disc pl-6 mb-4 text-foreground/90 space-y-2">
                 <li>

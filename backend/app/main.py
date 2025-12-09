@@ -37,8 +37,8 @@ class CachedStaticFiles(StaticFiles):
         await super().__call__(scope, receive, send_wrapper)
 
 app = FastAPI(
-    title="DocMCP API",
-    description="Documentation as MCP service",
+    title="DocuMur API",
+    description="DocuMur private API",
     version="0.1.0",
 )
 
@@ -75,7 +75,7 @@ async def health_check() -> dict[str, str]:
 @app.get("/api/v1")
 async def api_root() -> dict[str, str]:
     """API root endpoint."""
-    return {"message": "DocMCP API v1"}
+    return {"message": "DocuMur API v1"}
 
 
 # Serve static files (frontend build)

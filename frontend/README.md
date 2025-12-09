@@ -1,6 +1,6 @@
-# DocMCP Frontend
+# DocuMur Frontend
 
-Frontend application for DocMCP - Documentation as MCP.
+Frontend application for DocuMur.
 
 ## Tech Stack
 

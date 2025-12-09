@@ -8,6 +8,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import logo from '../../static/logo.svg'
 
 function MainLayout({ children, activeTab }) {
   const { user, logout } = useAuth()
@@ -91,9 +92,16 @@ function MainLayout({ children, activeTab }) {
               <div className="flex-shrink-0 flex items-center">
                 <Link
                   to="/"
-                  className="text-xl font-bold text-primary hover:text-primary/80"
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                 >
-                  DocMCP
+                  <img
+                    src={logo}
+                    alt="DocuMur"
+                    className="h-14 w-14 mr-1 dark:invert"
+                  />
+                  <span className="text-xl font-bold">
+                    DocuMur
+                  </span>
                 </Link>
               </div>
 
