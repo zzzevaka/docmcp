@@ -1,4 +1,4 @@
-import { Pencil, Trash2, Radio } from 'lucide-react';
+import { Pencil, Trash2, Radio, Download } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-export default function ProjectActionsModal({ project, isOpen, onClose, onEdit, onDelete, onConnectMCP }) {
+export default function ProjectActionsModal({ project, isOpen, onClose, onEdit, onDelete, onConnectMCP, onExport }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[375px]">
@@ -40,6 +40,19 @@ export default function ProjectActionsModal({ project, isOpen, onClose, onEdit, 
             <div>
               <div className="font-medium text-blue-600 dark:text-blue-400">Connect MCP</div>
               <div className="text-sm text-muted-foreground">Expose docs to Claude Code</div>
+            </div>
+          </button>
+          <button
+            onClick={() => {
+              onClose();
+              onExport();
+            }}
+            className="w-full text-left px-4 py-3 rounded-md hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center gap-3 transition-colors"
+          >
+            <Download className="w-5 h-5 text-green-600 dark:text-green-400" />
+            <div>
+              <div className="font-medium text-green-600 dark:text-green-400">Export</div>
+              <div className="text-sm text-muted-foreground">Download all documents</div>
             </div>
           </button>
           <button
