@@ -1,6 +1,7 @@
 """Tests for MCP routes."""
 
 import json
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 import pytest
@@ -10,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.main import app
+from app.projects.api.mcp_routes import extract_images_from_markdown, restore_images_to_markdown
 from app.projects.models import Document, DocumentType, Project
 from app.users.models import ApiToken, Team, TeamMember, TeamRole, User
 
@@ -808,8 +810,6 @@ async def test_auth_invalid_token(client_with_db: AsyncClient, test_project: dic
 @pytest.mark.asyncio
 async def test_auth_deleted_token(client_with_db: AsyncClient, test_project: dict, db_session: AsyncSession) -> None:
     """Test that deleted (revoked) token returns 401."""
-    from datetime import datetime, timezone
-
     project = test_project["project"]
     user = test_project["user"]
 
@@ -881,3 +881,291 @@ async def test_auth_valid_token_with_access(client_with_db: AsyncClient, test_pr
     data = response.json()
     assert "result" in data
     assert data["result"]["protocolVersion"] == "2024-11-05"
+
+
+@pytest.mark.asyncio
+async def test_extract_images_from_markdown() -> None:
+    """Test extracting base64 images from markdown."""
+    markdown = (
+        "# Document with images\n\n"
+        "Here is an image: ![alt text](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==)\n\n"
+        "And another: ![second image](data:image/jpeg;base64,/9j/4AAQSkZJRg==)\n\n"
+        "Regular text here."
+    )
+
+    modified_markdown, images = extract_images_from_markdown(markdown)
+
+    # Check that images were extracted
+    assert len(images) == 2
+
+    # Check first image (new format uses 'caption' instead of 'alt')
+    assert images[0]["caption"] == "alt text"
+    assert images[0]["mime_type"] == "png"
+    assert images[0]["data"] == "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+
+    # Check second image
+    assert images[1]["caption"] == "second image"
+    assert images[1]["mime_type"] == "jpeg"
+    assert images[1]["data"] == "/9j/4AAQSkZJRg=="
+
+    # Check that markdown has placeholders
+    assert "[image:0]" in modified_markdown
+    assert "[image:1]" in modified_markdown
+    assert "data:image/png;base64" not in modified_markdown
+    assert "data:image/jpeg;base64" not in modified_markdown
+
+
+@pytest.mark.asyncio
+async def test_restore_images_to_markdown() -> None:
+    """Test restoring base64 images from placeholders."""
+
+    markdown = (
+        "# Document with placeholders\n\n"
+        "Here is an image: [image:0]\n\n"
+        "And another: [image:1]\n\n"
+        "Regular text here."
+    )
+
+    # Test with new format (caption/title)
+    images = [
+        {
+            "caption": "alt text",
+            "mime_type": "png",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        },
+        {
+            "caption": "second image",
+            "mime_type": "jpeg",
+            "data": "/9j/4AAQSkZJRg==",
+        },
+    ]
+
+    restored_markdown = restore_images_to_markdown(markdown, images)
+
+    # Check that placeholders were replaced with actual images
+    assert "[image:0]" not in restored_markdown
+    assert "[image:1]" not in restored_markdown
+    assert "![alt text](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==)" in restored_markdown
+    assert "![second image](data:image/jpeg;base64,/9j/4AAQSkZJRg==)" in restored_markdown
+
+
+@pytest.mark.asyncio
+async def test_extract_images_with_title_attribute() -> None:
+    """Test extracting base64 images with title attribute from markdown."""
+    markdown = (
+        "# Document with images\n\n"
+        '![caption text](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg== "title text")\n\n'
+        "Regular text here."
+    )
+
+    modified_markdown, images = extract_images_from_markdown(markdown)
+
+    # Check that image was extracted with both caption and title
+    assert len(images) == 1
+    assert images[0]["caption"] == "caption text"
+    assert images[0]["title"] == "title text"
+    assert images[0]["mime_type"] == "png"
+
+    # Check that markdown has placeholder
+    assert "[image:0]" in modified_markdown
+    assert "data:image/png;base64" not in modified_markdown
+
+    # Test restoration
+    restored = restore_images_to_markdown(modified_markdown, images)
+    assert '![caption text](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg== "title text")' in restored
+
+
+@pytest.mark.asyncio
+async def test_get_document_with_base64_images(
+    client_with_db: AsyncClient, test_project: dict, db_session: AsyncSession
+) -> None:
+    """Test get_document extracts base64 images and returns them separately."""
+    project = test_project["project"]
+    token = test_project["api_token"].token
+
+    # Create markdown document with base64 images
+    markdown_content = (
+        "# Document with images\n\n"
+        "Here is an image: ![test image](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==)\n\n"
+        "Regular text here."
+    )
+
+    doc = Document(
+        name="Image Document",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content=json.dumps({"markdown": markdown_content}),
+        parent_id=None,
+        order=10,
+    )
+    db_session.add(doc)
+    await db_session.commit()
+    await db_session.refresh(doc)
+
+    request_data = {
+        "jsonrpc": "2.0",
+        "id": 100,
+        "method": "tools/call",
+        "params": {"name": "get_document", "arguments": {"id": str(doc.id)}},
+    }
+
+    response = await client_with_db.post(
+        f"/api/mcp/{project.id}",
+        json=request_data,
+        headers=get_auth_headers(token)
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    content_blocks = data["result"]["content"]
+
+    # Should have: title (text), markdown with placeholders (text), image (image)
+    assert len(content_blocks) == 3
+
+    # First block: title
+    assert content_blocks[0]["type"] == "text"
+    assert "Image Document" in content_blocks[0]["text"]
+
+    # Second block: markdown with placeholder
+    assert content_blocks[1]["type"] == "text"
+    assert "[image:0]" in content_blocks[1]["text"]
+    assert "data:image/png;base64" not in content_blocks[1]["text"]
+
+    # Third block: image
+    assert content_blocks[2]["type"] == "image"
+    assert content_blocks[2]["data"] == "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+    assert content_blocks[2]["mimeType"] == "image/png"
+
+    # Verify images were saved to document content
+    await db_session.refresh(doc)
+    saved_content = json.loads(doc.content)
+    assert "images" in saved_content
+    assert len(saved_content["images"]) == 1
+    assert saved_content["images"][0]["caption"] == "test image"
+
+
+@pytest.mark.asyncio
+async def test_edit_document_with_image_placeholders(
+    client_with_db: AsyncClient, test_project: dict, db_session: AsyncSession
+) -> None:
+    """Test edit_document restores images from placeholders."""
+    project = test_project["project"]
+    token = test_project["api_token"].token
+
+    # Create markdown document with base64 images
+    markdown_content = (
+        "# Original document\n\n"
+        "Image: ![original](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==)"
+    )
+
+    images = [
+        {
+            "alt": "original",
+            "mime_type": "png",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        }
+    ]
+
+    doc = Document(
+        name="Editable Image Document",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content=json.dumps({"markdown": markdown_content, "images": images}),
+        parent_id=None,
+        order=11,
+        editable_by_agent=True,
+    )
+    db_session.add(doc)
+    await db_session.commit()
+    await db_session.refresh(doc)
+
+    # Edit document with placeholder
+    new_content = (
+        "# Updated document\n\n"
+        "Image is still here: [image:0]\n\n"
+        "With some new text."
+    )
+
+    request_data = {
+        "jsonrpc": "2.0",
+        "id": 101,
+        "method": "tools/call",
+        "params": {
+            "name": "edit_document",
+            "arguments": {"document_id": str(doc.id), "content": new_content},
+        },
+    }
+
+    response = await client_with_db.post(
+        f"/api/mcp/{project.id}",
+        json=request_data,
+        headers=get_auth_headers(token)
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["jsonrpc"] == "2.0"
+    text_data = json.loads(data["result"]["content"][0]["text"])
+    assert text_data["success"] is True
+
+    # Verify the document content was updated with restored image
+    await db_session.refresh(doc)
+    saved_content = json.loads(doc.content)
+    assert "markdown" in saved_content
+    restored_markdown = saved_content["markdown"]
+
+    # Check that placeholder was replaced with actual image
+    assert "[image:0]" not in restored_markdown
+    assert "![original](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==)" in restored_markdown
+    assert "# Updated document" in restored_markdown
+    assert "With some new text" in restored_markdown
+
+
+@pytest.mark.asyncio
+async def test_markdown_without_images(
+    client_with_db: AsyncClient, test_project: dict, db_session: AsyncSession
+) -> None:
+    """Test get_document with markdown that has no images."""
+    project = test_project["project"]
+    token = test_project["api_token"].token
+
+    markdown_content = "# Simple document\n\nNo images here, just text."
+
+    doc = Document(
+        name="No Images Document",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content=json.dumps({"markdown": markdown_content}),
+        parent_id=None,
+        order=12,
+    )
+    db_session.add(doc)
+    await db_session.commit()
+    await db_session.refresh(doc)
+
+    request_data = {
+        "jsonrpc": "2.0",
+        "id": 102,
+        "method": "tools/call",
+        "params": {"name": "get_document", "arguments": {"id": str(doc.id)}},
+    }
+
+    response = await client_with_db.post(
+        f"/api/mcp/{project.id}",
+        json=request_data,
+        headers=get_auth_headers(token)
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    content_blocks = data["result"]["content"]
+
+    # Should have only: title (text), markdown (text) - no images
+    assert len(content_blocks) == 2
+    assert content_blocks[0]["type"] == "text"
+    assert "No Images Document" in content_blocks[0]["text"]
+    assert content_blocks[1]["type"] == "text"
+    assert "No images here" in content_blocks[1]["text"]

@@ -14,6 +14,23 @@ function MilkdownEditor({ markdown, onChange, readOnly }) {
     const crepe = new Crepe({
       root,
       defaultValue: markdown,
+      featureConfigs: {
+        [Crepe.Feature.ImageBlock]: {
+          onUpload: async (file) => {
+            // Convert file to base64 data URI
+            return new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                resolve(e.target?.result);
+              };
+              reader.onerror = (e) => {
+                reject(new Error('Failed to read file'));
+              };
+              reader.readAsDataURL(file);
+            });
+          },
+        },
+      },
     });
     crepe.setReadonly(readOnly);
 

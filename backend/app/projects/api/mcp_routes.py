@@ -1,6 +1,7 @@
 """MCP (Model Context Protocol) routes for exposing project documents to LLM agents."""
 
 import json
+import re
 from typing import Any
 from uuid import UUID
 
@@ -20,6 +21,85 @@ router = APIRouter(prefix="/api/mcp", tags=["mcp"])
 
 PROTOCOL_VERSION = "2024-11-05"
 SERVER_INFO = {"name": "docs-mcp-server", "version": "1.0.0"}
+
+
+# Image handling for markdown documents
+# Pattern supports both formats:
+# - ![caption](data:image/png;base64,...)
+# - ![caption](data:image/png;base64,... "title")
+# Groups: 1=caption, 2=mime_type, 3=base64_data, 4=title (optional)
+IMAGE_PATTERN = re.compile(r'!\[([^\]]*)\]\(data:image/([^;]+);base64,([^"\s)]+)(?:\s+"([^"]*)")?\)')
+
+
+def extract_images_from_markdown(markdown: str) -> tuple[str, list[dict[str, str]]]:
+    """
+    Extract base64 images from markdown and replace with placeholders.
+
+    Args:
+        markdown: Markdown content with embedded base64 images
+
+    Returns:
+        Tuple of (modified_markdown, list_of_images)
+        - modified_markdown: Markdown with images replaced by [image:N] placeholders
+        - list_of_images: List of dicts with keys: alt, mime_type, data
+    """
+    images: list[dict[str, str]] = []
+
+    def replace_image(match: re.Match) -> str:
+        caption = match.group(1)
+        mime_type = match.group(2)
+        base64_data = match.group(3)
+        title = match.group(4) if match.lastindex >= 4 else None
+
+        image_index = len(images)
+        image_data = {
+            "caption": caption,
+            "mime_type": mime_type,
+            "data": base64_data,
+        }
+        if title:
+            image_data["title"] = title
+
+        images.append(image_data)
+
+        return f"[image:{image_index}]"
+
+    modified_markdown = IMAGE_PATTERN.sub(replace_image, markdown)
+    return modified_markdown, images
+
+
+def restore_images_to_markdown(markdown: str, images: list[dict[str, str]]) -> str:
+    """
+    Restore base64 images from placeholders back into markdown.
+
+    Args:
+        markdown: Markdown content with [image:N] placeholders
+        images: List of dicts with keys: caption, mime_type, data, title (optional)
+               Also supports legacy format with 'alt' key for backward compatibility
+
+    Returns:
+        Markdown with placeholders replaced by actual base64 images
+    """
+    def replace_placeholder(match: re.Match) -> str:
+        image_index = int(match.group(1))
+        if 0 <= image_index < len(images):
+            img = images[image_index]
+            # Support both new format (caption/title) and legacy format (alt)
+            caption = img.get("caption", img.get("alt", ""))
+            mime_type = img["mime_type"]
+            data = img["data"]
+            title = img.get("title")
+
+            # Build markdown image syntax
+            if title:
+                return f'![{caption}](data:image/{mime_type};base64,{data} "{title}")'
+            else:
+                return f"![{caption}](data:image/{mime_type};base64,{data})"
+        # If image not found, keep placeholder
+        return match.group(0)
+
+    placeholder_pattern = re.compile(r"\[image:(\d+)\]")
+    return placeholder_pattern.sub(replace_placeholder, markdown)
 
 
 TOOLS = [
@@ -54,7 +134,12 @@ TOOLS = [
     },
     {
         "name": "get_document",
-        "description": "Returns full content of a specific document by ID",
+        "description": (
+            "Returns full content of a specific document by ID. "
+            "For markdown documents with embedded base64 images: images are extracted and replaced "
+            "with placeholders like [image:0], [image:1], etc. The images are provided separately "
+            "as image content blocks. When editing such documents, use these placeholders to preserve images."
+        ),
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -70,7 +155,10 @@ TOOLS = [
         "name": "edit_document",
         "description": (
             "Edit an existing document's content. "
-            "Only documents with editable_by_agent=true can be edited."
+            "Only documents with editable_by_agent=true can be edited. "
+            "For markdown documents with images: use placeholders like [image:0], [image:1] in your content "
+            "to preserve images from the original document. The placeholders will be automatically replaced "
+            "with the actual base64 images during save."
         ),
         "inputSchema": {
             "type": "object",
@@ -81,7 +169,10 @@ TOOLS = [
                 },
                 "content": {
                     "type": "string",
-                    "description": "New content for the document (will be stored based on document type)",
+                    "description": (
+                        "New content for the document. For markdown with images, use [image:N] placeholders "
+                        "to reference images from get_document response. Content will be stored based on document type."
+                    ),
                 },
             },
             "required": ["document_id", "content"],
@@ -247,26 +338,43 @@ async def get_document_tool(project_id: UUID, document_id: str, db: AsyncSession
 
     # Add document type-specific content
     if document.type.value == "markdown":
-        # For markdown documents, add the markdown text
+        # For markdown documents, extract images and replace with placeholders
+        markdown_text = ""
         if isinstance(content, dict) and "markdown" in content:
-            content_blocks.append(
-                {
-                    "type": "text",
-                    "text": content["markdown"],
-                }
-            )
+            markdown_text = content["markdown"]
         elif isinstance(content, dict) and "text" in content:
-            content_blocks.append(
-                {
-                    "type": "text",
-                    "text": content["text"],
-                }
-            )
+            markdown_text = content["text"]
         else:
+            markdown_text = json.dumps(content, indent=2)
+
+        # Extract images from markdown
+        modified_markdown, images = extract_images_from_markdown(markdown_text)
+
+        # Save images to document content for future restoration
+        if images:
+            if isinstance(content, dict):
+                content["images"] = images
+            else:
+                content = {"markdown": markdown_text, "images": images}
+            document.content = json.dumps(content)
+            await db.commit()
+            await db.refresh(document)
+
+        # Add modified markdown as text
+        content_blocks.append(
+            {
+                "type": "text",
+                "text": modified_markdown,
+            }
+        )
+
+        # Add each image separately
+        for img in images:
             content_blocks.append(
                 {
-                    "type": "text",
-                    "text": json.dumps(content, indent=2),
+                    "type": "image",
+                    "data": img["data"],
+                    "mimeType": f"image/{img['mime_type']}",
                 }
             )
     elif document.type.value == "whiteboard":
@@ -322,7 +430,25 @@ async def edit_document_tool(
         raise ValueError("This document is not editable by agents. Set editable_by_agent=true first.")
 
     if document.type == DocumentType.MARKDOWN:
-        new_content = {"markdown": content}
+        # Get current content to extract saved images
+        try:
+            if isinstance(document.content, str):
+                current_content = json.loads(document.content)
+            else:
+                current_content = document.content
+        except json.JSONDecodeError:
+            current_content = {}
+
+        # Extract images from current content if they exist
+        images = current_content.get("images", []) if isinstance(current_content, dict) else []
+
+        # Restore images to markdown from placeholders
+        restored_markdown = restore_images_to_markdown(content, images)
+
+        # Save markdown with images preserved
+        new_content = {"markdown": restored_markdown}
+        # if images:
+        #     new_content["images"] = images
     elif document.type == DocumentType.WHITEBOARD:
         try:
             new_content = {"raw": json.loads(content)}
