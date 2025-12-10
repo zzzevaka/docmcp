@@ -1,7 +1,8 @@
 import json
+import tempfile
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -14,6 +15,7 @@ from app.projects.api.schemas import (
 )
 from app.projects.models import Document
 from app.projects.repositories import DocumentRepository, ProjectRepository
+from app.projects.services.converters.ipython_notebooks import convert_jupyter_notebook_to_markdown
 from app.users.api.user_routes import get_current_user_dependency
 
 router = APIRouter(prefix="/api/v1/projects", tags=["documents"])
@@ -345,3 +347,75 @@ async def create_document_from_template(
             pass
 
     return DocumentSchema(**doc_dict)
+
+
+@router.post(
+    "/{project_id}/documents/from-file",
+    response_model=DocumentSchema,
+    status_code=201,
+)
+async def create_document_from_file(
+    project_id: UUID,
+    file: UploadFile = File(...),
+    name: str = Form(...),
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user_dependency),
+) -> DocumentSchema:
+    project_repo = ProjectRepository(db)
+    document_repo = DocumentRepository(db)
+
+    # Check if project exists and user has access
+    project = await project_repo.get(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    if project.team not in current_user.teams:
+        raise HTTPException(status_code=403, detail="Not a member of this project's team")
+
+    if not file.filename or not file.filename.endswith(".ipynb"):
+        raise HTTPException(
+            status_code=400,
+            detail="This file is not supported. Supported formats: ipynb."
+        )
+
+    if file.filename.endswith(".ipynb"):
+        converter = convert_jupyter_notebook_to_markdown
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="This file is not supported. Supported formats: ipynb."
+        )
+
+    try:
+        content = await file.read()
+
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=".ipynb", delete=False) as temp_file:
+            temp_file.write(content)
+            temp_file_path = temp_file.name
+
+            markdown_content = converter(temp_file_path)
+
+            document = Document(
+                name=name,
+                project_id=project_id,
+                type="markdown",
+                content=json.dumps({"markdown": markdown_content}),
+                parent_id=None,
+            )
+            document = await document_repo.create(document)
+            await db.commit()
+            await db.refresh(document)
+
+            doc_dict = DocumentSchema.model_validate(document).model_dump()
+            if isinstance(doc_dict["content"], str):
+                try:
+                    doc_dict["content"] = json.loads(doc_dict["content"])
+                except json.JSONDecodeError:
+                    pass
+
+            return DocumentSchema(**doc_dict)
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail="The file can't be parsed"
+        ) from e
