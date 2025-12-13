@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Union
 
 from nbconvert import MarkdownExporter
 from traitlets.config import Config
@@ -19,11 +20,11 @@ CONFIG.NbConvertBase.display_data_priority = [
 ]
 
 
-def convert_jupyter_notebook_to_markdown(temp_file_path: Path) -> str:
+def convert_jupyter_notebook_to_markdown(temp_file_path: Union[str, Path]) -> str:
     exporter = MarkdownExporter(config=CONFIG)
     exporter.register_preprocessor(HtmlTableToMarkdownPreprocessor, enabled=True)
     exporter.register_preprocessor(EmbedImagesAsDataURI, enabled=True)
 
-    markdown_content, _ = exporter.from_filename(temp_file_path)
+    markdown_content, _ = exporter.from_filename(str(temp_file_path))
 
     return markdown_content

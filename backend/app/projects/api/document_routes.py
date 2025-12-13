@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 from uuid import UUID
 
@@ -16,6 +17,10 @@ from app.projects.api.schemas import (
 from app.projects.models import Document
 from app.projects.repositories import DocumentRepository, ProjectRepository
 from app.projects.services.converters.ipython_notebooks import convert_jupyter_notebook_to_markdown
+from app.projects.services.converters.text_formats import (
+    convert_markdown_to_markdown,
+    convert_text_to_markdown,
+)
 from app.users.api.user_routes import get_current_user_dependency
 
 router = APIRouter(prefix="/api/v1/projects", tags=["documents"])
@@ -372,27 +377,49 @@ async def create_document_from_file(
     if project.team not in current_user.teams:
         raise HTTPException(status_code=403, detail="Not a member of this project's team")
 
-    if not file.filename or not file.filename.endswith(".ipynb"):
+    # Determine file extension and converter
+    supported_extensions = {".ipynb", ".md", ".txt"}
+    if not file.filename:
         raise HTTPException(
             status_code=400,
-            detail="This file is not supported. Supported formats: ipynb."
+            detail="File name is required."
         )
 
-    if file.filename.endswith(".ipynb"):
+    file_extension = None
+    for ext in supported_extensions:
+        if file.filename.endswith(ext):
+            file_extension = ext
+            break
+
+    if not file_extension:
+        raise HTTPException(
+            status_code=400,
+            detail="This file is not supported. Supported formats: .ipynb, .md, .txt"
+        )
+
+    # Select appropriate converter based on file extension
+    if file_extension == ".ipynb":
         converter = convert_jupyter_notebook_to_markdown
+    elif file_extension == ".md":
+        converter = convert_markdown_to_markdown
+    elif file_extension == ".txt":
+        converter = convert_text_to_markdown
     else:
         raise HTTPException(
             status_code=400,
-            detail="This file is not supported. Supported formats: ipynb."
+            detail="This file is not supported. Supported formats: .ipynb, .md, .txt"
         )
 
     try:
         content = await file.read()
 
-        with tempfile.NamedTemporaryFile(mode="wb", suffix=".ipynb", delete=False) as temp_file:
+        # Create temporary file and write content
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=file_extension, delete=False) as temp_file:
             temp_file.write(content)
             temp_file_path = temp_file.name
 
+        # Convert file (after closing the temp file)
+        try:
             markdown_content = converter(temp_file_path)
 
             document = Document(
@@ -414,6 +441,10 @@ async def create_document_from_file(
                     pass
 
             return DocumentSchema(**doc_dict)
+        finally:
+            # Clean up temporary file
+            if os.path.exists(temp_file_path):
+                os.unlink(temp_file_path)
     except Exception as e:
         raise HTTPException(
             status_code=400,

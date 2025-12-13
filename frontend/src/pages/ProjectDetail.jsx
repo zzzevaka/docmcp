@@ -131,14 +131,18 @@ function ProjectDetail() {
   const onDrop = useCallback((acceptedFiles) => {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
-      if (!file.name.endsWith('.ipynb')) {
-        toast.error('This file is not supported. Supported formats: ipynb.');
+      const supportedExtensions = ['.ipynb', '.md', '.txt'];
+      const hasValidExtension = supportedExtensions.some(ext => file.name.endsWith(ext));
+
+      if (!hasValidExtension) {
+        toast.error('This file is not supported. Supported formats: .ipynb, .md, .txt');
         return;
       }
       setUploadedFile(file);
       // Auto-fill document name from filename if empty
       if (!newDocumentName) {
-        const nameWithoutExt = file.name.replace('.ipynb', '');
+        // Remove extension from filename
+        const nameWithoutExt = file.name.replace(/\.(ipynb|md|txt)$/, '');
         setNewDocumentName(nameWithoutExt);
       }
     }
@@ -147,7 +151,9 @@ function ProjectDetail() {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'application/x-ipynb+json': ['.ipynb']
+      'application/x-ipynb+json': ['.ipynb'],
+      'text/markdown': ['.md'],
+      'text/plain': ['.txt']
     },
     multiple: false,
     disabled: newDocumentType !== 'markdown'
@@ -293,7 +299,7 @@ function ProjectDetail() {
                         Drag & drop or click to select
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Supported format: .ipynb
+                        Supported formats: .ipynb, .md, .txt
                       </p>
                     </div>
                   )}
