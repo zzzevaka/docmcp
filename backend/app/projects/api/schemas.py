@@ -31,6 +31,22 @@ class ProjectUpdateSchema(BaseModel):
     name: str
 
 
+class DocumentListItemSchema(BaseModel):
+    """Document schema for list view (without content)."""
+
+    id: UUID
+    name: str
+    project_id: UUID
+    type: DocumentType
+    parent_id: UUID | None
+    order: int
+    editable_by_agent: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class DocumentSchema(BaseModel):
     """Document schema."""
 

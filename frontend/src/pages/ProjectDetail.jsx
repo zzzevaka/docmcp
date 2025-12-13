@@ -36,7 +36,7 @@ function MobileSidebarTrigger() {
 function ProjectDetail() {
   const { projectId, documentId } = useParams();
   const navigate = useNavigate();
-  const { project, documents, loading, fetchProjectData, refreshProjectData, updateDocument, deleteDocument } = useProjectDetail(projectId);
+  const { project, documents, loading, fetchProjectData, refreshProjectData, updateDocument, deleteDocument, fetchDocumentContent } = useProjectDetail(projectId);
   const { deleteProject, updateProject } = useProjects();
   const { addTemplate } = useTemplates();
   const [activeDocument, setActiveDocument] = useState(null);
@@ -211,7 +211,7 @@ function ProjectDetail() {
           <MobileSidebarTrigger />
           {
             activeDocument !== null
-              ? <DocumentEditor document={ activeDocument } key={activeDocument.id} onDocumentUpdate={updateDocument} />
+              ? <DocumentEditor document={ activeDocument } key={activeDocument.id} onDocumentUpdate={updateDocument} onFetchContent={fetchDocumentContent} />
               : <div />
           }
         </div>

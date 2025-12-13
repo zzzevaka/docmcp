@@ -6,10 +6,11 @@ import MarkdownEditor from '@/components/editors/MarkdownEditor'
 import ExcalidrawEditor, { generateExcalidrawImageBase64 } from '@/components/editors/ExcalidrawEditor'
 
 
-export default function DocumentEditor({ document, onDocumentUpdate }) {
+export default function DocumentEditor({ document, onDocumentUpdate, onFetchContent }) {
   const [content, setContent] = useState(null);
   const [saveStatus, setSaveStatus] = useState('saved');
   const [changeCounter, setChangeCounter] = useState(document.type == "markdown" ? -1 : -3);
+  const [isLoadingContent, setIsLoadingContent] = useState(false);
   const excalidrawRef = useRef(null);
   const saveTimeoutRef = useRef(null);
   const contentRef = useRef(content);
@@ -18,6 +19,26 @@ export default function DocumentEditor({ document, onDocumentUpdate }) {
   useEffect(() => {
     contentRef.current = content;
   }, [content]);
+
+  // Fetch content if not loaded
+  useEffect(() => {
+    const loadContent = async () => {
+      // Check if content is missing
+      if (!document.content && onFetchContent) {
+        setIsLoadingContent(true);
+        try {
+          await onFetchContent(document.id);
+        } catch (error) {
+          console.error('Failed to load document content:', error);
+          toast.error('Failed to load document content');
+        } finally {
+          setIsLoadingContent(false);
+        }
+      }
+    };
+
+    loadContent();
+  }, [document.id, document.content, onFetchContent]);
 
   const handleChange = useCallback((data) => {
       setChangeCounter(prev => prev + 1);
@@ -96,12 +117,22 @@ export default function DocumentEditor({ document, onDocumentUpdate }) {
   }, [changeCounter, performSave]);
 
   const excalidrawInitialData = useMemo(() => {
+    if (!document.content) return null;
     return content || document.content.raw;
-  }, [content, document.content.raw]);
+  }, [content, document.content]);
 
   const saveIconBottomOffset = document.type === "markdown"
     ? 4
     : 16
+
+  // Show loading state while content is being fetched
+  if (isLoadingContent || !document.content) {
+    return (
+      <div className="flex items-center justify-center w-full h-full">
+        <div className="text-muted-foreground">Loading document...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-full">

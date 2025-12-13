@@ -94,5 +94,32 @@ export const useTemplates = () => {
     setCurrentFilters({});
   }, [setTemplates, setCurrentFilters]);
 
-  return { templates, loading, fetchTemplates, refreshTemplates, deleteTemplate, updateTemplate, addTemplate };
+  const fetchTemplateContent = useCallback(async (templateId) => {
+    try {
+      const response = await axios.get(
+        `/api/v1/library/templates/${templateId}`,
+        { withCredentials: true }
+      );
+      const templateWithContent = response.data;
+
+      // Parse content if it's a string
+      if (typeof templateWithContent.content === 'string') {
+        try {
+          templateWithContent.content = JSON.parse(templateWithContent.content);
+        } catch (e) {
+          console.error('Failed to parse template content:', e);
+        }
+      }
+
+      // Update the template in state with content
+      updateTemplate(templateId, { content: templateWithContent.content });
+
+      return templateWithContent;
+    } catch (error) {
+      console.error('Failed to fetch template content:', error);
+      throw error;
+    }
+  }, [updateTemplate]);
+
+  return { templates, loading, fetchTemplates, refreshTemplates, deleteTemplate, updateTemplate, addTemplate, fetchTemplateContent };
 };

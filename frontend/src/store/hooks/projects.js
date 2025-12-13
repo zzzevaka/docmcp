@@ -98,5 +98,23 @@ export const useProjectDetail = (projectId) => {
     });
   }, [setDocuments]);
 
-  return { project, documents, loading, fetchProjectData, refreshProjectData, updateDocument, deleteDocument };
+  const fetchDocumentContent = useCallback(async (documentId) => {
+    try {
+      const response = await axios.get(
+        `/api/v1/projects/${projectId}/documents/${documentId}`,
+        { withCredentials: true }
+      );
+      const documentWithContent = response.data;
+
+      // Update the document in state with content
+      updateDocument(documentId, { content: documentWithContent.content });
+
+      return documentWithContent.content;
+    } catch (error) {
+      console.error('Failed to fetch document content:', error);
+      throw error;
+    }
+  }, [projectId, updateDocument]);
+
+  return { project, documents, loading, fetchProjectData, refreshProjectData, updateDocument, deleteDocument, fetchDocumentContent };
 };

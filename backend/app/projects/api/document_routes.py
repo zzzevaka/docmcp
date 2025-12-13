@@ -11,6 +11,7 @@ from app.library.models import TemplateVisibility
 from app.library.repositories import TemplateRepository
 from app.projects.api.schemas import (
     DocumentCreateSchema,
+    DocumentListItemSchema,
     DocumentSchema,
     DocumentUpdateSchema,
 )
@@ -26,13 +27,13 @@ from app.users.api.user_routes import get_current_user_dependency
 router = APIRouter(prefix="/api/v1/projects", tags=["documents"])
 
 
-@router.get("/{project_id}/documents/", response_model=list[DocumentSchema])
+@router.get("/{project_id}/documents/", response_model=list[DocumentListItemSchema])
 async def list_documents(
     project_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user_dependency),
-) -> list[DocumentSchema]:
-    """List documents for a project."""
+) -> list[DocumentListItemSchema]:
+    """List documents for a project (without content)."""
     project_repo = ProjectRepository(db)
     document_repo = DocumentRepository(db)
 
@@ -47,19 +48,8 @@ async def list_documents(
     # Get documents
     documents = await document_repo.list_for_project(project_id)
 
-    # Parse content if stored as string
-    result = []
-    for doc in documents:
-        doc_dict = DocumentSchema.model_validate(doc).model_dump()
-        # Parse JSON content if it's a string
-        if isinstance(doc_dict["content"], str):
-            try:
-                doc_dict["content"] = json.loads(doc_dict["content"])
-            except json.JSONDecodeError:
-                pass
-        result.append(DocumentSchema(**doc_dict))
-
-    return result
+    # Return documents without content
+    return [DocumentListItemSchema.model_validate(doc) for doc in documents]
 
 
 @router.get("/{project_id}/documents/{document_id}", response_model=DocumentSchema)
