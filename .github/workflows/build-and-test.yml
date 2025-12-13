@@ -30,7 +30,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image with dev dependencies
+      - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -42,11 +42,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Run linter inside container
+      - name: Lint
         run: |
           docker run --rm docmcp:test sh -c "cd /app && ruff check ."
 
-      - name: Run tests inside container
+      - name: Unit tests
         run: |
           docker run --rm docmcp:test sh -c "cd /app && pytest -v --cov=app --cov-report=term-missing"
 
@@ -73,7 +73,7 @@ jobs:
               alembic upgrade head
             "
 
-      - name: Start production app for E2E tests
+      - name: Start app for E2E tests
         env:
           DATABASE_URL: "postgresql+psycopg://app:app@localhost:5432/app"
           APP_ENV: "test"
@@ -88,11 +88,12 @@ jobs:
           # Wait for app to be ready
           timeout 60 bash -c 'until curl -f http://localhost:8000/api/v1/health; do sleep 2; done'
 
-      - name: Install Playwright with browsers
+      - name: Install Playwright
         run: |
-          npx -y playwright@1.57.0 install --with-deps
+          npm install -g @playwright/test@latest && \
+          npx playwright install --with-deps
 
-      - name: Run E2E tests
+      - name: E2E tests
         working-directory: ./frontend
         env:
           BASE_URL: http://localhost:8000
