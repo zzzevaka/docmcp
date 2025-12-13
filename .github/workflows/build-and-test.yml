@@ -94,6 +94,10 @@ jobs:
           npm install @playwright/test@1.57.0
           npx playwright install --with-deps
 
+      - name: Prepare E2E directories
+        working-directory: ./frontend
+        run: mkdir -p e2e/.auth
+
       - name: E2E tests
         working-directory: ./frontend
         env:
