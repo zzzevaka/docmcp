@@ -67,6 +67,8 @@ coverage.json
 /frontend/playwright-report/
 /frontend/e2e/.auth/
 /frontend/playwright/.cache/
+/test-results/
+/playwright-report/
 
 # Alembic
 alembic/versions/*.pyc
