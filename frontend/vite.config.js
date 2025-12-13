@@ -17,8 +17,13 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     hmr: false,
+    allowedHosts: true,
     proxy: {
       '/api': {
+        target: 'http://backend:8000',
+        changeOrigin: true,
+      },
+      '/health': {
         target: 'http://backend:8000',
         changeOrigin: true,
       },

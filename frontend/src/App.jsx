@@ -27,6 +27,7 @@ function App() {
             <CookieBanner />
             <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />

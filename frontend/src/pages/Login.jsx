@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import { toast } from 'sonner'
@@ -7,11 +7,14 @@ import logo from '../static/logo.svg'
 
 function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, checkAuth } = useAuth()
   const [searchParams] = useSearchParams()
   const error = searchParams.get('error')
 
-  const [activeTab, setActiveTab] = useState('login') // 'login' or 'register'
+  // Determine initial tab based on URL path
+  const initialTab = location.pathname === '/register' ? 'register' : 'login'
+  const [activeTab, setActiveTab] = useState(initialTab)
   const [authConfig, setAuthConfig] = useState();
   const [loading, setLoading] = useState(false)
 
