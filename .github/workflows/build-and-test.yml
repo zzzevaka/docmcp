@@ -97,7 +97,7 @@ jobs:
         working-directory: ./frontend
         env:
           BASE_URL: http://localhost:8000
-        run: npx -y playwright@1.57.0 test
+        run: npx -y playwright test
 
       - name: Upload E2E test results
         uses: actions/upload-artifact@v4
