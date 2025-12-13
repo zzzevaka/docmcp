@@ -41,10 +41,11 @@ export default function TemplateDetail() {
   const { templateId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { deleteTemplate } = useTemplates();
+  const { deleteTemplate, fetchTemplateContent } = useTemplates();
   const [template, setTemplate] = useState(null);
   const [allTemplates, setAllTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingContent, setLoadingContent] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showAddToProjectModal, setShowAddToProjectModal] = useState(false);
   const [showActionsModal, setShowActionsModal] = useState(false);
@@ -53,6 +54,31 @@ export default function TemplateDetail() {
   useEffect(() => {
     fetchTemplateData();
   }, [templateId]);
+
+  // Fetch content when template changes and doesn't have content
+  useEffect(() => {
+    const loadContent = async () => {
+      if (template && !template.content) {
+        setLoadingContent(true);
+        try {
+          const templateWithContent = await fetchTemplateContent(template.id);
+          setTemplate(prev => prev?.id === templateWithContent.id ? templateWithContent : prev);
+
+          // Update in allTemplates as well
+          setAllTemplates(prev => prev.map(t =>
+            t.id === templateWithContent.id ? { ...t, content: templateWithContent.content } : t
+          ));
+        } catch (error) {
+          console.error('Failed to load template content:', error);
+          toast.error('Failed to load template content');
+        } finally {
+          setLoadingContent(false);
+        }
+      }
+    };
+
+    loadContent();
+  }, [template?.id, template?.content, fetchTemplateContent]);
 
   const fetchTemplateData = async () => {
     try {
@@ -170,6 +196,17 @@ export default function TemplateDetail() {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <p className="text-gray-600">Template not found</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state while content is being fetched
+  if (loadingContent || !template.content) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="text-gray-600">Loading template content...</p>
         </div>
       </div>
     );

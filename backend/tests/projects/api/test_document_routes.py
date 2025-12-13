@@ -250,7 +250,9 @@ async def test_list_documents(db_session: AsyncSession, client: AsyncClient):
     assert response.status_code == 200
     docs = response.json()
     assert len(docs) == 2
-    assert docs[0]["content"]["markdown"] == "Content 1"
+    # List endpoint should not return content
+    assert "content" not in docs[0]
+    assert docs[0]["name"] == "Doc 1"
 
 
 @pytest.mark.asyncio
