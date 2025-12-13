@@ -1,7 +1,9 @@
 import json
+import os
+import tempfile
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -14,6 +16,11 @@ from app.projects.api.schemas import (
 )
 from app.projects.models import Document
 from app.projects.repositories import DocumentRepository, ProjectRepository
+from app.projects.services.converters.ipython_notebooks import convert_jupyter_notebook_to_markdown
+from app.projects.services.converters.text_formats import (
+    convert_markdown_to_markdown,
+    convert_text_to_markdown,
+)
 from app.users.api.user_routes import get_current_user_dependency
 
 router = APIRouter(prefix="/api/v1/projects", tags=["documents"])
@@ -345,3 +352,101 @@ async def create_document_from_template(
             pass
 
     return DocumentSchema(**doc_dict)
+
+
+@router.post(
+    "/{project_id}/documents/from-file",
+    response_model=DocumentSchema,
+    status_code=201,
+)
+async def create_document_from_file(
+    project_id: UUID,
+    file: UploadFile = File(...),
+    name: str = Form(...),
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user_dependency),
+) -> DocumentSchema:
+    project_repo = ProjectRepository(db)
+    document_repo = DocumentRepository(db)
+
+    # Check if project exists and user has access
+    project = await project_repo.get(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    if project.team not in current_user.teams:
+        raise HTTPException(status_code=403, detail="Not a member of this project's team")
+
+    # Determine file extension and converter
+    supported_extensions = {".ipynb", ".md", ".txt"}
+    if not file.filename:
+        raise HTTPException(
+            status_code=400,
+            detail="File name is required."
+        )
+
+    file_extension = None
+    for ext in supported_extensions:
+        if file.filename.endswith(ext):
+            file_extension = ext
+            break
+
+    if not file_extension:
+        raise HTTPException(
+            status_code=400,
+            detail="This file is not supported. Supported formats: .ipynb, .md, .txt"
+        )
+
+    # Select appropriate converter based on file extension
+    if file_extension == ".ipynb":
+        converter = convert_jupyter_notebook_to_markdown
+    elif file_extension == ".md":
+        converter = convert_markdown_to_markdown
+    elif file_extension == ".txt":
+        converter = convert_text_to_markdown
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="This file is not supported. Supported formats: .ipynb, .md, .txt"
+        )
+
+    try:
+        content = await file.read()
+
+        # Create temporary file and write content
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=file_extension, delete=False) as temp_file:
+            temp_file.write(content)
+            temp_file_path = temp_file.name
+
+        # Convert file (after closing the temp file)
+        try:
+            markdown_content = converter(temp_file_path)
+
+            document = Document(
+                name=name,
+                project_id=project_id,
+                type="markdown",
+                content=json.dumps({"markdown": markdown_content}),
+                parent_id=None,
+            )
+            document = await document_repo.create(document)
+            await db.commit()
+            await db.refresh(document)
+
+            doc_dict = DocumentSchema.model_validate(document).model_dump()
+            if isinstance(doc_dict["content"], str):
+                try:
+                    doc_dict["content"] = json.loads(doc_dict["content"])
+                except json.JSONDecodeError:
+                    pass
+
+            return DocumentSchema(**doc_dict)
+        finally:
+            # Clean up temporary file
+            if os.path.exists(temp_file_path):
+                os.unlink(temp_file_path)
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail="The file can't be parsed"
+        ) from e

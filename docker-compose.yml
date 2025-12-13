@@ -31,7 +31,6 @@ services:
       - ./backend/tests:/app/tests
       - ./backend/alembic:/app/alembic
       - ./backend/alembic.ini:/app/alembic.ini
-      - ./backend/poetry.lock:/app/poetry.lock
       - ./backend/pyproject.toml:/app/pyproject.toml
 
   frontend:

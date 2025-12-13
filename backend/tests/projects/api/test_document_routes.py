@@ -1,5 +1,7 @@
 """Test document routes."""
 
+import json as json_module
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -1192,3 +1194,315 @@ async def test_create_from_template_project_not_team_member(
         f"/api/v1/projects/{project.id}/documents/from-template/{template.id}"
     )
     assert response.status_code == 403
+
+
+# File import tests
+
+
+@pytest.mark.asyncio
+async def test_import_markdown_file(db_session: AsyncSession, client: AsyncClient):
+    """Test importing a markdown (.md) file."""
+    result = await db_session.execute(select(User).where(User.username == "testuser"))
+    user = result.scalar_one()
+
+    team = Team(name="Import MD Team")
+    db_session.add(team)
+    await db_session.flush()
+
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
+    await db_session.flush()
+
+    project = Project(name="Import MD Project", team_id=team.id)
+    db_session.add(project)
+    await db_session.commit()
+
+    # Create markdown file content
+    markdown_content = "# Hello World\n\nThis is a **test** markdown file."
+
+    # Upload file
+    files = {"file": ("test.md", markdown_content.encode("utf-8"), "text/markdown")}
+    data = {"name": "Test Markdown Document"}
+
+    response = await client.post(
+        f"/api/v1/projects/{project.id}/documents/from-file", files=files, data=data
+    )
+
+    assert response.status_code == 201
+    doc = response.json()
+    assert doc["name"] == "Test Markdown Document"
+    assert doc["type"] == "markdown"
+    assert doc["content"]["markdown"] == markdown_content
+
+
+@pytest.mark.asyncio
+async def test_import_text_file(db_session: AsyncSession, client: AsyncClient):
+    """Test importing a plain text (.txt) file."""
+    result = await db_session.execute(select(User).where(User.username == "testuser"))
+    user = result.scalar_one()
+
+    team = Team(name="Import TXT Team")
+    db_session.add(team)
+    await db_session.flush()
+
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
+    await db_session.flush()
+
+    project = Project(name="Import TXT Project", team_id=team.id)
+    db_session.add(project)
+    await db_session.commit()
+
+    # Create text file content
+    text_content = "This is a plain text file.\nWith multiple lines.\nAnd some text."
+
+    # Upload file
+    files = {"file": ("test.txt", text_content.encode("utf-8"), "text/plain")}
+    data = {"name": "Test Text Document"}
+
+    response = await client.post(
+        f"/api/v1/projects/{project.id}/documents/from-file", files=files, data=data
+    )
+
+    assert response.status_code == 201
+    doc = response.json()
+    assert doc["name"] == "Test Text Document"
+    assert doc["type"] == "markdown"
+    assert doc["content"]["markdown"] == text_content
+
+
+@pytest.mark.asyncio
+async def test_import_jupyter_notebook(db_session: AsyncSession, client: AsyncClient):
+    """Test importing a Jupyter notebook (.ipynb) file."""
+    result = await db_session.execute(select(User).where(User.username == "testuser"))
+    user = result.scalar_one()
+
+    team = Team(name="Import IPYNB Team")
+    db_session.add(team)
+    await db_session.flush()
+
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
+    await db_session.flush()
+
+    project = Project(name="Import IPYNB Project", team_id=team.id)
+    db_session.add(project)
+    await db_session.commit()
+
+    # Create minimal valid Jupyter notebook
+    notebook_content = {
+        "cells": [
+            {
+                "cell_type": "markdown",
+                "metadata": {},
+                "source": ["# Test Notebook\n", "\n", "This is a test notebook."],
+            },
+            {
+                "cell_type": "code",
+                "execution_count": None,
+                "metadata": {},
+                "outputs": [],
+                "source": ["print('Hello World')"],
+            },
+        ],
+        "metadata": {
+            "kernelspec": {
+                "display_name": "Python 3",
+                "language": "python",
+                "name": "python3",
+            },
+            "language_info": {
+                "name": "python",
+                "version": "3.8.0",
+            },
+        },
+        "nbformat": 4,
+        "nbformat_minor": 4,
+    }
+    # Upload file
+    files = {
+        "file": (
+            "test.ipynb",
+            json_module.dumps(notebook_content).encode("utf-8"),
+            "application/x-ipynb+json",
+        )
+    }
+    data = {"name": "Test Jupyter Notebook"}
+
+    response = await client.post(
+        f"/api/v1/projects/{project.id}/documents/from-file", files=files, data=data
+    )
+
+    assert response.status_code == 201
+    doc = response.json()
+    assert doc["name"] == "Test Jupyter Notebook"
+    assert doc["type"] == "markdown"
+    # Verify markdown content is present (nbconvert will convert the notebook)
+    assert "markdown" in doc["content"]
+    assert len(doc["content"]["markdown"]) > 0
+
+
+@pytest.mark.asyncio
+async def test_import_unsupported_file_format(db_session: AsyncSession, client: AsyncClient):
+    """Test importing an unsupported file format."""
+    result = await db_session.execute(select(User).where(User.username == "testuser"))
+    user = result.scalar_one()
+
+    team = Team(name="Import Unsupported Team")
+    db_session.add(team)
+    await db_session.flush()
+
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
+    await db_session.flush()
+
+    project = Project(name="Import Unsupported Project", team_id=team.id)
+    db_session.add(project)
+    await db_session.commit()
+
+    # Create unsupported file (e.g., PDF)
+    # Upload file
+    files = {"file": ("test.pdf", b"fake pdf content", "application/pdf")}
+    data = {"name": "Test PDF Document"}
+
+    response = await client.post(
+        f"/api/v1/projects/{project.id}/documents/from-file", files=files, data=data
+    )
+
+    assert response.status_code == 400
+    assert "not supported" in response.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_import_file_no_filename(db_session: AsyncSession, client: AsyncClient):
+    """Test importing a file without filename."""
+    result = await db_session.execute(select(User).where(User.username == "testuser"))
+    user = result.scalar_one()
+
+    team = Team(name="Import No Name Team")
+    db_session.add(team)
+    await db_session.flush()
+
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
+    await db_session.flush()
+
+    project = Project(name="Import No Name Project", team_id=team.id)
+    db_session.add(project)
+    await db_session.commit()
+
+    # Upload file with empty filename
+    files = {"file": ("", b"test content", "text/plain")}
+    data = {"name": "Test Document"}
+
+    response = await client.post(
+        f"/api/v1/projects/{project.id}/documents/from-file", files=files, data=data
+    )
+
+    assert response.status_code in [400, 422]  # Can be either validation error
+
+
+@pytest.mark.asyncio
+async def test_import_file_project_not_found(db_session: AsyncSession, client: AsyncClient):
+    """Test importing file when project doesn't exist."""
+    from uuid import uuid4
+
+    fake_project_id = uuid4()
+
+    files = {"file": ("test.md", b"test content", "text/markdown")}
+    data = {"name": "Test Document"}
+
+    response = await client.post(
+        f"/api/v1/projects/{fake_project_id}/documents/from-file", files=files, data=data
+    )
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_import_file_not_team_member(db_session: AsyncSession, client: AsyncClient):
+    """Test importing file when user is not team member."""
+    team = Team(name="Import Not Member Team")
+    db_session.add(team)
+    await db_session.flush()
+
+    project = Project(name="Import Not Member Project", team_id=team.id)
+    db_session.add(project)
+    await db_session.commit()
+
+    files = {"file": ("test.md", b"test content", "text/markdown")}
+    data = {"name": "Test Document"}
+
+    response = await client.post(
+        f"/api/v1/projects/{project.id}/documents/from-file", files=files, data=data
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_import_empty_markdown_file(db_session: AsyncSession, client: AsyncClient):
+    """Test importing an empty markdown file."""
+    result = await db_session.execute(select(User).where(User.username == "testuser"))
+    user = result.scalar_one()
+
+    team = Team(name="Import Empty MD Team")
+    db_session.add(team)
+    await db_session.flush()
+
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
+    await db_session.flush()
+
+    project = Project(name="Import Empty MD Project", team_id=team.id)
+    db_session.add(project)
+    await db_session.commit()
+
+    # Create empty markdown file
+    files = {"file": ("empty.md", b"", "text/markdown")}
+    data = {"name": "Empty Markdown"}
+
+    response = await client.post(
+        f"/api/v1/projects/{project.id}/documents/from-file", files=files, data=data
+    )
+
+    assert response.status_code == 201
+    doc = response.json()
+    assert doc["name"] == "Empty Markdown"
+    assert doc["content"]["markdown"] == ""
+
+
+@pytest.mark.asyncio
+async def test_import_markdown_with_special_characters(
+    db_session: AsyncSession, client: AsyncClient
+):
+    """Test importing markdown file with special characters."""
+    result = await db_session.execute(select(User).where(User.username == "testuser"))
+    user = result.scalar_one()
+
+    team = Team(name="Import Special Team")
+    db_session.add(team)
+    await db_session.flush()
+
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
+    await db_session.flush()
+
+    project = Project(name="Import Special Project", team_id=team.id)
+    db_session.add(project)
+    await db_session.commit()
+
+    # Create markdown with special characters
+    markdown_content = "# Тест\n\n日本語 テスト\n\n**Специальные** символы: é ñ ü"
+
+    files = {"file": ("test.md", markdown_content.encode("utf-8"), "text/markdown")}
+    data = {"name": "Special Characters"}
+
+    response = await client.post(
+        f"/api/v1/projects/{project.id}/documents/from-file", files=files, data=data
+    )
+
+    assert response.status_code == 201
+    doc = response.json()
+    assert doc["name"] == "Special Characters"
+    assert doc["content"]["markdown"] == markdown_content

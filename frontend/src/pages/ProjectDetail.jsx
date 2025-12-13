@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { useDropzone } from 'react-dropzone';
 
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import MainLayout from '@/components/layout/MainLayout'
@@ -42,6 +43,8 @@ function ProjectDetail() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newDocumentName, setNewDocumentName] = useState('');
   const [newDocumentType, setNewDocumentType] = useState('markdown');
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     fetchProjectData().catch((error) => {
@@ -79,25 +82,82 @@ function ProjectDetail() {
     if (!newDocumentName.trim()) return;
 
     try {
-      const response = await axios.post(
-        `/api/v1/projects/${projectId}/documents/`,
-        {
-          name: newDocumentName,
-          type: newDocumentType,
-          content: newDocumentType === 'markdown' ? { markdown: '' } : { raw: { elements: [], appState: {}, files: {} } },
-        },
-        { withCredentials: true }
-      );
+      setIsUploading(true);
+
+      let response;
+
+      // If there's an uploaded file (Jupyter notebook), use the upload endpoint
+      if (uploadedFile && newDocumentType === 'markdown') {
+        const formData = new FormData();
+        formData.append('file', uploadedFile);
+        formData.append('name', newDocumentName);
+
+        response = await axios.post(
+          `/api/v1/projects/${projectId}/documents/from-file`,
+          formData,
+          {
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        );
+      } else {
+        // Regular document creation
+        response = await axios.post(
+          `/api/v1/projects/${projectId}/documents/`,
+          {
+            name: newDocumentName,
+            type: newDocumentType,
+            content: newDocumentType === 'markdown' ? { markdown: '' } : { raw: { elements: [], appState: {}, files: {} } },
+          },
+          { withCredentials: true }
+        );
+      }
 
       setNewDocumentName('');
+      setUploadedFile(null);
       setShowCreateModal(false);
       await refreshProjectData();
       navigate(`/projects/${projectId}/documents/${response.data.id}`);
     } catch (error) {
       console.error('Failed to create document:', error);
       toast.error(`Failed to create document: ${error.response?.data?.detail || error.message}`);
+    } finally {
+      setIsUploading(false);
     }
   };
+
+  const onDrop = useCallback((acceptedFiles) => {
+    if (acceptedFiles.length > 0) {
+      const file = acceptedFiles[0];
+      const supportedExtensions = ['.ipynb', '.md', '.txt'];
+      const hasValidExtension = supportedExtensions.some(ext => file.name.endsWith(ext));
+
+      if (!hasValidExtension) {
+        toast.error('This file is not supported. Supported formats: .ipynb, .md, .txt');
+        return;
+      }
+      setUploadedFile(file);
+      // Auto-fill document name from filename if empty
+      if (!newDocumentName) {
+        // Remove extension from filename
+        const nameWithoutExt = file.name.replace(/\.(ipynb|md|txt)$/, '');
+        setNewDocumentName(nameWithoutExt);
+      }
+    }
+  }, [newDocumentName]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/x-ipynb+json': ['.ipynb'],
+      'text/markdown': ['.md'],
+      'text/plain': ['.txt']
+    },
+    multiple: false,
+    disabled: newDocumentType !== 'markdown'
+  });
 
   const handleCreateTemplate = async (documentId, templateName, categoryName, visibility, includeChildren = false) => {
     try {
@@ -130,10 +190,6 @@ function ProjectDetail() {
     }
   };
 
-  if (loading) {
-    return null;
-  }
-
   return (
     <>
       <SidebarProvider>
@@ -150,7 +206,7 @@ function ProjectDetail() {
           onDocumentDelete={deleteDocument}
         />
         <div
-          className="h-screen w-full relative"
+          className="flex-1 h-screen relative overflow-x-hidden overflow-y-auto"
         >
           <MobileSidebarTrigger />
           {
@@ -187,13 +243,70 @@ function ProjectDetail() {
               </label>
               <select
                 value={newDocumentType}
-                onChange={(e) => setNewDocumentType(e.target.value)}
+                onChange={(e) => {
+                  setNewDocumentType(e.target.value);
+                  setUploadedFile(null); // Clear uploaded file when switching type
+                }}
                 className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="markdown">Markdown</option>
                 <option value="whiteboard">Whiteboard</option>
               </select>
             </div>
+
+            {/* Dropzone for Jupyter Notebook upload - only for Markdown documents */}
+            {newDocumentType === 'markdown' && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Upload a file (Optional)
+                </label>
+                <div
+                  {...getRootProps()}
+                  className={`border-2 border-dashed rounded-md p-2 text-center cursor-pointer transition-colors ${
+                    isDragActive
+                      ? 'border-primary bg-primary/10'
+                      : uploadedFile
+                      ? 'border-green-500 bg-green-500/10'
+                      : 'border-input hover:border-primary/50'
+                  }`}
+                >
+                  <input {...getInputProps()} />
+                  {uploadedFile ? (
+                    <div className="space-y-2">
+                      <div className="text-sm text-foreground font-medium">
+                        📓 {uploadedFile.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {(uploadedFile.size / 1024).toFixed(2)} KB
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setUploadedFile(null);
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ) : isDragActive ? (
+                    <p className="text-sm text-foreground">Drop the notebook here...</p>
+                  ) : (
+                    <div className="space-y-1">
+                      <p className="text-sm text-foreground">
+                        Drag & drop or click to select
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Supported formats: .ipynb, .md, .txt
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <DialogFooter>
               <Button
                 type="button"
@@ -202,12 +315,14 @@ function ProjectDetail() {
                   setShowCreateModal(false);
                   setNewDocumentName('');
                   setNewDocumentType('markdown');
+                  setUploadedFile(null);
                 }}
+                disabled={isUploading}
               >
                 Cancel
               </Button>
-              <Button type="submit">
-                Create
+              <Button type="submit" disabled={isUploading}>
+                {isUploading ? 'Creating...' : 'Create'}
               </Button>
             </DialogFooter>
           </form>
