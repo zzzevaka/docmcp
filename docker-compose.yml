@@ -47,5 +47,20 @@ services:
       - ./frontend/package.json:/app/package.json
       - ./frontend/vite.config.js:/app/vite.config.js
 
+  playwright:
+    build:
+      context: ./frontend
+      dockerfile: playwright.Dockerfile
+    environment:
+      BASE_URL: ${BASE_URL:-http://frontend:5173}
+      CI: "true"
+    depends_on:
+      - frontend
+    volumes:
+      - ./frontend:/app
+    profiles:
+      - test
+    command: npx playwright test
+
 volumes:
   pg_data:
