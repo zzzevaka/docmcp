@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.projects.models import Document, DocumentType
-from app.projects.repositories import DocumentRepository, ProjectRepository
+from app.projects.repositories import DocumentFilter, DocumentRepository, ProjectRepository
 from app.users.api.dependencies import verify_project_access
 from app.users.models import User
 
@@ -111,7 +111,12 @@ TOOLS = [
         ),
         "inputSchema": {
             "type": "object",
-            "properties": {},
+            "properties": {
+                "include_archive": {
+                    "type": "boolean",
+                    "description": "If true, include archived documents in the results. Default: false",
+                }
+            },
             "required": [],
         },
     },
@@ -127,6 +132,10 @@ TOOLS = [
                 "query": {
                     "type": "string",
                     "description": "Search query to match against document names and content",
+                },
+                "include_archive": {
+                    "type": "boolean",
+                    "description": "If true, include archived documents in the search. Default: false",
                 }
             },
             "required": ["query"],
@@ -225,7 +234,9 @@ def build_document_tree(document: Document, all_docs: list[Document]) -> dict[st
     return result
 
 
-async def list_documents_tool(project_id: UUID, db: AsyncSession) -> dict[str, Any]:
+async def list_documents_tool(
+    project_id: UUID, db: AsyncSession, include_archive: bool = False
+) -> dict[str, Any]:
     """List all documents with hierarchical structure."""
     project_repo = ProjectRepository(db)
     document_repo = DocumentRepository(db)
@@ -236,7 +247,9 @@ async def list_documents_tool(project_id: UUID, db: AsyncSession) -> dict[str, A
         raise ValueError("Project not found")
 
     # Get all documents
-    documents = await document_repo.list_for_project(project_id)
+    documents = await document_repo.find_by_filter(
+        DocumentFilter(project_id=project_id, include_archive=include_archive)
+    )
     all_docs = list(documents)
 
     # Build tree structure starting from root documents (no parent)
@@ -253,7 +266,9 @@ async def list_documents_tool(project_id: UUID, db: AsyncSession) -> dict[str, A
     }
 
 
-async def search_documents_tool(project_id: UUID, query: str, db: AsyncSession) -> dict[str, Any]:
+async def search_documents_tool(
+    project_id: UUID, query: str, db: AsyncSession, include_archive: bool = False
+) -> dict[str, Any]:
     """Search for documents by name or content using SQL full-text search."""
 
     project_repo = ProjectRepository(db)
@@ -288,15 +303,20 @@ async def search_documents_tool(project_id: UUID, query: str, db: AsyncSession) 
             func.lower(Document.content).ilike(func.lower(search_pattern)),
         )
 
-    result = await db.execute(
-        select(Document)
-        .where(
-            Document.project_id == project_id,
-            combined_condition,
-        )
-        .order_by(Document.created_at.asc())
+    # Build base query with parent relationship for archive checking
+    query_builder = select(Document).where(
+        Document.project_id == project_id,
+        combined_condition,
     )
+
+    query_builder = query_builder.order_by(Document.created_at.asc())
+
+    result = await db.execute(query_builder)
     matching_docs = result.scalars().all()
+
+    # Filter out archived documents (including inherited) unless include_archive is True
+    if not include_archive:
+        matching_docs = [doc for doc in matching_docs if not doc.is_archived()]
 
     results = [
         {
@@ -585,10 +605,12 @@ async def execute_tool(
 ) -> dict[str, Any]:
     """Execute a tool by name."""
     if tool_name == "list_documents":
-        return await list_documents_tool(project_id, db)
+        include_archive = arguments.get("include_archive", False)
+        return await list_documents_tool(project_id, db, include_archive)
     elif tool_name == "search_documents":
         query = arguments.get("query", "")
-        return await search_documents_tool(project_id, query, db)
+        include_archive = arguments.get("include_archive", False)
+        return await search_documents_tool(project_id, query, db, include_archive)
     elif tool_name == "get_document":
         document_id = arguments.get("id", "")
         return await get_document_tool(project_id, document_id, db)

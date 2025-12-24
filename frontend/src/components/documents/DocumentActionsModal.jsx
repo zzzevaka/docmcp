@@ -1,4 +1,4 @@
-import { Pencil, Trash2, BookTemplate, Bot } from 'lucide-react';
+import { Pencil, Trash2, BookTemplate, Bot, Archive, HelpCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 
-export default function DocumentActionsModal({ document, isOpen, onClose, onEdit, onDelete, onCreateTemplate, onToggleEditableByAgent }) {
+export default function DocumentActionsModal({ document, isOpen, onClose, onEdit, onDelete, onCreateTemplate, onToggleEditableByAgent, onToggleArchived }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[375px]">
@@ -28,6 +28,22 @@ export default function DocumentActionsModal({ document, isOpen, onClose, onEdit
               onCheckedChange={(checked) => {
                 if (onToggleEditableByAgent) {
                   onToggleEditableByAgent(document.id, checked);
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+          <div className="w-full px-4 py-3 rounded-md flex items-center gap-3">
+            <Archive className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+            <div className="flex-1">
+              <div className="font-medium text-foreground flex items-center gap-1.5">Archive</div>
+              <div className="text-sm text-muted-foreground">Archived documents are not visible to AI agents by default</div>
+            </div>
+            <Switch
+              checked={document.archived}
+              onCheckedChange={(checked) => {
+                if (onToggleArchived) {
+                  onToggleArchived(document.id, checked);
                 }
               }}
               onClick={(e) => e.stopPropagation()}

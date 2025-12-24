@@ -224,6 +224,68 @@ async def test_list_documents_tool(client_with_db: AsyncClient, test_project: di
 
 
 @pytest.mark.asyncio
+async def test_list_documents_with_archive(
+    client_with_db: AsyncClient, test_project: dict, db_session: AsyncSession
+) -> None:
+    """Test list_documents tool with include_archive parameter."""
+    project = test_project["project"]
+    token = test_project["api_token"].token
+
+    # Create an archived document
+    archived_doc = Document(
+        name="Archived Document",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content=json.dumps({"text": "This is archived"}),
+        parent_id=None,
+        order=99,
+        archived=True,
+    )
+    db_session.add(archived_doc)
+    await db_session.commit()
+
+    # Test without include_archive (should not include archived docs)
+    request_data = {
+        "jsonrpc": "2.0",
+        "id": 23,
+        "method": "tools/call",
+        "params": {"name": "list_documents", "arguments": {}},
+    }
+
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
+    assert response.status_code == 200
+    data = response.json()
+    text_data = json.loads(data["result"]["content"][0]["text"])
+
+    # Should have 2 root documents (Getting Started, Architecture) - not the archived one
+    assert len(text_data["documents"]) == 2
+    doc_names = [d["name"] for d in text_data["documents"]]
+    assert "Archived Document" not in doc_names
+
+    # Test with include_archive=True (should include archived docs)
+    request_data_with_archive = {
+        "jsonrpc": "2.0",
+        "id": 24,
+        "method": "tools/call",
+        "params": {"name": "list_documents", "arguments": {"include_archive": True}},
+    }
+
+    response = await client_with_db.post(
+        f"/api/mcp/{project.id}",
+        json=request_data_with_archive,
+        headers=get_auth_headers(token)
+    )
+    assert response.status_code == 200
+    data = response.json()
+    text_data = json.loads(data["result"]["content"][0]["text"])
+
+    # Should have 3 root documents including the archived one
+    assert len(text_data["documents"]) == 3
+    doc_names = [d["name"] for d in text_data["documents"]]
+    assert "Archived Document" in doc_names
+
+
+@pytest.mark.asyncio
 async def test_search_documents_tool(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test search_documents tool."""
     project = test_project["project"]
@@ -284,6 +346,68 @@ async def test_search_documents_multiple_words(client_with_db: AsyncClient, test
     result_names = [r["name"] for r in text_data["results"]]
     assert "Installation" in result_names
     assert "Configuration" in result_names
+
+
+@pytest.mark.asyncio
+async def test_search_documents_with_archive(
+    client_with_db: AsyncClient, test_project: dict, db_session: AsyncSession
+) -> None:
+    """Test search_documents tool with include_archive parameter."""
+    project = test_project["project"]
+    token = test_project["api_token"].token
+
+    # Create an archived document with searchable content
+    archived_doc = Document(
+        name="Archived Guide",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content=json.dumps({"text": "This is an archived installation guide"}),
+        parent_id=None,
+        order=99,
+        archived=True,
+    )
+    db_session.add(archived_doc)
+    await db_session.commit()
+
+    # Test without include_archive (should not find archived docs)
+    request_data = {
+        "jsonrpc": "2.0",
+        "id": 25,
+        "method": "tools/call",
+        "params": {"name": "search_documents", "arguments": {"query": "archived"}},
+    }
+
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
+    assert response.status_code == 200
+    data = response.json()
+    text_data = json.loads(data["result"]["content"][0]["text"])
+
+    # Should not find the archived document
+    assert len(text_data["results"]) == 0
+
+    # Test with include_archive=True (should find archived docs)
+    request_data_with_archive = {
+        "jsonrpc": "2.0",
+        "id": 26,
+        "method": "tools/call",
+        "params": {
+            "name": "search_documents",
+            "arguments": {"query": "archived", "include_archive": True}
+        },
+    }
+
+    response = await client_with_db.post(
+        f"/api/mcp/{project.id}",
+        json=request_data_with_archive,
+        headers=get_auth_headers(token)
+    )
+    assert response.status_code == 200
+    data = response.json()
+    text_data = json.loads(data["result"]["content"][0]["text"])
+
+    # Should find the archived document
+    assert len(text_data["results"]) == 1
+    assert text_data["results"][0]["name"] == "Archived Guide"
 
 
 @pytest.mark.asyncio
@@ -1245,3 +1369,85 @@ async def test_markdown_without_images(
     assert "No Images Document" in content_blocks[0]["text"]
     assert content_blocks[1]["type"] == "text"
     assert "No images here" in content_blocks[1]["text"]
+
+
+@pytest.mark.asyncio
+async def test_archived_inheritance(client_with_db: AsyncClient, test_project: dict, db_session: AsyncSession) -> None:
+    """Test that children inherit archived status from parent."""
+    project = test_project["project"]
+    token = test_project["api_token"].token
+
+    # Create parent document with archived=True
+    parent = Document(
+        name="Archived Parent",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content=json.dumps({"text": "Parent content"}),
+        parent_id=None,
+        order=98,
+        archived=True,
+    )
+    db_session.add(parent)
+    await db_session.flush()
+
+    # Create child document with archived=None (should inherit from parent)
+    child = Document(
+        name="Child with Inherited Archive",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content=json.dumps({"text": "Child content"}),
+        parent_id=parent.id,
+        order=0,
+        archived=None,
+    )
+    db_session.add(child)
+    await db_session.flush()
+
+    # Create another child with explicit archived=False (but this should fail validation in real app)
+    # For now, just test that child with archived=None inherits parent's status
+    await db_session.commit()
+
+    # Test without include_archive - both parent and child should be filtered out
+    request_data = {
+        "jsonrpc": "2.0",
+        "id": 103,
+        "method": "tools/call",
+        "params": {"name": "list_documents", "arguments": {}},
+    }
+
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
+    assert response.status_code == 200
+    data = response.json()
+    text_data = json.loads(data["result"]["content"][0]["text"])
+
+    # Should not include the archived parent or its child
+    doc_names = [d["name"] for d in text_data["documents"]]
+    assert "Archived Parent" not in doc_names
+
+    # Test with include_archive=True - should include both parent and child
+    request_data_with_archive = {
+        "jsonrpc": "2.0",
+        "id": 104,
+        "method": "tools/call",
+        "params": {"name": "list_documents", "arguments": {"include_archive": True}},
+    }
+
+    response = await client_with_db.post(
+        f"/api/mcp/{project.id}",
+        json=request_data_with_archive,
+        headers=get_auth_headers(token)
+    )
+    assert response.status_code == 200
+    data = response.json()
+    text_data = json.loads(data["result"]["content"][0]["text"])
+
+    # Should include the archived parent
+    doc_names = [d["name"] for d in text_data["documents"]]
+    assert "Archived Parent" in doc_names
+
+    # Find the parent in the tree and check it has the child
+    parent_in_tree = next((d for d in text_data["documents"] if d["name"] == "Archived Parent"), None)
+    assert parent_in_tree is not None
+    assert "descendants" in parent_in_tree
+    assert len(parent_in_tree["descendants"]) == 1
+    assert parent_in_tree["descendants"][0]["name"] == "Child with Inherited Archive"
