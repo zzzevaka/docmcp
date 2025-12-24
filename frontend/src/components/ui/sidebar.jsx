@@ -24,11 +24,14 @@ import {
 } from "@/components/ui/tooltip"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
+const SIDEBAR_WIDTH_COOKIE_NAME = "sidebar_width"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+const SIDEBAR_MIN_WIDTH = 200
+const SIDEBAR_MAX_WIDTH = 600
 
 const SidebarContext = React.createContext(null)
 
@@ -72,6 +75,29 @@ const SidebarProvider = React.forwardRef((
     document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
   }, [setOpenProp, open])
 
+  // Sidebar width state
+  const getInitialWidth = React.useCallback(() => {
+    if (typeof document !== 'undefined') {
+      const cookies = document.cookie.split('; ')
+      const widthCookie = cookies.find(c => c.startsWith(`${SIDEBAR_WIDTH_COOKIE_NAME}=`))
+      if (widthCookie) {
+        const width = parseInt(widthCookie.split('=')[1])
+        if (!isNaN(width) && width >= SIDEBAR_MIN_WIDTH && width <= SIDEBAR_MAX_WIDTH) {
+          return width
+        }
+      }
+    }
+    return 256 // 16rem default
+  }, [])
+
+  const [sidebarWidth, setSidebarWidth] = React.useState(getInitialWidth)
+
+  const updateSidebarWidth = React.useCallback((width) => {
+    const newWidth = Math.min(Math.max(width, SIDEBAR_MIN_WIDTH), SIDEBAR_MAX_WIDTH)
+    setSidebarWidth(newWidth)
+    document.cookie = `${SIDEBAR_WIDTH_COOKIE_NAME}=${newWidth}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+  }, [])
+
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
     return isMobile
@@ -107,7 +133,9 @@ const SidebarProvider = React.forwardRef((
     openMobile,
     setOpenMobile,
     toggleSidebar,
-  }), [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar])
+    sidebarWidth,
+    updateSidebarWidth,
+  }), [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, sidebarWidth, updateSidebarWidth])
 
   return (
     <SidebarContext.Provider value={contextValue}>
@@ -115,7 +143,7 @@ const SidebarProvider = React.forwardRef((
         <div
           style={
             {
-              "--sidebar-width": SIDEBAR_WIDTH,
+              "--sidebar-width": `${sidebarWidth}px`,
               "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
               ...style
             }
@@ -139,6 +167,7 @@ const Sidebar = React.forwardRef((
     side = "left",
     variant = "sidebar",
     collapsible = "offcanvas",
+    resizable = true,
     className,
     children,
     ...props
@@ -217,8 +246,9 @@ const Sidebar = React.forwardRef((
         {...props}>
         <div
           data-sidebar="sidebar"
-          className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow">
+          className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow relative">
           {children}
+          {resizable && state === "expanded" && <SidebarResizer side={side} />}
         </div>
       </div>
     </div>
@@ -272,6 +302,96 @@ const SidebarRail = React.forwardRef(({ className, ...props }, ref) => {
   );
 })
 SidebarRail.displayName = "SidebarRail"
+
+const SidebarResizer = React.forwardRef(({ className, side = "left", ...props }, ref) => {
+  const { sidebarWidth, updateSidebarWidth, state } = useSidebar()
+  const [isResizing, setIsResizing] = React.useState(false)
+
+  const handleMouseDown = React.useCallback((e) => {
+    e.preventDefault()
+    setIsResizing(true)
+
+    const startX = e.clientX
+    const startWidth = sidebarWidth
+
+    // Get the wrapper element to update CSS variable directly
+    const wrapper = document.querySelector('.group\\/sidebar-wrapper')
+
+    // Disable transitions during resize for smooth performance
+    if (wrapper) {
+      wrapper.style.setProperty('--sidebar-transition', 'none')
+    }
+
+    let animationFrameId = null
+
+    const handleMouseMove = (e) => {
+      // Use requestAnimationFrame for smooth updates
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId)
+      }
+
+      animationFrameId = requestAnimationFrame(() => {
+        const delta = side === "left" ? e.clientX - startX : startX - e.clientX
+        let newWidth = startWidth + delta
+
+        // Clamp width between min and max
+        newWidth = Math.min(Math.max(newWidth, SIDEBAR_MIN_WIDTH), SIDEBAR_MAX_WIDTH)
+
+        // Update CSS variable directly for immediate visual feedback
+        if (wrapper) {
+          wrapper.style.setProperty('--sidebar-width', `${newWidth}px`)
+        }
+      })
+    }
+
+    const handleMouseUp = () => {
+      setIsResizing(false)
+
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId)
+      }
+
+      // Re-enable transitions
+      if (wrapper) {
+        wrapper.style.removeProperty('--sidebar-transition')
+      }
+
+      // Get final width and update state
+      const finalWidth = parseInt(wrapper?.style.getPropertyValue('--sidebar-width')) || sidebarWidth
+      updateSidebarWidth(finalWidth)
+
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    document.body.style.cursor = 'ew-resize'
+    document.body.style.userSelect = 'none'
+  }, [sidebarWidth, updateSidebarWidth, side])
+
+  if (state === "collapsed") {
+    return null
+  }
+
+  return (
+    <div
+      ref={ref}
+      data-sidebar="resizer"
+      onMouseDown={handleMouseDown}
+      className={cn(
+        "absolute inset-y-0 z-20 hidden w-1 transition-colors hover:bg-sidebar-border sm:flex",
+        "cursor-ew-resize",
+        side === "left" ? "-right-0.5" : "-left-0.5",
+        isResizing && "bg-sidebar-border",
+        className
+      )}
+      {...props} />
+  );
+})
+SidebarResizer.displayName = "SidebarResizer"
 
 const SidebarInset = React.forwardRef(({ className, ...props }, ref) => {
   return (
@@ -623,6 +743,7 @@ export {
   SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
+  SidebarResizer,
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
