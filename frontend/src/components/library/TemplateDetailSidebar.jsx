@@ -61,15 +61,15 @@ export default function TemplateDetailSidebar({ template, templates, activeTempl
           </div>
         ) : (
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <button
                 onClick={() => navigate('/library/categories')}
-                className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+                className="p-1.5 hover:bg-gray-100 rounded-md transition-colors flex-shrink-0"
                 title="Back to library"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <span className="font-semibold truncate">{template.name}</span>
+              <span className="font-semibold truncate" title={template.name}>{template.name}</span>
             </div>
             {canDelete && (
               <button

@@ -14,7 +14,10 @@ export default function TemplateCard({ template, onClick }) {
       className="bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow p-6 cursor-pointer"
     >
       <div className="flex items-start justify-between mb-2">
-        <h3 className="text-lg font-semibold text-card-foreground flex-1 pr-2">
+        <h3
+          className="text-lg font-semibold text-card-foreground flex-1 pr-2 truncate"
+          title={template.name}
+        >
           {template.name}
         </h3>
         <Icon className="w-5 h-5 text-muted-foreground flex-shrink-0" />

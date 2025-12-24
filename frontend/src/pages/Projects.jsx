@@ -95,7 +95,10 @@ function Projects() {
             onClick={() => navigate(`/projects/${project.id}`)}
             className="bg-card border border-border p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
           >
-            <h3 className="text-lg font-semibold text-card-foreground mb-2">
+            <h3
+              className="text-lg font-semibold text-card-foreground mb-2 truncate"
+              title={project.name}
+            >
               {project.name}
             </h3>
             <p className="text-sm text-muted-foreground">
