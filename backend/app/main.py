@@ -2,6 +2,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -42,8 +43,6 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# CORS middleware - allow all origins in dev, specific in production
-# Note: allow_origins=["*"] doesn't work with credentials, so we use regex
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=r"https?://.*" if settings.app_env == "dev" else r"https://.*",
@@ -53,7 +52,11 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# Include routers
+app.add_middleware(
+    GZipMiddleware,
+    minimum_size=1000,
+)
+
 app.include_router(auth_routes.router)
 app.include_router(user_routes.router)
 app.include_router(team_routes.router)
