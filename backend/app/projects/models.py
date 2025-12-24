@@ -48,6 +48,7 @@ class Document(Base):
     )
     order: Mapped[int] = mapped_column(default=0, server_default="0", index=True)
     editable_by_agent: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    archived: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=None)
 
     # Relationships
     project: Mapped["Project"] = relationship(back_populates="documents", lazy="selectin")
@@ -57,6 +58,14 @@ class Document(Base):
     children: Mapped[List["Document"]] = relationship(
         "Document", back_populates="parent", cascade="all, delete-orphan", lazy="selectin"
     )
+
+    def is_archived(self) -> bool:
+        """Check if document is archived (including inherited from parent)."""
+        if self.archived is not None:
+            return bool(self.archived)
+        if self.parent:
+            return self.parent.is_archived()
+        return False
 
     def __repr__(self) -> str:
         return f"<Document(id={self.id}, name={self.name}, type={self.type})>"

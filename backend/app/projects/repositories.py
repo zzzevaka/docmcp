@@ -24,6 +24,7 @@ class DocumentFilter:
     project_id: UUID | None = None
     parent_id: UUID | None = None
     type: DocumentType | None = None
+    include_archive: bool = False
 
 
 class ProjectRepository:
@@ -124,11 +125,17 @@ class DocumentRepository:
         query = query.order_by(Document.order, Document.created_at)
 
         result = await self.db.execute(query)
-        return result.scalars().all()
+        all_docs = result.scalars().all()
+
+        # Filter archived documents based on inherited status if needed
+        if not filter_.include_archive:
+            all_docs = [doc for doc in all_docs if not doc.is_archived()]
+
+        return all_docs
 
     async def list_for_project(self, project_id: UUID) -> Iterable[Document]:
         """List all documents for a project."""
-        return await self.find_by_filter(DocumentFilter(project_id=project_id))
+        return await self.find_by_filter(DocumentFilter(project_id=project_id, include_archive=True))
 
     async def create(self, document: Document) -> Document:
         """Create a new document."""

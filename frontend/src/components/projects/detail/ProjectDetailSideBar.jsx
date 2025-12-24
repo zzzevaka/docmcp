@@ -9,7 +9,7 @@ import {
   SidebarGroup,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { FileText, Image, Plus, MoreHorizontal, ArrowLeft } from 'lucide-react';
+import { FileText, Image, Plus, MoreHorizontal, ArrowLeft, Archive } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import axios from 'axios';
@@ -76,6 +76,32 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
       }
 
       toast.success(editableByAgent ? 'Document is now editable by AI' : 'Document is no longer editable by AI');
+    } catch (error) {
+      console.error('Failed to update document:', error);
+      toast.error(`Failed to update document: ${error.response?.data?.detail || error.message}`);
+      throw error;
+    }
+  };
+
+  const handleToggleArchived = async (documentId, archived) => {
+    try {
+      const response = await axios.put(
+        `/api/v1/projects/${project.id}/documents/${documentId}`,
+        { archived: archived },
+        { withCredentials: true }
+      );
+
+      // Update the actionsDocument state immediately to reflect the change in the modal
+      if (actionsDocument && actionsDocument.id === documentId) {
+        setActionsDocument({ ...actionsDocument, archived: response.data.archived });
+      }
+
+      // Update document in store with computed archived value from response
+      if (onDocumentUpdate) {
+        onDocumentUpdate(documentId, { archived: response.data.archived });
+      }
+
+      toast.success(archived ? 'Document archived' : 'Document unarchived');
     } catch (error) {
       console.error('Failed to update document:', error);
       toast.error(`Failed to update document: ${error.response?.data?.detail || error.message}`);
@@ -207,6 +233,13 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
           name: doc.name,
           icon: doc.type === 'markdown' ? FileText : Image,
           draggable: true,
+          className: doc.archived ? 'opacity-60' : '',
+          badge: doc.archived ? (
+            <Archive
+              className="w-3 h-3 text-yellow-600 dark:text-yellow-400"
+              title="Archived"
+            />
+          ) : null,
           actions: (
             <div
               onClick={(e) => {
@@ -436,6 +469,7 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
         onDelete={() => setDeletingDocument(actionsDocument)}
         onCreateTemplate={() => setCreatingTemplateDocument(actionsDocument)}
         onToggleEditableByAgent={handleToggleEditableByAgent}
+        onToggleArchived={handleToggleArchived}
       />
     )}
 

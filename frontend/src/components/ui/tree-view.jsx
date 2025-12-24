@@ -325,6 +325,11 @@ const TreeNode = ({
                                   className="text-sm truncate"
                                   title={item.name}
                                 >{item.name}</span>
+                                {item.badge && (
+                                  <div className="ml-1 shrink-0">
+                                    {item.badge}
+                                  </div>
+                                )}
                             </div>
                             <TreeActions isSelected={isSelected}>
                                 {item.actions}
@@ -458,6 +463,11 @@ const TreeLeaf = React.forwardRef((
                 <>
                     <TreeIcon item={item} isSelected={isSelected} default={defaultLeafIcon} />
                     <span className="flex-grow text-sm truncate">{item.name}</span>
+                    {item.badge && (
+                      <div className="ml-1 shrink-0">
+                        {item.badge}
+                      </div>
+                    )}
                     <TreeActions isSelected={isSelected && !item.disabled}>
                         {item.actions}
                     </TreeActions>

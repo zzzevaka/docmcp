@@ -193,6 +193,23 @@ async def update_document(
     if "editable_by_agent" in update_data:
         document.editable_by_agent = payload.editable_by_agent
 
+    if "archived" in update_data:
+        # Check if parent is archived (including inherited)
+        if document.parent_id:
+            parent = await document_repo.get(document.parent_id)
+            if parent and parent.is_archived():
+                raise HTTPException(
+                    status_code=400,
+                    detail="Cannot change archived status when parent is archived"
+                )
+
+        # If setting archived to False, set to None to inherit from parent
+        # If setting to True, set explicitly
+        if payload.archived is False:
+            document.archived = None
+        else:
+            document.archived = payload.archived
+
     document = await document_repo.update(document)
     await db.commit()
     await db.refresh(document)
