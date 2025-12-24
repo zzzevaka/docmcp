@@ -234,19 +234,13 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
           icon: doc.type === 'markdown' ? FileText : Image,
           draggable: true,
           className: doc.archived ? 'opacity-60' : '',
-          badge: doc.archived ? (
-            <Archive
-              className="w-3 h-3 text-yellow-600 dark:text-yellow-400"
-              title="Archived"
-            />
-          ) : null,
           actions: (
             <div
               onClick={(e) => {
                 e.stopPropagation();
                 setActionsDocument(doc);
               }}
-              className="p-1 hover:bg-gray-200 rounded transition-all cursor-pointer"
+              className="flex gap-3 items-center"
               title="Document actions"
               role="button"
               tabIndex={0}
@@ -258,7 +252,21 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
                 }
               }}
             >
-              <MoreHorizontal className="w-3 h-3 text-gray-600" />
+              {
+                doc.archived
+                  ? (
+                    <Archive
+                        className="w-3 h-3 transition-all text-yellow-600 dark:text-yellow-400"
+                        title="Archived"
+                      />
+                  )
+                  : null
+              }
+              <div
+                className="p-1 hover:bg-gray-200 rounded transition-all cursor-pointer"
+              >
+                <MoreHorizontal className="w-3 h-3 text-gray-600" />
+              </div>
             </div>
           ),
         }
