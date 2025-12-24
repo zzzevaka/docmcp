@@ -253,6 +253,40 @@ async def test_search_documents_tool(client_with_db: AsyncClient, test_project: 
 
 
 @pytest.mark.asyncio
+async def test_search_documents_multiple_words(client_with_db: AsyncClient, test_project: dict) -> None:
+    """Test search_documents tool with multiple words - should find documents containing any word."""
+    project = test_project["project"]
+    token = test_project["api_token"].token
+    request_data = {
+        "jsonrpc": "2.0",
+        "id": 21,
+        "method": "tools/call",
+        "params": {"name": "search_documents", "arguments": {"query": "installation configure"}},
+    }
+
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["jsonrpc"] == "2.0"
+    assert "result" in data
+    assert "content" in data["result"]
+
+    # Parse the text content
+    text_data = json.loads(data["result"]["content"][0]["text"])
+    assert text_data["query"] == "installation configure"
+
+    # Should find both "Installation" and "Configuration" documents
+    # because query is split into ["installation", "configure"] and each word is searched separately
+    assert len(text_data["results"]) == 2
+
+    result_names = [r["name"] for r in text_data["results"]]
+    assert "Installation" in result_names
+    assert "Configuration" in result_names
+
+
+@pytest.mark.asyncio
 async def test_get_document_tool(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test get_document tool."""
     project = test_project["project"]
@@ -280,6 +314,48 @@ async def test_get_document_tool(client_with_db: AsyncClient, test_project: dict
     assert len(content_blocks) >= 1
     assert content_blocks[0]["type"] == "text"
     assert "Getting Started" in content_blocks[0]["text"]
+
+
+@pytest.mark.asyncio
+async def test_get_document_with_parents(client_with_db: AsyncClient, test_project: dict) -> None:
+    """Test get_document tool returns document with all parent documents."""
+    project = test_project["project"]
+    token = test_project["api_token"].token
+    child_doc = test_project["child_doc1"]  # Installation (child of Getting Started)
+
+    request_data = {
+        "jsonrpc": "2.0",
+        "id": 22,
+        "method": "tools/call",
+        "params": {"name": "get_document", "arguments": {"id": str(child_doc.id)}},
+    }
+
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["jsonrpc"] == "2.0"
+    assert "result" in data
+    assert "content" in data["result"]
+
+    # Check content blocks - should contain parent document first, then child
+    content_blocks = data["result"]["content"]
+
+    # Convert to text for easier checking
+    full_text = "\n".join([block.get("text", "") for block in content_blocks if block["type"] == "text"])
+
+    # Should contain both parent and child document titles
+    assert "Getting Started" in full_text
+    assert "Installation" in full_text
+
+    # Should contain separator between documents
+    assert "---" in full_text
+
+    # Parent should appear before child (check order)
+    getting_started_pos = full_text.find("Getting Started")
+    installation_pos = full_text.find("Installation")
+    assert getting_started_pos < installation_pos, "Parent document should appear before child"
 
 
 @pytest.mark.asyncio

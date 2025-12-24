@@ -135,7 +135,8 @@ TOOLS = [
     {
         "name": "get_document",
         "description": (
-            "Returns full content of a specific document by ID. "
+            "Returns full content of a specific document by ID along with all its parent documents. "
+            "Documents are returned in hierarchical order from root to the requested document, separated by '---'. "
             "For markdown documents with embedded base64 images: images are extracted and replaced "
             "with placeholders like [image:0], [image:1], etc. The images are provided separately "
             "as image content blocks. When editing such documents, use these placeholders to preserve images."
@@ -262,17 +263,36 @@ async def search_documents_tool(project_id: UUID, query: str, db: AsyncSession) 
     if not project:
         raise ValueError("Project not found")
 
-    # Use SQL ILIKE for case-insensitive full-text search
-    search_pattern = f"%{query}%"
+    # Split query into words and search for each word
+    words = query.strip().split()
+    search_conditions = []
+
+    for word in words:
+        if word:  # Skip empty strings
+            word_pattern = f"%{word}%"
+            search_conditions.append(
+                or_(
+                    func.lower(Document.name).ilike(func.lower(word_pattern)),
+                    func.lower(Document.content).ilike(func.lower(word_pattern)),
+                )
+            )
+
+    # Combine all conditions with OR (documents matching any word)
+    if search_conditions:
+        combined_condition = or_(*search_conditions)
+    else:
+        # If no valid words, use original query
+        search_pattern = f"%{query}%"
+        combined_condition = or_(
+            func.lower(Document.name).ilike(func.lower(search_pattern)),
+            func.lower(Document.content).ilike(func.lower(search_pattern)),
+        )
 
     result = await db.execute(
         select(Document)
         .where(
             Document.project_id == project_id,
-            or_(
-                func.lower(Document.name).ilike(func.lower(search_pattern)),
-                func.lower(Document.content).ilike(func.lower(search_pattern)),
-            ),
+            combined_condition,
         )
         .order_by(Document.created_at.asc())
     )
@@ -302,7 +322,7 @@ async def search_documents_tool(project_id: UUID, query: str, db: AsyncSession) 
 
 
 async def get_document_tool(project_id: UUID, document_id: str, db: AsyncSession) -> dict[str, Any]:
-    """Get the full content of a specific document."""
+    """Get the full content of a specific document along with all its parent documents."""
     project_repo = ProjectRepository(db)
     document_repo = DocumentRepository(db)
 
@@ -321,81 +341,106 @@ async def get_document_tool(project_id: UUID, document_id: str, db: AsyncSession
     if not document or document.project_id != project_id:
         raise ValueError("Document not found")
 
-    try:
-        if isinstance(document.content, str):
-            content = json.loads(document.content)
-        else:
-            content = document.content
-    except json.JSONDecodeError:
-        content = document.content
+    # Collect all parent documents (from root to requested document)
+    documents_chain = [document]
+    current_doc = document
 
-    content_blocks = [
-        {
-            "type": "text",
-            "text": f"Title: {document.name}",
-        }
-    ]
+    while current_doc.parent_id is not None:
+        parent = await document_repo.get(current_doc.parent_id)
+        if parent is None:
+            break
+        documents_chain.insert(0, parent)  # Insert at beginning to have parents first
+        current_doc = parent
 
-    # Add document type-specific content
-    if document.type.value == "markdown":
-        # For markdown documents, extract images and replace with placeholders
-        markdown_text = ""
-        if isinstance(content, dict) and "markdown" in content:
-            markdown_text = content["markdown"]
-        elif isinstance(content, dict) and "text" in content:
-            markdown_text = content["text"]
-        else:
-            markdown_text = json.dumps(content, indent=2)
+    # Build content blocks for all documents in the chain
+    content_blocks = []
 
-        # Extract images from markdown
-        modified_markdown, images = extract_images_from_markdown(markdown_text)
-
-        # Save images to document content for future restoration
-        if images:
-            if isinstance(content, dict):
-                content["images"] = images
+    for doc in documents_chain:
+        try:
+            if isinstance(doc.content, str):
+                content = json.loads(doc.content)
             else:
-                content = {"markdown": markdown_text, "images": images}
-            document.content = json.dumps(content)
-            await db.commit()
-            await db.refresh(document)
+                content = doc.content
+        except json.JSONDecodeError:
+            content = doc.content
 
-        # Add modified markdown as text
+        # Add document title
         content_blocks.append(
             {
                 "type": "text",
-                "text": modified_markdown,
+                "text": f"Title: {doc.name}",
             }
         )
 
-        # Add each image separately
-        for img in images:
-            content_blocks.append(
-                {
-                    "type": "image",
-                    "data": img["data"],
-                    "mimeType": f"image/{img['mime_type']}",
-                }
-            )
-    elif document.type.value == "whiteboard":
-        # For whiteboard documents, return base64 image if available
-        if isinstance(content, dict) and "image" in content:
-            content_image = content["image"].split(",")[-1]
-            content_blocks.append({"type": "image", "data": content_image, "mimeType": "image/png"})
-        # Add raw content as text
-        if isinstance(content, dict) and "raw" in content:
+        # Add document type-specific content
+        if doc.type.value == "markdown":
+            # For markdown documents, extract images and replace with placeholders
+            markdown_text = ""
+            if isinstance(content, dict) and "markdown" in content:
+                markdown_text = content["markdown"]
+            elif isinstance(content, dict) and "text" in content:
+                markdown_text = content["text"]
+            else:
+                markdown_text = json.dumps(content, indent=2)
+
+            # Extract images from markdown
+            modified_markdown, images = extract_images_from_markdown(markdown_text)
+
+            # Save images to document content for future restoration
+            if images:
+                if isinstance(content, dict):
+                    content["images"] = images
+                else:
+                    content = {"markdown": markdown_text, "images": images}
+                doc.content = json.dumps(content)
+                await db.commit()
+                await db.refresh(doc)
+
+            # Add modified markdown as text
             content_blocks.append(
                 {
                     "type": "text",
-                    "text": json.dumps(content["raw"], indent=2),
+                    "text": modified_markdown,
                 }
             )
-        else:
-            # Fallback: show full content if no 'raw' field
+
+            # Add each image separately
+            for img in images:
+                content_blocks.append(
+                    {
+                        "type": "image",
+                        "data": img["data"],
+                        "mimeType": f"image/{img['mime_type']}",
+                    }
+                )
+        elif doc.type.value == "whiteboard":
+            # For whiteboard documents, return base64 image if available
+            if isinstance(content, dict) and "image" in content:
+                content_image = content["image"].split(",")[-1]
+                content_blocks.append({"type": "image", "data": content_image, "mimeType": "image/png"})
+            # Add raw content as text
+            if isinstance(content, dict) and "raw" in content:
+                content_blocks.append(
+                    {
+                        "type": "text",
+                        "text": json.dumps(content["raw"], indent=2),
+                    }
+                )
+            else:
+                # Fallback: show full content if no 'raw' field
+                content_blocks.append(
+                    {
+                        "type": "text",
+                        "text": f"Excalidraw whiteboard content:\n{json.dumps(content, indent=2)}",
+                    }
+                )
+
+        # Add separator between documents (except after the last one)
+        if doc != documents_chain[-1]:
             content_blocks.append(
                 {
                     "type": "text",
-                    "text": f"Excalidraw whiteboard content:\n{json.dumps(content, indent=2)}",
+                    "text": "\n---\n",
                 }
             )
 
