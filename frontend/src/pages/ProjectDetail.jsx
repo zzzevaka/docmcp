@@ -36,7 +36,7 @@ function MobileSidebarTrigger() {
 function ProjectDetail() {
   const { projectId, documentId } = useParams();
   const navigate = useNavigate();
-  const { project, documents, loading, fetchProjectData, refreshProjectData, updateDocument, deleteDocument, fetchDocumentContent } = useProjectDetail(projectId);
+  const { project, documents, loading, fetchProjectData, refreshProjectData, updateDocument, updateDocuments, deleteDocument, fetchDocumentContent } = useProjectDetail(projectId);
   const { deleteProject, updateProject } = useProjects();
   const { addTemplate } = useTemplates();
   const [activeDocument, setActiveDocument] = useState(null);
@@ -208,6 +208,7 @@ function ProjectDetail() {
           onCreateDocument={() => setShowCreateModal(true)}
           onCreateChildDocument={handleCreateChildDocument}
           onDocumentsChange={refreshProjectData}
+          onDocumentsUpdate={updateDocuments}
           onCreateTemplate={handleCreateTemplate}
           onProjectDelete={deleteProject}
           onProjectUpdate={updateProject}

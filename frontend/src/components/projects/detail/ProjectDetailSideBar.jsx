@@ -24,7 +24,7 @@ import EditProjectModal from '@/components/projects/EditProjectModal'
 import DeleteProjectModal from '@/components/projects/DeleteProjectModal'
 import MCPInstructionsModal from '@/components/projects/MCPInstructionsModal'
 
-export default function ProjectDetailSidebar({ project, documents, activeDocumentId, onCreateDocument, onCreateChildDocument, onDocumentsChange, onCreateTemplate, onProjectDelete, onProjectUpdate, onDocumentUpdate, onDocumentDelete }) {
+export default function ProjectDetailSidebar({ project, documents, activeDocumentId, onCreateDocument, onCreateChildDocument, onDocumentsChange, onDocumentsUpdate, onCreateTemplate, onProjectDelete, onProjectUpdate, onDocumentUpdate, onDocumentDelete }) {
   const navigate = useNavigate();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -317,6 +317,8 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
       // Determine new parent_id and order based on drop zone
       let newParentId = null;
       let newOrder = 0;
+      const apiCalls = [];
+      const allUpdates = [];
 
       // If target is the parent div (root level), set parent to null
       if (targetItem.name === 'parent_div') {
@@ -339,60 +341,89 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
           newParentId = targetDoc.parent_id;
           newOrder = targetDoc.order;
 
-          // Update orders of siblings that come at or after the insert position
+          // Calculate updates for siblings that need to shift
           const siblings = documents.filter(d =>
             d.parent_id === newParentId &&
             d.id !== draggedDoc.id &&
             d.order >= newOrder
           ).sort((a, b) => a.order - b.order);
 
-          // Update their orders to make room
-          for (let i = 0; i < siblings.length; i++) {
-            const sibling = siblings[i];
-            await axios.put(
-              `/api/v1/projects/${project.id}/documents/${sibling.id}`,
-              { order: newOrder + i + 1 },
-              { withCredentials: true }
+          // Add sibling updates to batch
+          siblings.forEach((sibling, i) => {
+            const newSiblingOrder = newOrder + i + 1;
+            allUpdates.push({ id: sibling.id, order: newSiblingOrder });
+            apiCalls.push(
+              axios.put(
+                `/api/v1/projects/${project.id}/documents/${sibling.id}`,
+                { order: newSiblingOrder },
+                { withCredentials: true }
+              )
             );
-          }
+          });
         } else if (dropZone === 'after') {
           // Dropped AFTER the element - insert at same level, after target
           newParentId = targetDoc.parent_id;
           newOrder = targetDoc.order + 1;
 
-          // Update orders of siblings that come after the insert position
+          // Calculate updates for siblings that need to shift
           const siblings = documents.filter(d =>
             d.parent_id === newParentId &&
             d.id !== draggedDoc.id &&
             d.order >= newOrder
           ).sort((a, b) => a.order - b.order);
 
-          // Update their orders to make room
-          for (let i = 0; i < siblings.length; i++) {
-            const sibling = siblings[i];
-            await axios.put(
-              `/api/v1/projects/${project.id}/documents/${sibling.id}`,
-              { order: newOrder + i + 1 },
-              { withCredentials: true }
+          // Add sibling updates to batch
+          siblings.forEach((sibling, i) => {
+            const newSiblingOrder = newOrder + i + 1;
+            allUpdates.push({ id: sibling.id, order: newSiblingOrder });
+            apiCalls.push(
+              axios.put(
+                `/api/v1/projects/${project.id}/documents/${sibling.id}`,
+                { order: newSiblingOrder },
+                { withCredentials: true }
+              )
             );
-          }
+          });
         }
       }
 
-      // Update dragged document with new parent and order
-      await axios.put(
-        `/api/v1/projects/${project.id}/documents/${draggedDoc.id}`,
-        {
-          parent_id: newParentId,
-          order: newOrder
-        },
-        { withCredentials: true }
+      // Add dragged document update
+      allUpdates.push({
+        id: draggedDoc.id,
+        parent_id: newParentId,
+        order: newOrder
+      });
+
+      // API call for dragged document
+      apiCalls.push(
+        axios.put(
+          `/api/v1/projects/${project.id}/documents/${draggedDoc.id}`,
+          {
+            parent_id: newParentId,
+            order: newOrder
+          },
+          { withCredentials: true }
+        )
       );
 
-      // Refresh documents list
-      if (onDocumentsChange) {
-        await onDocumentsChange();
+      // Apply optimistic updates immediately
+      if (onDocumentsUpdate) {
+        onDocumentsUpdate(allUpdates);
       }
+
+      // Fire API calls in background without blocking
+      Promise.all(apiCalls)
+        .catch((error) => {
+          // Rollback on error by refreshing from server
+          console.error('Failed to reorder document:', error);
+          toast.error(`Failed to reorder document: ${error.response?.data?.detail || error.message}`);
+
+          // Revert to server state
+          if (onDocumentsChange) {
+            onDocumentsChange();
+          }
+        });
+
     } catch (error) {
       console.error('Failed to reorder document:', error);
       toast.error(`Failed to reorder document: ${error.response?.data?.detail || error.message}`);
