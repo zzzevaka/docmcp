@@ -211,6 +211,10 @@ TOOLS = [
                         "Content of whiteboards should be JSON in Excalidraw format."
                     ),
                 },
+                "parent_id": {
+                    "type": "string",
+                    "description": "Optional UUID of parent document to nest this document under",
+                },
             },
             "required": ["title", "type", "content"],
         },
@@ -545,10 +549,11 @@ async def edit_document_tool(
 
 
 async def create_document_tool(
-    project_id: UUID, title: str, doc_type: str, content: str, db: AsyncSession
+    project_id: UUID, title: str, doc_type: str, content: str, db: AsyncSession, parent_id: str | None = None
 ) -> dict[str, Any]:
     """Create a new document in the project."""
     project_repo = ProjectRepository(db)
+    document_repo = DocumentRepository(db)
 
     project = await project_repo.get(project_id)
     if not project:
@@ -558,6 +563,20 @@ async def create_document_tool(
         document_type = DocumentType(doc_type)
     except ValueError as e:
         raise ValueError("Invalid document type. Must be 'markdown' or 'whiteboard'") from e
+
+    # Validate parent_id if provided
+    parent_uuid = None
+    if parent_id:
+        try:
+            parent_uuid = UUID(parent_id)
+        except ValueError as e:
+            raise ValueError("Invalid parent_id format. Must be a valid UUID") from e
+
+        parent_doc = await document_repo.get(parent_uuid)
+        if not parent_doc:
+            raise ValueError(f"Parent document {parent_id} not found")
+        if parent_doc.project_id != project_id:
+            raise ValueError(f"Parent document {parent_id} does not belong to this project")
 
     if document_type == DocumentType.MARKDOWN:
         doc_content = {"markdown": content}
@@ -576,6 +595,7 @@ async def create_document_tool(
         project_id=project_id,
         type=document_type,
         content=json.dumps(doc_content),
+        parent_id=parent_uuid,
         editable_by_agent=True,
     )
 
@@ -622,7 +642,8 @@ async def execute_tool(
         title = arguments.get("title", "")
         doc_type = arguments.get("type", "")
         content = arguments.get("content", "")
-        return await create_document_tool(project_id, title, doc_type, content, db)
+        parent_id = arguments.get("parent_id")
+        return await create_document_tool(project_id, title, doc_type, content, db, parent_id)
     else:
         raise ValueError(f"Unknown tool: {tool_name}")
 

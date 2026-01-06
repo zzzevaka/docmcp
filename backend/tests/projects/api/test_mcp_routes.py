@@ -932,6 +932,149 @@ async def test_create_document_invalid_type(client_with_db: AsyncClient, test_pr
 
 
 @pytest.mark.asyncio
+async def test_create_document_with_valid_parent(
+    client_with_db: AsyncClient, test_project: dict, db_session: AsyncSession
+) -> None:
+    """Test create_document tool with valid parent_id."""
+    project = test_project["project"]
+    token = test_project["api_token"].token
+    parent_doc = test_project["root_doc1"]  # Use first root document as parent
+
+    request_data = {
+        "jsonrpc": "2.0",
+        "id": 20,
+        "method": "tools/call",
+        "params": {
+            "name": "create_document",
+            "arguments": {
+                "title": "Child Document",
+                "type": "markdown",
+                "content": "# Child Content\n\nThis is a child document.",
+                "parent_id": str(parent_doc.id),
+            },
+        },
+    }
+
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["jsonrpc"] == "2.0"
+    assert "result" in data
+    text_data = json.loads(data["result"]["content"][0]["text"])
+    assert text_data["success"] is True
+    assert "document_id" in text_data
+
+    # Verify the document was created with correct parent
+    doc_id = UUID(text_data["document_id"])
+    result = await db_session.execute(select(Document).where(Document.id == doc_id))
+    new_doc = result.scalar_one_or_none()
+    assert new_doc is not None
+    assert new_doc.name == "Child Document"
+    assert new_doc.parent_id == parent_doc.id
+    assert new_doc.editable_by_agent is True
+
+
+@pytest.mark.asyncio
+async def test_create_document_without_parent(
+    client_with_db: AsyncClient, test_project: dict, db_session: AsyncSession
+) -> None:
+    """Test create_document tool without parent_id creates root-level document."""
+    project = test_project["project"]
+    token = test_project["api_token"].token
+
+    request_data = {
+        "jsonrpc": "2.0",
+        "id": 21,
+        "method": "tools/call",
+        "params": {
+            "name": "create_document",
+            "arguments": {
+                "title": "Root Document",
+                "type": "markdown",
+                "content": "# Root Content\n\nThis is a root document.",
+            },
+        },
+    }
+
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
+
+    assert response.status_code == 200
+    data = response.json()
+
+    text_data = json.loads(data["result"]["content"][0]["text"])
+    doc_id = UUID(text_data["document_id"])
+    result = await db_session.execute(select(Document).where(Document.id == doc_id))
+    new_doc = result.scalar_one_or_none()
+    assert new_doc is not None
+    assert new_doc.parent_id is None  # Should be root-level
+
+
+@pytest.mark.asyncio
+async def test_create_document_with_invalid_parent_id(client_with_db: AsyncClient, test_project: dict) -> None:
+    """Test create_document tool with invalid parent_id (not found)."""
+    project = test_project["project"]
+    token = test_project["api_token"].token
+    fake_parent_id = str(uuid4())  # Generate a random UUID that doesn't exist
+
+    request_data = {
+        "jsonrpc": "2.0",
+        "id": 22,
+        "method": "tools/call",
+        "params": {
+            "name": "create_document",
+            "arguments": {
+                "title": "Child Document",
+                "type": "markdown",
+                "content": "Content",
+                "parent_id": fake_parent_id,
+            },
+        },
+    }
+
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Should return error
+    assert "error" in data
+    assert "not found" in data["error"]["message"].lower()
+
+
+@pytest.mark.asyncio
+async def test_create_document_with_malformed_parent_id(client_with_db: AsyncClient, test_project: dict) -> None:
+    """Test create_document tool with malformed parent_id (not a valid UUID)."""
+    project = test_project["project"]
+    token = test_project["api_token"].token
+
+    request_data = {
+        "jsonrpc": "2.0",
+        "id": 23,
+        "method": "tools/call",
+        "params": {
+            "name": "create_document",
+            "arguments": {
+                "title": "Child Document",
+                "type": "markdown",
+                "content": "Content",
+                "parent_id": "not-a-valid-uuid",
+            },
+        },
+    }
+
+    response = await client_with_db.post(f"/api/mcp/{project.id}", json=request_data, headers=get_auth_headers(token))
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Should return error
+    assert "error" in data
+    assert "invalid" in data["error"]["message"].lower()
+
+
+@pytest.mark.asyncio
 async def test_edit_document_invalid_id(client_with_db: AsyncClient, test_project: dict) -> None:
     """Test edit_document with invalid document ID format."""
     project = test_project["project"]

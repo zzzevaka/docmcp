@@ -24,7 +24,7 @@ import EditProjectModal from '@/components/projects/EditProjectModal'
 import DeleteProjectModal from '@/components/projects/DeleteProjectModal'
 import MCPInstructionsModal from '@/components/projects/MCPInstructionsModal'
 
-export default function ProjectDetailSidebar({ project, documents, activeDocumentId, onCreateDocument, onDocumentsChange, onCreateTemplate, onProjectDelete, onProjectUpdate, onDocumentUpdate, onDocumentDelete }) {
+export default function ProjectDetailSidebar({ project, documents, activeDocumentId, onCreateDocument, onCreateChildDocument, onDocumentsChange, onCreateTemplate, onProjectDelete, onProjectUpdate, onDocumentUpdate, onDocumentDelete }) {
   const navigate = useNavigate();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -235,23 +235,7 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
           draggable: true,
           className: doc.archived ? 'opacity-60' : '',
           actions: (
-            <div
-              onClick={(e) => {
-                e.stopPropagation();
-                setActionsDocument(doc);
-              }}
-              className="flex gap-3 items-center"
-              title="Document actions"
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setActionsDocument(doc);
-                }
-              }}
-            >
+            <div className="flex gap-1 items-center">
               {
                 doc.archived
                   ? (
@@ -262,8 +246,43 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
                   )
                   : null
               }
+              {onCreateChildDocument && (
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCreateChildDocument(doc.id);
+                  }}
+                  className="p-1 hover:bg-gray-200 rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                  title="Add child document"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onCreateChildDocument(doc.id);
+                    }
+                  }}
+                >
+                  <Plus className="w-3 h-3 text-gray-600" />
+                </div>
+              )}
               <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActionsDocument(doc);
+                }}
                 className="p-1 hover:bg-gray-200 rounded transition-all cursor-pointer"
+                title="Document actions"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActionsDocument(doc);
+                  }
+                }}
               >
                 <MoreHorizontal className="w-3 h-3 text-gray-600" />
               </div>

@@ -45,6 +45,7 @@ function ProjectDetail() {
   const [newDocumentType, setNewDocumentType] = useState('markdown');
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [parentDocumentId, setParentDocumentId] = useState(null);
 
   useEffect(() => {
     fetchProjectData().catch((error) => {
@@ -110,6 +111,7 @@ function ProjectDetail() {
             name: newDocumentName,
             type: newDocumentType,
             content: newDocumentType === 'markdown' ? { markdown: '' } : { raw: { elements: [], appState: {}, files: {} } },
+            parent_id: parentDocumentId,
           },
           { withCredentials: true }
         );
@@ -117,6 +119,7 @@ function ProjectDetail() {
 
       setNewDocumentName('');
       setUploadedFile(null);
+      setParentDocumentId(null);
       setShowCreateModal(false);
       await refreshProjectData();
       navigate(`/projects/${projectId}/documents/${response.data.id}`);
@@ -190,6 +193,11 @@ function ProjectDetail() {
     }
   };
 
+  const handleCreateChildDocument = (parentId) => {
+    setParentDocumentId(parentId);
+    setShowCreateModal(true);
+  };
+
   return (
     <>
       <SidebarProvider>
@@ -198,6 +206,7 @@ function ProjectDetail() {
           documents={documents}
           activeDocumentId={activeDocument?.id}
           onCreateDocument={() => setShowCreateModal(true)}
+          onCreateChildDocument={handleCreateChildDocument}
           onDocumentsChange={refreshProjectData}
           onCreateTemplate={handleCreateTemplate}
           onProjectDelete={deleteProject}
@@ -316,6 +325,7 @@ function ProjectDetail() {
                   setNewDocumentName('');
                   setNewDocumentType('markdown');
                   setUploadedFile(null);
+                  setParentDocumentId(null);
                 }}
                 disabled={isUploading}
               >
