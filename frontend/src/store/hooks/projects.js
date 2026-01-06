@@ -91,6 +91,17 @@ export const useProjectDetail = (projectId) => {
     });
   }, [setDocuments]);
 
+  const updateDocuments = useCallback((updates) => {
+    setDocuments((prevDocuments) => {
+      if (!prevDocuments) return prevDocuments;
+      const updatesMap = new Map(updates.map(u => [u.id, u]));
+      return prevDocuments.map((doc) => {
+        const update = updatesMap.get(doc.id);
+        return update ? { ...doc, ...update } : doc;
+      });
+    });
+  }, [setDocuments]);
+
   const deleteDocument = useCallback((documentId) => {
     setDocuments((prevDocuments) => {
       if (!prevDocuments) return prevDocuments;
@@ -116,5 +127,5 @@ export const useProjectDetail = (projectId) => {
     }
   }, [projectId, updateDocument]);
 
-  return { project, documents, loading, fetchProjectData, refreshProjectData, updateDocument, deleteDocument, fetchDocumentContent };
+  return { project, documents, loading, fetchProjectData, refreshProjectData, updateDocument, updateDocuments, deleteDocument, fetchDocumentContent };
 };
