@@ -68,8 +68,6 @@ const UIOptions = { canvasActions: { export: false, loadScene: false } }
 
 export default function ExcalidrawEditor({ initialData, onChange, readOnly, excalidrawRef }) {
   const { resolvedTheme } = useTheme();
-  const previousElementsRef = useRef(null);
-  const previousFilesRef = useRef(null);
 
   const clean = useMemo(() => {
     const sanitized = sanitizeInitialData(initialData);
@@ -86,18 +84,11 @@ export default function ExcalidrawEditor({ initialData, onChange, readOnly, exca
       ...sanitized,
       appState,
     };
-  }, []);
+  }, [initialData, readOnly, resolvedTheme]);
 
   const handleChange = useCallback((elements, appState, files) => {
     if (!readOnly && onChange) {
-      const elementsChanged = JSON.stringify(elements) !== JSON.stringify(previousElementsRef.current);
-      const filesChanged = JSON.stringify(files) !== JSON.stringify(previousFilesRef.current);
-
-      if (elementsChanged || filesChanged) {
-        previousElementsRef.current = JSON.parse(JSON.stringify(elements));
-        previousFilesRef.current = JSON.parse(JSON.stringify(files));
-        onChange({ elements, files });
-      }
+      onChange({ elements, appState, files });
     }
   }, [readOnly, onChange]);
 
