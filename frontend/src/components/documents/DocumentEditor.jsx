@@ -57,13 +57,19 @@ export default function DocumentEditor({ document, onDocumentUpdate, onFetchCont
           throw new Error("Excalidraw API not available");
         }
 
+        // Don't store appState - it's not needed and causes race conditions
         const sceneData = {
           elements: excalidrawRef.current.getSceneElements(),
-          appState: excalidrawRef.current.getAppState(),
           files: excalidrawRef.current.getFiles(),
         };
 
-        const b64image = await generateExcalidrawImageBase64(sceneData);
+        // For image generation, we need appState temporarily
+        const sceneDataWithAppState = {
+          ...sceneData,
+          appState: excalidrawRef.current.getAppState(),
+        };
+
+        const b64image = await generateExcalidrawImageBase64(sceneDataWithAppState);
         contentToSave = {
           raw: sceneData,
           image: b64image
