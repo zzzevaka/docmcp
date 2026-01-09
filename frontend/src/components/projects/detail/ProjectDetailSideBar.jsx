@@ -491,6 +491,7 @@ export default function ProjectDetailSidebar({ project, documents, activeDocumen
                   initialSelectedItemId={activeDocumentId}
                   onSelectChange={handleDocumentSelected}
                   onDocumentDrag={handleDocumentDrag}
+                  onRename={handleEditDocument}
                   defaultLeafIcon={FileText}
                   defaultNodeIcon={FileText}
                 />

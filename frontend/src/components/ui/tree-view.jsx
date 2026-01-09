@@ -1,8 +1,9 @@
 import React from 'react'
 import * as AccordionPrimitive from '@radix-ui/react-accordion'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Check } from 'lucide-react'
 import { cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
 
 const treeVariants = cva(
     'group/tree-node hover:before:opacity-100 before:absolute before:rounded-lg before:left-0 px-2 before:w-full before:opacity-0 before:bg-accent/70 before:h-[2rem] before:-z-10'
@@ -22,6 +23,7 @@ const TreeView = React.forwardRef((
         defaultNodeIcon,
         className,
         onDocumentDrag,
+        onRename,
         renderItem,
         ...props
     },
@@ -30,6 +32,9 @@ const TreeView = React.forwardRef((
     const [selectedItemId, setSelectedItemId] = React.useState(initialSelectedItemId)
 
     const [draggedItem, setDraggedItem] = React.useState(null)
+
+    const [editingItemId, setEditingItemId] = React.useState(null)
+    const [editingItemName, setEditingItemName] = React.useState('')
 
     // Update selected item when initialSelectedItemId changes
     React.useEffect(() => {
@@ -53,6 +58,30 @@ const TreeView = React.forwardRef((
         }
         setDraggedItem(null)
     }, [draggedItem, onDocumentDrag])
+
+    const handleStartEdit = React.useCallback((item) => {
+        setEditingItemId(item.id)
+        setEditingItemName(item.name)
+    }, [])
+
+    const handleCancelEdit = React.useCallback(() => {
+        setEditingItemId(null)
+        setEditingItemName('')
+    }, [])
+
+    const handleSaveEdit = React.useCallback(async (itemId) => {
+        if (onRename && editingItemName.trim()) {
+            try {
+                await onRename(itemId, editingItemName.trim())
+                setEditingItemId(null)
+                setEditingItemName('')
+            } catch (error) {
+                // Keep editing mode on error
+            }
+        } else {
+            handleCancelEdit()
+        }
+    }, [editingItemName, onRename, handleCancelEdit])
 
     const expandedItemIds = React.useMemo(() => {
         if (!initialSelectedItemId) {
@@ -98,6 +127,12 @@ const TreeView = React.forwardRef((
                 handleDrop={handleDrop}
                 draggedItem={draggedItem}
                 renderItem={renderItem}
+                editingItemId={editingItemId}
+                editingItemName={editingItemName}
+                onStartEdit={handleStartEdit}
+                onCancelEdit={handleCancelEdit}
+                onSaveEdit={handleSaveEdit}
+                onEditNameChange={setEditingItemName}
                 level={0}
                 {...props} />
             <div
@@ -122,6 +157,12 @@ const TreeItem = React.forwardRef((
         handleDrop,
         draggedItem,
         renderItem,
+        editingItemId,
+        editingItemName,
+        onStartEdit,
+        onCancelEdit,
+        onSaveEdit,
+        onEditNameChange,
         level,
         onSelectChange,
         expandAll,
@@ -187,7 +228,13 @@ const TreeItem = React.forwardRef((
                                 handleDragStart={handleDragStart}
                                 handleDrop={handleDrop}
                                 draggedItem={draggedItem}
-                                renderItem={renderItem} />
+                                renderItem={renderItem}
+                                editingItemId={editingItemId}
+                                editingItemName={editingItemName}
+                                onStartEdit={onStartEdit}
+                                onCancelEdit={onCancelEdit}
+                                onSaveEdit={onSaveEdit}
+                                onEditNameChange={onEditNameChange} />
                         ) : (
                             <TreeLeaf
                                 item={item}
@@ -198,7 +245,13 @@ const TreeItem = React.forwardRef((
                                 handleDragStart={handleDragStart}
                                 handleDrop={handleDrop}
                                 draggedItem={draggedItem}
-                                renderItem={renderItem} />
+                                renderItem={renderItem}
+                                editingItemId={editingItemId}
+                                editingItemName={editingItemName}
+                                onStartEdit={onStartEdit}
+                                onCancelEdit={onCancelEdit}
+                                onSaveEdit={onSaveEdit}
+                                onEditNameChange={onEditNameChange} />
                         )}
                     </li>
                 ))}
@@ -219,14 +272,29 @@ const TreeNode = ({
     handleDrop,
     draggedItem,
     renderItem,
+    editingItemId,
+    editingItemName,
+    onStartEdit,
+    onCancelEdit,
+    onSaveEdit,
+    onEditNameChange,
     level = 0
 }) => {
     const [value, setValue] = React.useState(expandedItemIds.includes(item.id) ? [item.id] : [])
     const [dropZone, setDropZone] = React.useState(null) // 'before', 'on', 'after'
     const elementRef = React.useRef(null)
+    const inputRef = React.useRef(null)
     const hasChildren = !!item.children?.length
     const isSelected = selectedItemId === item.id
     const isOpen = value.includes(item.id)
+    const isEditing = editingItemId === item.id
+
+    React.useEffect(() => {
+        if (isEditing && inputRef.current) {
+            inputRef.current.focus()
+            inputRef.current.select()
+        }
+    }, [isEditing])
 
     // Auto-expand when this node is in expandedItemIds (e.g., when a nested child is selected)
     React.useEffect(() => {
@@ -278,7 +346,15 @@ const TreeNode = ({
     return (
         <AccordionPrimitive.Root type="multiple" value={value} onValueChange={(s) => setValue(s)}>
             <AccordionPrimitive.Item value={item.id}>
-                <div className="relative" ref={elementRef}>
+                <div
+                  className="relative"
+                  ref={elementRef}
+                  draggable={!!item.draggable}
+                  onDragStart={onDragStart}
+                  onDragOver={onDragOver}
+                  onDragLeave={onDragLeave}
+                  onDrop={onDrop}
+                >
                     {dropZone === 'before' && (
                         <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500 z-10 rounded" />
                     )}
@@ -292,11 +368,7 @@ const TreeNode = ({
                             dropZone === 'on' && dragOverVariants(),
                             item.className
                         )}
-                        draggable={!!item.draggable}
-                        onDragStart={onDragStart}
-                        onDragOver={onDragOver}
-                        onDragLeave={onDragLeave}
-                        onDrop={onDrop}>
+                    >
                     {renderItem ? (
                         renderItem({
                             item,
@@ -311,9 +383,11 @@ const TreeNode = ({
                             <div
                                 className="flex items-center flex-1 min-w-0"
                                 onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleSelectChange(item)
-                                    item.onClick?.()
+                                    if (!isEditing) {
+                                        e.stopPropagation()
+                                        handleSelectChange(item)
+                                        item.onClick?.()
+                                    }
                                 }}
                             >
                                 <TreeIcon
@@ -321,19 +395,64 @@ const TreeNode = ({
                                     isSelected={isSelected}
                                     isOpen={isOpen}
                                     default={defaultNodeIcon} />
-                                <span
-                                  className="text-sm truncate"
-                                  title={item.name}
-                                >{item.name}</span>
-                                {item.badge && (
+                                {isEditing ? (
+                                    <div className="flex items-center gap-1 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+                                        <Input
+                                            ref={inputRef}
+                                            value={editingItemName}
+                                            onChange={(e) => onEditNameChange?.(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault()
+                                                    e.stopPropagation()
+                                                    onSaveEdit?.(item.id)
+                                                } else if (e.key === 'Escape') {
+                                                    e.preventDefault()
+                                                    e.stopPropagation()
+                                                    onCancelEdit?.()
+                                                }
+                                            }}
+                                            onBlur={() => onCancelEdit?.()}
+                                            className="h-6 text-sm px-1 py-0"
+                                        />
+                                        <button
+                                            onMouseDown={(e) => {
+                                                e.preventDefault()
+                                                e.stopPropagation()
+                                            }}
+                                            onClick={(e) => {
+                                                e.preventDefault()
+                                                e.stopPropagation()
+                                                onSaveEdit?.(item.id)
+                                            }}
+                                            className="p-1 hover:bg-green-100 rounded transition-all"
+                                            title="Save"
+                                        >
+                                            <Check className="w-3 h-3 text-green-600" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <span
+                                        className="text-sm truncate"
+                                        title={item.name}
+                                        onDoubleClick={(e) => {
+                                            e.preventDefault()
+                                            e.stopPropagation()
+                                            onStartEdit?.(item)
+                                        }}
+                                    >{item.name}</span>
+                                )}
+                                {!isEditing && item.badge && (
                                   <div className="ml-1 shrink-0">
                                     {item.badge}
                                   </div>
                                 )}
                             </div>
-                            <TreeActions isSelected={isSelected}>
-                                {item.actions}
-                            </TreeActions>
+                            {!isEditing && (
+                                <TreeActions isSelected={isSelected}>
+                                    {item.actions}
+                                </TreeActions>
+                            )}
                         </>
                     )}
                 </AccordionTrigger>
@@ -350,6 +469,12 @@ const TreeNode = ({
                         handleDrop={handleDrop}
                         draggedItem={draggedItem}
                         renderItem={renderItem}
+                        editingItemId={editingItemId}
+                        editingItemName={editingItemName}
+                        onStartEdit={onStartEdit}
+                        onCancelEdit={onCancelEdit}
+                        onSaveEdit={onSaveEdit}
+                        onEditNameChange={onEditNameChange}
                         level={level + 1} />
                 </AccordionContent>
             </AccordionPrimitive.Item>
@@ -369,13 +494,28 @@ const TreeLeaf = React.forwardRef((
         handleDrop,
         draggedItem,
         renderItem,
+        editingItemId,
+        editingItemName,
+        onStartEdit,
+        onCancelEdit,
+        onSaveEdit,
+        onEditNameChange,
         ...props
     },
     ref
 ) => {
     const [dropZone, setDropZone] = React.useState(null)
     const elementRef = React.useRef(null)
+    const inputRef = React.useRef(null)
     const isSelected = selectedItemId === item.id
+    const isEditing = editingItemId === item.id
+
+    React.useEffect(() => {
+        if (isEditing && inputRef.current) {
+            inputRef.current.focus()
+            inputRef.current.select()
+        }
+    }, [isEditing])
 
     const onDragStart = (e) => {
         if (!item.draggable || item.disabled) {
@@ -419,7 +559,15 @@ const TreeLeaf = React.forwardRef((
     }
 
     return (
-        <div className="relative" ref={elementRef}>
+        <div
+          className="relative"
+          ref={elementRef}
+          draggable={!!item.draggable && !item.disabled}
+          onDragStart={onDragStart}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
+        >
             {dropZone === 'before' && (
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-500 z-10" />
             )}
@@ -438,15 +586,10 @@ const TreeLeaf = React.forwardRef((
                     item.className
                 )}
                 onClick={() => {
-                    if (item.disabled) return
+                    if (item.disabled || isEditing) return
                     handleSelectChange(item)
                     item.onClick?.()
                 }}
-                draggable={!!item.draggable && !item.disabled}
-                onDragStart={onDragStart}
-                onDragOver={onDragOver}
-                onDragLeave={onDragLeave}
-                onDrop={onDrop}
                 {...props}>
             {renderItem ? (
                 <>
@@ -462,15 +605,62 @@ const TreeLeaf = React.forwardRef((
             ) : (
                 <>
                     <TreeIcon item={item} isSelected={isSelected} default={defaultLeafIcon} />
-                    <span className="flex-grow text-sm truncate">{item.name}</span>
-                    {item.badge && (
+                    {isEditing ? (
+                        <div className="flex items-center gap-1 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+                            <Input
+                                ref={inputRef}
+                                value={editingItemName}
+                                onChange={(e) => onEditNameChange?.(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        onSaveEdit?.(item.id)
+                                    } else if (e.key === 'Escape') {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        onCancelEdit?.()
+                                    }
+                                }}
+                                onBlur={() => onCancelEdit?.()}
+                                className="h-6 text-sm px-1 py-0"
+                            />
+                            <button
+                                onMouseDown={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                }}
+                                onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    onSaveEdit?.(item.id)
+                                }}
+                                className="p-1 hover:bg-green-100 rounded transition-all"
+                                title="Save"
+                            >
+                                <Check className="w-3 h-3 text-green-600" />
+                            </button>
+                        </div>
+                    ) : (
+                        <span
+                            className="flex-grow text-sm truncate"
+                            onDoubleClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                onStartEdit?.(item)
+                            }}
+                        >{item.name}</span>
+                    )}
+                    {!isEditing && item.badge && (
                       <div className="ml-1 shrink-0">
                         {item.badge}
                       </div>
                     )}
-                    <TreeActions isSelected={isSelected && !item.disabled}>
-                        {item.actions}
-                    </TreeActions>
+                    {!isEditing && (
+                        <TreeActions isSelected={isSelected && !item.disabled}>
+                            {item.actions}
+                        </TreeActions>
+                    )}
                 </>
             )}
             </div>
