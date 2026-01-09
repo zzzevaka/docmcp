@@ -1508,3 +1508,193 @@ async def test_import_markdown_with_special_characters(
     doc = response.json()
     assert doc["name"] == "Special Characters"
     assert doc["content"]["markdown"] == markdown_content
+
+
+@pytest.mark.asyncio
+async def test_update_document_bidirectional_circular_dependency(
+    db_session: AsyncSession, client: AsyncClient
+):
+    """Test preventing bidirectional circular dependency (A->B, then B->A)."""
+    result = await db_session.execute(select(User).where(User.username == "testuser"))
+    user = result.scalar_one()
+
+    team = Team(name="Bidirectional Circular Test Team")
+    db_session.add(team)
+    await db_session.flush()
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
+    await db_session.flush()
+
+    project = Project(name="Bidirectional Circular Test Project", team_id=team.id)
+    db_session.add(project)
+    await db_session.flush()
+
+    # Create doc A and doc B
+    doc_a = Document(
+        name="Doc A",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content='{"markdown": "Doc A"}',
+    )
+    doc_b = Document(
+        name="Doc B",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content='{"markdown": "Doc B"}',
+    )
+    db_session.add(doc_a)
+    db_session.add(doc_b)
+    await db_session.commit()
+
+    # Set A's parent to B (B is now parent of A)
+    response = await client.put(
+        f"/api/v1/projects/{project.id}/documents/{doc_a.id}",
+        json={"parent_id": str(doc_b.id)},
+    )
+    assert response.status_code == 200
+
+    # Now try to set B's parent to A (would create circular dependency)
+    response = await client.put(
+        f"/api/v1/projects/{project.id}/documents/{doc_b.id}",
+        json={"parent_id": str(doc_a.id)},
+    )
+    assert response.status_code == 400
+    assert "circular" in response.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_update_document_three_level_circular_dependency(
+    db_session: AsyncSession, client: AsyncClient
+):
+    """Test preventing three-level circular dependency (A->B->C, then C->A)."""
+    result = await db_session.execute(select(User).where(User.username == "testuser"))
+    user = result.scalar_one()
+
+    team = Team(name="Three Level Circular Test Team")
+    db_session.add(team)
+    await db_session.flush()
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
+    await db_session.flush()
+
+    project = Project(name="Three Level Circular Test Project", team_id=team.id)
+    db_session.add(project)
+    await db_session.flush()
+
+    # Create doc A, B, and C
+    doc_a = Document(
+        name="Doc A",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content='{"markdown": "Doc A"}',
+    )
+    doc_b = Document(
+        name="Doc B",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content='{"markdown": "Doc B"}',
+    )
+    doc_c = Document(
+        name="Doc C",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content='{"markdown": "Doc C"}',
+    )
+    db_session.add(doc_a)
+    db_session.add(doc_b)
+    db_session.add(doc_c)
+    await db_session.commit()
+
+    # Create chain: A -> B -> C
+    response = await client.put(
+        f"/api/v1/projects/{project.id}/documents/{doc_a.id}",
+        json={"parent_id": str(doc_b.id)},
+    )
+    assert response.status_code == 200
+
+    response = await client.put(
+        f"/api/v1/projects/{project.id}/documents/{doc_b.id}",
+        json={"parent_id": str(doc_c.id)},
+    )
+    assert response.status_code == 200
+
+    # Now try to set C's parent to A (would create circular dependency: A->B->C->A)
+    response = await client.put(
+        f"/api/v1/projects/{project.id}/documents/{doc_c.id}",
+        json={"parent_id": str(doc_a.id)},
+    )
+    assert response.status_code == 400
+    assert "circular" in response.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_update_document_valid_hierarchy_change(
+    db_session: AsyncSession, client: AsyncClient
+):
+    """Test that valid hierarchy changes (non-circular) are allowed."""
+    result = await db_session.execute(select(User).where(User.username == "testuser"))
+    user = result.scalar_one()
+
+    team = Team(name="Valid Hierarchy Test Team")
+    db_session.add(team)
+    await db_session.flush()
+    team_member = TeamMember(user_id=user.id, team_id=team.id, role=TeamRole.MEMBER)
+    db_session.add(team_member)
+    await db_session.flush()
+
+    project = Project(name="Valid Hierarchy Test Project", team_id=team.id)
+    db_session.add(project)
+    await db_session.flush()
+
+    # Create docs A, B, C, D
+    doc_a = Document(
+        name="Doc A",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content='{"markdown": "Doc A"}',
+    )
+    doc_b = Document(
+        name="Doc B",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content='{"markdown": "Doc B"}',
+    )
+    doc_c = Document(
+        name="Doc C",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content='{"markdown": "Doc C"}',
+    )
+    doc_d = Document(
+        name="Doc D",
+        project_id=project.id,
+        type=DocumentType.MARKDOWN,
+        content='{"markdown": "Doc D"}',
+    )
+    db_session.add(doc_a)
+    db_session.add(doc_b)
+    db_session.add(doc_c)
+    db_session.add(doc_d)
+    await db_session.commit()
+
+    # Create chain: D -> C -> B
+    response = await client.put(
+        f"/api/v1/projects/{project.id}/documents/{doc_d.id}",
+        json={"parent_id": str(doc_c.id)},
+    )
+    assert response.status_code == 200
+
+    response = await client.put(
+        f"/api/v1/projects/{project.id}/documents/{doc_c.id}",
+        json={"parent_id": str(doc_b.id)},
+    )
+    assert response.status_code == 200
+
+    # Now set A's parent to D (creates A -> D -> C -> B, which is valid)
+    response = await client.put(
+        f"/api/v1/projects/{project.id}/documents/{doc_a.id}",
+        json={"parent_id": str(doc_d.id)},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["parent_id"] == str(doc_d.id)

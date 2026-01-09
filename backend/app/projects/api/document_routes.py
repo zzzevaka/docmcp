@@ -27,6 +27,42 @@ from app.users.api.user_routes import get_current_user_dependency
 router = APIRouter(prefix="/api/v1/projects", tags=["documents"])
 
 
+async def _check_circular_parent_dependency(
+    document_id: UUID,
+    parent_id: UUID,
+    document_repo: DocumentRepository,
+) -> bool:
+    """
+    Check if setting parent_id for document_id would create a circular dependency.
+
+    Returns True if there would be a circular dependency, False otherwise.
+    """
+    visited = set()
+    current_id = parent_id
+
+    # Walk up the parent chain
+    while current_id:
+        if current_id == document_id:
+            # Found the document in its own parent chain - circular dependency!
+            return True
+
+        if current_id in visited:
+            # We've seen this node before - there's a cycle somewhere,
+            # but not involving our document
+            break
+
+        visited.add(current_id)
+
+        # Get the parent of current document
+        current_doc = await document_repo.get(current_id)
+        if not current_doc:
+            break
+
+        current_id = current_doc.parent_id
+
+    return False
+
+
 @router.get("/{project_id}/documents/", response_model=list[DocumentListItemSchema])
 async def list_documents(
     project_id: UUID,
@@ -185,6 +221,15 @@ async def update_document(
                 raise HTTPException(status_code=400, detail="Invalid parent document")
             if payload.parent_id == document_id:
                 raise HTTPException(status_code=400, detail="Document cannot be its own parent")
+            # Check for circular dependency
+            has_circular_dependency = await _check_circular_parent_dependency(
+                document_id, payload.parent_id, document_repo
+            )
+            if has_circular_dependency:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Cannot set parent: would create circular dependency"
+                )
         document.parent_id = payload.parent_id
 
     if "order" in update_data:
