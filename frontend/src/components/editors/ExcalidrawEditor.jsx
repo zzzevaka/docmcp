@@ -84,7 +84,7 @@ export default function ExcalidrawEditor({ initialData, onChange, readOnly, exca
       ...sanitized,
       appState,
     };
-  }, [initialData, readOnly, resolvedTheme]);
+  }, []);
 
   const handleChange = useCallback((elements, appState, files) => {
     if (!readOnly && onChange) {
