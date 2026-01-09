@@ -346,7 +346,15 @@ const TreeNode = ({
     return (
         <AccordionPrimitive.Root type="multiple" value={value} onValueChange={(s) => setValue(s)}>
             <AccordionPrimitive.Item value={item.id}>
-                <div className="relative" ref={elementRef}>
+                <div
+                  className="relative"
+                  ref={elementRef}
+                  draggable={!!item.draggable}
+                  onDragStart={onDragStart}
+                  onDragOver={onDragOver}
+                  onDragLeave={onDragLeave}
+                  onDrop={onDrop}
+                >
                     {dropZone === 'before' && (
                         <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500 z-10 rounded" />
                     )}
@@ -360,11 +368,7 @@ const TreeNode = ({
                             dropZone === 'on' && dragOverVariants(),
                             item.className
                         )}
-                        draggable={!!item.draggable}
-                        onDragStart={onDragStart}
-                        onDragOver={onDragOver}
-                        onDragLeave={onDragLeave}
-                        onDrop={onDrop}>
+                    >
                     {renderItem ? (
                         renderItem({
                             item,
@@ -555,7 +559,15 @@ const TreeLeaf = React.forwardRef((
     }
 
     return (
-        <div className="relative" ref={elementRef}>
+        <div
+          className="relative"
+          ref={elementRef}
+          draggable={!!item.draggable && !item.disabled}
+          onDragStart={onDragStart}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
+        >
             {dropZone === 'before' && (
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-500 z-10" />
             )}
@@ -578,11 +590,6 @@ const TreeLeaf = React.forwardRef((
                     handleSelectChange(item)
                     item.onClick?.()
                 }}
-                draggable={!!item.draggable && !item.disabled}
-                onDragStart={onDragStart}
-                onDragOver={onDragOver}
-                onDragLeave={onDragLeave}
-                onDrop={onDrop}
                 {...props}>
             {renderItem ? (
                 <>
