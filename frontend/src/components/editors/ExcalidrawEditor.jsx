@@ -1,4 +1,4 @@
-import React, { Suspense, useCallback, useEffect, useRef, useState, useMemo } from "react";
+import React, { Suspense, useCallback, useEffect, useState } from "react";
 import { exportToBlob } from "@excalidraw/excalidraw";
 import { useTheme } from "next-themes";
 
@@ -68,8 +68,9 @@ const UIOptions = { canvasActions: { export: false, loadScene: false } }
 
 export default function ExcalidrawEditor({ initialData, onChange, readOnly, excalidrawRef }) {
   const { resolvedTheme } = useTheme();
+  const [data, setData] = useState();
 
-  const clean = useMemo(() => {
+  useEffect(() => {
     const sanitized = sanitizeInitialData(initialData);
     const appState = {
       ...sanitized.appState,
@@ -80,10 +81,10 @@ export default function ExcalidrawEditor({ initialData, onChange, readOnly, exca
       appState.viewModeEnabled = true;
     }
 
-    return {
+    setData({
       ...sanitized,
       appState,
-    };
+    })
   }, []);
 
   const handleChange = useCallback((elements, appState, files) => {
@@ -98,6 +99,10 @@ export default function ExcalidrawEditor({ initialData, onChange, readOnly, exca
     }
   }, [excalidrawRef]);
 
+  if (!data) {
+    return null;
+  }
+
   return (
     <div className="w-full h-full">
       <Suspense fallback={
@@ -109,7 +114,7 @@ export default function ExcalidrawEditor({ initialData, onChange, readOnly, exca
         </div>
       }>
         <ExcalidrawLazy
-          initialData={clean}
+          initialData={data}
           onChange={handleChange}
           excalidrawAPI={handleExcalidrawAPI}
           UIOptions={UIOptions}
