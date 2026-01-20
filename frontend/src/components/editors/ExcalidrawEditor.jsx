@@ -22,10 +22,6 @@ function sanitizeInitialData(data) {
   return { ...data, appState: sanitizeAppState(data.appState) };
 }
 
-function makeSnapshot(elements, appState, files) {
-  return { type: "excalidraw", version: 2, source: "ui", elements, appState: sanitizeAppState(appState), files };
-}
-
 
 export async function generateExcalidrawImageBase64(excalidrawData, options = {}) {
   const {
@@ -66,7 +62,7 @@ export async function generateExcalidrawImageBase64(excalidrawData, options = {}
 const UIOptions = { canvasActions: { export: false, loadScene: false } }
 
 
-export default function ExcalidrawEditor({ initialData, onChange, readOnly, excalidrawRef }) {
+export default function ExcalidrawEditor({ initialData, onChange, readOnly }) {
   const { resolvedTheme } = useTheme();
   const [data, setData] = useState();
 
@@ -93,12 +89,6 @@ export default function ExcalidrawEditor({ initialData, onChange, readOnly, exca
     }
   }, [readOnly, onChange]);
 
-  const handleExcalidrawAPI = useCallback((api) => {
-    if (excalidrawRef) {
-      excalidrawRef.current = api;
-    }
-  }, [excalidrawRef]);
-
   if (!data) {
     return null;
   }
@@ -116,7 +106,6 @@ export default function ExcalidrawEditor({ initialData, onChange, readOnly, exca
         <ExcalidrawLazy
           initialData={data}
           onChange={handleChange}
-          excalidrawAPI={handleExcalidrawAPI}
           UIOptions={UIOptions}
           viewModeEnabled={readOnly}
         />
