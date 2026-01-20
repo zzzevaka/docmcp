@@ -8,7 +8,6 @@ import ExcalidrawEditor, { generateExcalidrawImageBase64 } from '@/components/ed
 
 export default function DocumentEditor({ document, onDocumentUpdate, onFetchContent }) {
   const [content, setContent] = useState(null);
-  const [saveStatus, setSaveStatus] = useState('saved');
   const [changeCounter, setChangeCounter] = useState(document.type == "markdown" ? -1 : -3);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const saveTimeoutRef = useRef(null);
@@ -34,11 +33,9 @@ export default function DocumentEditor({ document, onDocumentUpdate, onFetchCont
   const handleChange = useCallback((data) => {
       setChangeCounter(prev => prev + 1);
       setContent(data);
-      setSaveStatus('unsaved');
   }, []);
 
   const performSave = useCallback(async () => {
-    setSaveStatus('saving');
     try {
       let contentToSave;
 
@@ -60,20 +57,17 @@ export default function DocumentEditor({ document, onDocumentUpdate, onFetchCont
         { withCredentials: true }
       );
 
-      setSaveStatus('saved');
-
       if (onDocumentUpdate) {
         onDocumentUpdate(document.id, { content: contentToSave });
       }
     } catch (error) {
       console.error("Error saving document:", error);
-      setSaveStatus('unsaved');
       toast.error(`Failed to save document: ${error.response?.data?.detail || error.message}`);
     }
   }, [content, document.project_id, document.id, onDocumentUpdate]);
 
   useEffect(() => {
-    if (changeCounter > 0 && saveStatus === 'unsaved') {
+    if (changeCounter > 0) {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
@@ -88,7 +82,7 @@ export default function DocumentEditor({ document, onDocumentUpdate, onFetchCont
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [changeCounter, performSave, saveStatus]);
+  }, [changeCounter, performSave]);
 
   const excalidrawInitialData = useMemo(() => {
     if (!document.content) return null;
@@ -130,16 +124,6 @@ export default function DocumentEditor({ document, onDocumentUpdate, onFetchCont
           />
         )
       }
-
-      {/* Save status indicator - only show when not saved */}
-      {(changeCounter > 0 && saveStatus !== 'saved') && (
-        <div
-          className={`fixed bottom-${saveIconBottomOffset} right-4 opacity-70 z-40 backdrop-blur-sm rounded-md shadow-md`}
-          title={saveStatus === 'saving' ? 'Saving...' : 'Unsaved changes'}
-        >
-          <Save className="w-5 h-5 text-primary" />
-        </div>
-      )}
     </div>
   )
 }

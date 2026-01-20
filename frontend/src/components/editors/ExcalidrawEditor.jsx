@@ -47,7 +47,6 @@ export async function generateExcalidrawImageBase64(excalidrawData, options = {}
     }),
   });
 
-  // Convert blob to base64
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -88,10 +87,6 @@ export default function ExcalidrawEditor({ initialData, onChange, readOnly }) {
       onChange({ elements, appState, files });
     }
   }, [readOnly, onChange]);
-
-  if (!data) {
-    return null;
-  }
 
   if (!data) {
     return null;
