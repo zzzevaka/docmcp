@@ -93,10 +93,6 @@ export default function ExcalidrawEditor({ initialData, onChange, readOnly }) {
     return null;
   }
 
-  if (!data) {
-    return null;
-  }
-
   return (
     <div className="w-full h-full">
       <Suspense fallback={
