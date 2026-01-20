@@ -11,19 +11,10 @@ export default function DocumentEditor({ document, onDocumentUpdate, onFetchCont
   const [saveStatus, setSaveStatus] = useState('saved');
   const [changeCounter, setChangeCounter] = useState(document.type == "markdown" ? -1 : -3);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
-  const excalidrawRef = useRef(null);
   const saveTimeoutRef = useRef(null);
-  const contentRef = useRef(content);
 
-  // Keep contentRef in sync with content
-  useEffect(() => {
-    contentRef.current = content;
-  }, [content]);
-
-  // Fetch content if not loaded
   useEffect(() => {
     const loadContent = async () => {
-      // Check if content is missing
       if (!document.content && onFetchContent) {
         setIsLoadingContent(true);
         try {
@@ -52,29 +43,16 @@ export default function DocumentEditor({ document, onDocumentUpdate, onFetchCont
       let contentToSave;
 
       if (document.type === "whiteboard") {
-        // Get current scene data from Excalidraw ref
-        if (!excalidrawRef.current) {
-          throw new Error("Excalidraw API not available");
-        }
-
-        const sceneData = {
-          elements: excalidrawRef.current.getSceneElements(),
-          appState: excalidrawRef.current.getAppState(),
-          files: excalidrawRef.current.getFiles(),
-        };
-
-        const b64image = await generateExcalidrawImageBase64(sceneData);
+        const b64image = await generateExcalidrawImageBase64(content);
         contentToSave = {
-          raw: sceneData,
+          raw: content,
           image: b64image
         };
       } else {
         contentToSave = {
-          markdown: contentRef.current,
+          markdown: content,
         };
       }
-
-      console.log('Saving content:', contentToSave);
 
       await axios.put(
         `/api/v1/projects/${document.project_id}/documents/${document.id}`,
@@ -82,11 +60,8 @@ export default function DocumentEditor({ document, onDocumentUpdate, onFetchCont
         { withCredentials: true }
       );
 
-      console.log('Save successful');
-      // After successful save:
       setSaveStatus('saved');
 
-      // Update document in store
       if (onDocumentUpdate) {
         onDocumentUpdate(document.id, { content: contentToSave });
       }
@@ -95,9 +70,8 @@ export default function DocumentEditor({ document, onDocumentUpdate, onFetchCont
       setSaveStatus('unsaved');
       toast.error(`Failed to save document: ${error.response?.data?.detail || error.message}`);
     }
-  }, [document.project_id, document.id, excalidrawRef, onDocumentUpdate]);
+  }, [content, document.project_id, document.id, onDocumentUpdate]);
 
-  // Auto-save with debounce
   useEffect(() => {
     if (changeCounter > 0 && saveStatus === 'unsaved') {
       if (saveTimeoutRef.current) {
@@ -114,7 +88,7 @@ export default function DocumentEditor({ document, onDocumentUpdate, onFetchCont
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [changeCounter, performSave]);
+  }, [changeCounter, performSave, saveStatus]);
 
   const excalidrawInitialData = useMemo(() => {
     if (!document.content) return null;
@@ -153,7 +127,6 @@ export default function DocumentEditor({ document, onDocumentUpdate, onFetchCont
             initialData={excalidrawInitialData}
             onChange={handleChange}
             readOnly={false}
-            excalidrawRef={excalidrawRef}
           />
         )
       }
